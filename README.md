@@ -1,47 +1,55 @@
 # Seka Kama: Modeling Land Use & Lion Population Dynamics
-An open-source research initiative investigating the spatial relationship between human expansion and apex predator viability.
+
+*An open-source research initiative investigating the spatial relationship between human expansion and apex predator viability.*
 
 ## 1. The Challenge
-The ecosystem is undergoing a rapid transition. As human footprints expand through increased settlement, infrastructure, and agricultural activity, the available habitat for wide-ranging species is becoming increasingly fragmented.
 
-This project addresses the critical gap between land-use planning and wildlife conservation. Currently, it is difficult to quantify how a specific change in land utility—such as the introduction of a new physical barrier or the conversion of wild land to seasonal farming—affects the long-term survival of lion populations.
+The ecosystem is undergoing rapid transition. As human footprints expand through increased settlement, infrastructure, and agriculture, available habitat for wide‑ranging species becomes increasingly fragmented.
 
-The Problem
-Seka Kama seeks to bridge the gap between human development and ecological stability. Without a way to simulate future outcomes, land-use decisions are often made without a full understanding of their long-term impact on biodiversity. We aim to create a predictive environment where different development scenarios can be tested to see their direct effect on predator movement and population health.
+This project addresses the critical gap between land‑use planning and wildlife conservation. Currently, it is difficult to quantify how a specific change in land utility—e.g., a new barrier or conversion of wild land to seasonal farming—affects the long‑term survival of lion populations.
+
+### The Problem
+
+Seka Kama bridges human development and ecological stability. Without the ability to simulate future outcomes, land‑use decisions often overlook long‑term biodiversity impacts. Our goal: a predictive environment where different development scenarios can be tested for their direct effect on predator movement and population health.
 
 ## 2. Project Vision
-The goal is to build a robust spatial model that integrates human activity data with known biological requirements of lions. By establishing statistical relationships between land fragmentation and habitat use, we can ask the model: "If human activity increases by X percent in this specific corridor, what is the impact on population viability over the next decade?"
 
-The final output is intended to be a simulation tool that helps visualize these "what-if" scenarios, providing a clearer picture of the trade-offs involved in regional development.
+We aim to build a robust spatial model that integrates human activity data with the known biological requirements of lions. By establishing statistical relationships between land fragmentation and habitat use, we can ask the model: *“If human activity increases by X% in this specific corridor, what is the impact on population viability over the next decade?”*
+
+The final output is a simulation tool that visualizes these “what‑if” scenarios, clarifying the trade‑offs involved in regional development.
 
 ## 3. Core Documentation and Resources
-The following documents provide the foundational logic, the raw data parameters, and the research methodology used in this project.
 
-Project Methodology and Scope: [Link to Document]
+The following documents provide the foundational logic, raw data parameters, and research methodology:
 
-Land Dynamics Analysis: [Link to Document]
-
-Predator Population Benchmarks: [Link to Document]
-
-Simulation Logic and Statistical Framework: [Link to Document]
+| Document | Purpose |
+|----------|---------|
+| **Project Specification Sheet (Spec Sheet)** – [[Link](https://1drv.ms/w/c/8673414c20162375/IQAveIbgZRkMQ5kBnRXftheBAS1GxRJlstWqH1IVrA1RS_4?e=OkJne8)] | Technical blueprint: functional requirements, data resolution, and variables (land‑use types, infrastructure density). |
+| **Project Methodology and Scope** – [Link] | Ecological framework: study area boundaries and scientific principles linking human expansion to habitat fragmentation. |
+| **Data Dictionary and Schema** – [Link] | Translation layer: every field, unit, and coordinate system to ensure consistent measurements and naming. |
+| **Simulation Logic and Statistical Framework** – [Link] | Mathematical brain: statistical models and algorithms for predictive outcomes and “what‑if” scenarios. |
+| **Project Report** – [Link] | Evidence and results: formal record of findings, observed trends, and data‑backed recommendations. |
 
 ## 4. Visual Guide
-The following guide illustrates the logic flow of our data processing and the eventual generation of predictive simulations:
 
-(Place for the generated guide image showing the flow from raw data to model output)
+The diagram below illustrates the logic flow from raw data to predictive simulations:
+
+*(coming soon)*
 
 ## 5. Collaboration
-Seka Kama is a collaborative effort. Solving these complex spatial problems requires a variety of perspectives and technical skills. We invite anyone with an interest in data science, ecology, or spatial modeling to contribute to the repository.
 
-Who can help:
-Spatial Analysts: To help refine the layers of human activity and habitat maps.
+Seka Kama is a collaborative effort. Solving these complex spatial problems requires diverse perspectives and technical skills. We invite anyone with an interest in data science, ecology, or spatial modeling to contribute.
 
-Modelers: To assist in building the statistical frameworks that drive the simulations.
+### Who can help
 
-Researchers: To provide insights into animal behavior and movement patterns.
+- **Spatial Analysts** – refine layers of human activity and habitat maps  
+- **Modelers** – build statistical frameworks that drive simulations  
+- **Researchers** – provide insights into animal behavior and movement patterns  
 
-Developers: To help turn these models into an interactive and accessible environment.
+### Get involved
 
-The project is built on the belief that better data leads to better decisions. If you have a background in any of these areas or are simply passionate about the intersection of development and conservation, we welcome your input.
+- **Repository**: [Link to GitHub / project repo]  
+- **Discussion board**: [Link to ideas & planning]  
+- **Issue tracker**: [Link for bugs or data gaps]
 
-To get involved, please review the documentation above or check the active issues to see where your skills can be best applied.
+*Together, we can build tools that help protect these critical ecosystems while supporting informed development.*
