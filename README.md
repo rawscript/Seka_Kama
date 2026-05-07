@@ -44,11 +44,11 @@ Seka Kama is a collaborative effort. Solving these complex spatial problems requ
 
 - **Spatial Analysts** – refine layers of human activity and habitat maps  
 - **Modelers** – build statistical frameworks that drive simulations  
-- **Researchers** – provide insights into animal behavior and movement patterns  
+- **Researchers** – provide insights into animal behaviour and movement patterns  
 
 ### Get involved
 
-- **Repository**: [Link to GitHub / project repo]  
+- **Repository**: [[GitHub](https://github.com/rawscript/Seka_Kama)]  
 - **Discussion board**: [Link to ideas & planning]  
 - **Issue tracker**: [Link for bugs or data gaps]
 
