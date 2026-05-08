@@ -3,7 +3,7 @@
 *An open-source research initiative investigating the spatial relationship between human expansion and apex predator viability.*
 
 ## 1. The Challenge
-![Lion stats 2025](https://ibb.co/qLCZyVT2)
+![Lion stats 2025](https://i.ibb.co/Q7k5btyx/kepler-gl-3.png)
 The ecosystem is undergoing rapid transition. As human footprints expand through increased settlement, infrastructure, and agriculture, available habitat for wide‑ranging species becomes increasingly fragmented.
 
 This project addresses the critical gap between land‑use planning and wildlife conservation. Currently, it is difficult to quantify how a specific change in land utility—e.g., a new barrier or conversion of wild land to seasonal farming—affects the long‑term survival of lion populations.
