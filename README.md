@@ -27,7 +27,7 @@ The following documents provide the foundational logic, raw data parameters, and
 |----------|---------|
 | **Project Specification Sheet (Spec Sheet)** – [[Link](https://1drv.ms/w/c/8673414c20162375/IQAveIbgZRkMQ5kBnRXftheBAS1GxRJlstWqH1IVrA1RS_4?e=OkJne8)] | Technical blueprint: functional requirements, data resolution, and variables (land‑use types, infrastructure density). |
 | **Project Methodology and Scope** – [Link] | Ecological framework: study area boundaries and scientific principles linking human expansion to habitat fragmentation. |
-| **Data Dictionary and Schema** – [Link] | Translation layer: every field, unit, and coordinate system to ensure consistent measurements and naming. |
+| **Data Dictionary and Schema** – [[Link](https://drive.google.com/drive/folders/1dIr8iG8XcJspU67zzoNSh3j1RzqcibK3?usp=sharing)] | Translation layer: every field, unit, and coordinate system to ensure consistent measurements and naming. |
 | **Simulation Logic and Statistical Framework** – [Link] | Mathematical brain: statistical models and algorithms for predictive outcomes and “what‑if” scenarios. |
 | **Project Report** – [Link] | Evidence and results: formal record of findings, observed trends, and data‑backed recommendations. |
 
