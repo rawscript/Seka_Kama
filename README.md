@@ -34,8 +34,7 @@ The following documents provide the foundational logic, raw data parameters, and
 ## 4. Visual Guide
 
 The diagram below illustrates the logic flow from raw data to predictive simulations:
-
-*(coming soon)*
+![logic](https://res.cloudinary.com/dp7vwr0av/image/upload/v1778585612/Seka_Net_o4fvcf.png)
 
 ## 5. Collaboration
 
