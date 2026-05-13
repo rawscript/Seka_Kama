@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: sekakama
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+  
+  fastapi:
+    build: ./backend
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
+      MODEL_PATH: /models/sekanet_xgboost_2026.pkl
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgis
+  
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+  
+  ollama:  # Local LLM for narratives
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    command: serve
+
+volumes:
+  postgis_data:
+  ollama_data:
