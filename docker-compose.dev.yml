@@ -1,0 +1,49 @@
+# docker-compose.dev.yml
+version: '3.8'
+
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: sekakama_postgis_dev
+    environment:
+      POSTGRES_DB: sekakama_dev
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgis_dev_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: sekakama_backend_dev
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      DATABASE_URL: postgresql://dev_user:dev_password@postgis:5432/sekakama_dev
+      DEBUG: "true"
+    volumes:
+      - ./backend:/app
+      - ./models:/app/models
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+  frontend:
+    build:
+      context: ./seka_kama
+      dockerfile: Dockerfile.dev
+    container_name: sekakama_frontend_dev
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    volumes:
+      - ./seka_kama:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgis_dev_data:
