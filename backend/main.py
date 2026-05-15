@@ -5,6 +5,7 @@ import joblib
 import os
 
 from api.routes import router
+from api.auth_routes import router as auth_router
 from core.config import settings
 from core.database import init_supabase
 
@@ -28,15 +29,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS for Next.js frontend
+# CORS — extend ALLOWED_ORIGINS in .env for staging/prod
+_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Next.js default
+    allow_origins=[o.strip() for o in _origins],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(auth_router, prefix="/api")
 app.include_router(router, prefix="/api")
 
 @app.get("/health")

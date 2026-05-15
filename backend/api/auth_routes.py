@@ -4,7 +4,8 @@ from datetime import datetime
 from core.database import get_supabase_client
 from core.auth import (
     verify_password, get_password_hash, create_access_token,
-    get_current_user, UserCreate, UserLogin, Token, UserResponse
+    get_current_user, require_admin,
+    UserCreate, UserLogin, Token, UserResponse, TokenData
 )
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
