@@ -49,7 +49,7 @@ Seka Kama is a collaborative effort. Solving these complex spatial problems requ
 ### Get involved
 
 - **Repository**: [[GitHub](https://github.com/rawscript/Seka_Kama)]  
-- **Discussion board**: [Link to ideas & planning]  
+- **Discussion board**:  # coming soon 
 - **Issue tracker**: [[Link](https://github.com/rawscript/Seka_Kama/issues?q=is%3Aissue+is%3Aopen)]
 
 *Together, we can build tools that help protect these critical ecosystems while supporting informed development.*
