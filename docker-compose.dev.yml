@@ -1,6 +1,4 @@
 # docker-compose.dev.yml
-version: '3.8'
-
 services:
   postgis:
     image: postgis/postgis:16-3.4
@@ -33,13 +31,13 @@ services:
 
   frontend:
     build:
-      context: ./seka_kama
+      context: ./web-app/seka_kama
       dockerfile: Dockerfile.dev
     container_name: sekakama_frontend_dev
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000/api
     volumes:
-      - ./seka_kama:/app
+      - ./web-app/seka_kama:/app
       - /app/node_modules
       - /app/.next
     ports:
