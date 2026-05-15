@@ -53,7 +53,7 @@ function KeplerMapInner({ managementUnit, onSelectionComplete, onCellClick }: Ke
         geometry: feature.geometry,
       }));
 
-      const managementUnits = Array.from(
+      const managementUnits: string[] = Array.from(
         new Set(
           gridCellsData
             .map((d: any) => d.management_unit)
@@ -67,43 +67,75 @@ function KeplerMapInner({ managementUnit, onSelectionComplete, onCellClick }: Ke
         addDataToMap({
           datasets: [
             {
-              id: 'grid_cells',
-              label: 'Seka Kama Grid Cells',
-              data: gridCellsData,
-              fields: [
-                { name: 'latitude', type: 'real', format: '.6f' },
-                { name: 'longitude', type: 'real', format: '.6f' },
-                { name: 'lion_density', type: 'real', format: '.2f' },
-                { name: 'nightlight_intensity', type: 'real', format: '.4f' },
-                { name: 'nightlight_trend', type: 'real', format: '.5f' },
-                { name: 'distance_to_protected_km', type: 'real', format: '.1f' },
-                { name: 'management_unit', type: 'string' },
-                { name: 'longterm_slope_mean', type: 'real', format: '.5f' },
-                { name: 'all_skew_mean', type: 'real', format: '.3f' },
-                { name: 'all_kurtosis_mean', type: 'real', format: '.3f' },
-                { name: 'licorr_slope_mean', type: 'real', format: '.5f' },
-                { name: 'pop2018_mean', type: 'integer' },
-                { name: 'ann_amp_mean', type: 'real', format: '.4f' },
-                { name: 'ann_cv_mean', type: 'real', format: '.3f' },
-                { name: 'ann_peak_month_mean', type: 'integer' },
-              ],
+              info: {
+                id: 'grid_cells',
+                label: 'Seka Kama Grid Cells',
+              },
+              data: {
+                fields: [
+                  { name: 'latitude', type: 'real', format: '.6f' },
+                  { name: 'longitude', type: 'real', format: '.6f' },
+                  { name: 'lion_density', type: 'real', format: '.2f' },
+                  { name: 'nightlight_intensity', type: 'real', format: '.4f' },
+                  { name: 'nightlight_trend', type: 'real', format: '.5f' },
+                  { name: 'distance_to_protected_km', type: 'real', format: '.1f' },
+                  { name: 'management_unit', type: 'string' },
+                  { name: 'longterm_slope_mean', type: 'real', format: '.5f' },
+                  { name: 'all_skew_mean', type: 'real', format: '.3f' },
+                  { name: 'all_kurtosis_mean', type: 'real', format: '.3f' },
+                  { name: 'licorr_slope_mean', type: 'real', format: '.5f' },
+                  { name: 'pop2018_mean', type: 'integer' },
+                  { name: 'ann_amp_mean', type: 'real', format: '.4f' },
+                  { name: 'ann_cv_mean', type: 'real', format: '.3f' },
+                  { name: 'ann_peak_month_mean', type: 'integer' },
+                ],
+                rows: gridCellsData.map((d: any) => [
+                  d.latitude,
+                  d.longitude,
+                  d.lion_density,
+                  d.nightlight_intensity,
+                  d.nightlight_trend,
+                  d.distance_to_protected_km,
+                  d.management_unit,
+                  d.longterm_slope_mean,
+                  d.all_skew_mean,
+                  d.all_kurtosis_mean,
+                  d.licorr_slope_mean,
+                  d.pop2018_mean,
+                  d.ann_amp_mean,
+                  d.ann_cv_mean,
+                  d.ann_peak_month_mean,
+                ]),
+              },
             },
             {
-              id: 'protected_areas',
-              label: 'Protected Areas',
-              data: protectedAreasData,
-              fields: [
-                { name: 'site_name', type: 'string' },
-                { name: 'designation', type: 'string' },
-                { name: 'iucn_category', type: 'string' },
-                { name: 'area_km2', type: 'real', format: '.1f' },
-                { name: 'year_established', type: 'integer' },
-              ],
+              info: {
+                id: 'protected_areas',
+                label: 'Protected Areas',
+              },
+              data: {
+                fields: [
+                  { name: 'site_name', type: 'string' },
+                  { name: 'designation', type: 'string' },
+                  { name: 'iucn_category', type: 'string' },
+                  { name: 'area_km2', type: 'real', format: '.1f' },
+                  { name: 'year_established', type: 'integer' },
+                  { name: 'geometry', type: 'geojson' },
+                ],
+                rows: protectedAreasData.map((d: any) => [
+                  d.site_name,
+                  d.designation,
+                  d.iucn_category,
+                  d.area_km2,
+                  d.year_established,
+                  d.geometry,
+                ]),
+              },
             },
           ],
           options: { centerMap: true, readOnly: false },
           config: keplerConfig,
-        })
+        } as any)
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
