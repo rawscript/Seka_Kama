@@ -5,10 +5,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createStore, combineReducers, applyMiddleware } from 'redux';
 import { taskMiddleware } from 'react-palm/tasks';
 import { Provider } from 'react-redux';
-import KeplerGl from 'kepler.gl';
-import { addDataToMap, toggleSplitMap, updateMap } from 'kepler.gl/actions';
-import { keplerGlReducer } from 'kepler.gl/reducers';
-import type { KeplerGlState } from 'kepler.gl/reducers';
+import KeplerGl from '@kepler.gl/components';
+import { addDataToMap, toggleSplitMap, updateMap } from '@kepler.gl/actions';
+import { keplerGlReducer } from '@kepler.gl/reducers';
+// KeplerGlState type is removed as it was unused and missing from @kepler.gl/types in this version.
+// If needed in the future, it can be imported from @kepler.gl/reducers.
+
 import { api, type GridCell, type ProtectedArea } from '@/lib/api';
 import { createKeplerConfig } from '@/lib/kepler-config';
 
@@ -51,9 +53,15 @@ function KeplerMapInner({ managementUnit, onSelectionComplete, onCellClick }: Ke
         geometry: feature.geometry,
       }));
 
-      const keplerConfig = createKeplerConfig(
-        [...new Set(gridCellsData.map((d: any) => d.management_unit).filter(Boolean))]
+      const managementUnits = Array.from(
+        new Set(
+          gridCellsData
+            .map((d: any) => d.management_unit)
+            .filter((u: any): u is string => typeof u === 'string' && u.length > 0)
+        )
       );
+
+      const keplerConfig = createKeplerConfig(managementUnits);
 
       dispatch(
         addDataToMap({

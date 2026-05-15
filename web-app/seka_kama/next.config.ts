@@ -1,7 +1,21 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  transpilePackages: [
+    'kepler.gl',
+    '@kepler.gl/components',
+    '@kepler.gl/actions',
+    '@kepler.gl/reducers',
+    '@kepler.gl/styles',
+    '@kepler.gl/layers',
+    '@kepler.gl/processors',
+    '@kepler.gl/utils',
+    'react-palm',
+    'styled-components'
+  ],
+  turbopack: {
+    root: '.',
+  },
 };
 
 export default nextConfig;
