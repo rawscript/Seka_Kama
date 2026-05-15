@@ -1,4 +1,7 @@
-# app/main.py
+# web-app/app.py  ── prototype / reference implementation
+# NOTE: The canonical backend is at backend/main.py.
+#       This file is kept as a standalone reference / local-dev entry point.
+import os
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -6,7 +9,6 @@ from typing import List, Dict, Optional
 import joblib
 import numpy as np
 from supabase import create_client, Client
-from sqlalchemy import create_engine, text
 
 app = FastAPI(title="Seka Kama Digital Twin", version="2.0.0")
 

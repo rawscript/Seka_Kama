@@ -1,193 +1,221 @@
 # backend/services/llm_service.py
 """
-LLM service for generating ecological narratives
-Supports both local Ollama and cloud LLM APIs
+LLM service — powered by NVIDIA NIM (stepfun-ai/step-3.5-flash)
+via the OpenAI-compatible client.
+
+Falls back to a rule-based narrative if the API is unavailable.
 """
 
-import httpx
-import json
 import logging
-from typing import Dict, Any, Optional
-from datetime import datetime
+import os
+from typing import Any, Dict, Optional
+
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
+# ── Client factory ────────────────────────────────────────────────────────────
+
+def _get_client() -> OpenAI:
+    """Return an OpenAI client pointed at NVIDIA NIM."""
+    api_key = os.getenv("NVIDIA_API_KEY", "")
+    base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
+    return OpenAI(base_url=base_url, api_key=api_key)
+
+
+_LLM_MODEL   = os.getenv("LLM_MODEL",       "stepfun-ai/step-3.5-flash")
+_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.3"))
+_TOP_P       = float(os.getenv("LLM_TOP_P",       "0.9"))
+_MAX_TOKENS  = int(os.getenv("LLM_MAX_TOKENS",    "1024"))
+
+
+# ── Public API ────────────────────────────────────────────────────────────────
 
 async def generate_narrative(
     scenario_request: Any,
     scenario_results: Dict[str, Any],
-    llm_url: str = "http://localhost:11434/api/generate",
-    llm_model: str = "llama3"
 ) -> str:
     """
-    Generate human-readable narrative for scenario results
-    
-    Args:
-        scenario_request: The original scenario request
-        scenario_results: Prediction results from the model
-        llm_url: LLM API endpoint
-        llm_model: Model name to use
-        
-    Returns:
-        Generated narrative text
+    Generate a human-readable ecological narrative for a scenario result.
+
+    Streams tokens from NVIDIA NIM and returns the assembled text.
+    Falls back to a rule-based narrative on any error.
     """
-    
-    # Extract key information
-    modifications = scenario_request.feature_modifications
-    delta = scenario_results.get('delta_total', 0)
-    delta_pct = scenario_results.get('delta_percent_total', 0)
-    affected_units = scenario_results.get('unit_aggregation', {})
-    
-    # Build prompt for LLM
-    prompt = f"""You are an ecological analyst for the Seka Kama landscape in Kenya, specializing in lion (Panthera leo) conservation. 
-A stakeholder has proposed a development scenario and you must provide a concise, actionable assessment.
+    modifications  = scenario_request.feature_modifications
+    delta          = scenario_results.get("delta_total", 0)
+    delta_pct      = scenario_results.get("delta_percent_total", 0)
+    unit_agg       = scenario_results.get("unit_aggregation", {})
 
----
-
-## Scenario Description
-{scenario_request.user_query or "User modified landscape features within a drawn area"}
-
-## Modified Features
-{json.dumps(modifications, indent=2)}
-
-## Model Predictions
-- **Total lion abundance change**: {delta:.1f} lions ({delta_pct:.1f}%)
-- **Affected conservancies**: {', '.join(list(affected_units.keys())[:5])}
-
-## Per-Unit Impacts:
-{_format_unit_impacts(affected_units)}
-
-## Top Model Drivers
-Based on SekaNet XGBoost model, the most important features are:
-1. `longterm_slope_mean` (nightlight trend) - most important
-2. `dist_to_protected_km` (distance to safe zones)
-3. `all_skew_std` (spatial heterogeneity)
-
----
-
-## Instructions
-Write a **3-4 sentence ecological interpretation** for a conservancy manager. Include:
-1. Whether the change is ecologically significant (>5% change)
-2. Which conservancies are most affected
-3. One actionable recommendation
-4. A disclaimer about model limitations
-
-Be concise, professional, and avoid technical jargon. Do not hallucinate data not provided.
-"""
+    prompt = _build_narrative_prompt(
+        user_query    = scenario_request.user_query or "",
+        modifications = modifications,
+        delta         = delta,
+        delta_pct     = delta_pct,
+        unit_agg      = unit_agg,
+    )
 
     try:
-        # Try local Ollama first
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                llm_url,
-                json={
-                    "model": llm_model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "temperature": 0.3,
-                    "max_tokens": 500
-                }
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                narrative = result.get('response', 'Unable to generate narrative.')
-                return _post_process_narrative(narrative, scenario_results)
-            
-    except Exception as e:
-        logger.warning(f"LLM API call failed: {e}")
-    
-    # Fallback narrative if LLM unavailable
-    return _generate_fallback_narrative(scenario_request, scenario_results)
-
-
-def _format_unit_impacts(unit_aggregation: Dict) -> str:
-    """Format per-unit impacts for prompt"""
-    lines = []
-    for unit, data in list(unit_aggregation.items())[:5]:
-        delta = data.get('delta', 0)
-        lines.append(f"- {unit}: {delta:+.1f} lions ({data.get('delta_pct', 0):+.1f}%)")
-    return '\n'.join(lines)
-
-
-def _post_process_narrative(narrative: str, results: Dict) -> str:
-    """Clean up and validate LLM output"""
-    # Ensure narrative is not too long
-    if len(narrative) > 800:
-        narrative = narrative[:800] + "..."
-    
-    # Add model note if significant change
-    if abs(results.get('delta_percent_total', 0)) > 10:
-        narrative += "\n\n⚠️ **Note**: This scenario predicts a >10% change in lion abundance. Field validation recommended."
-    
-    return narrative
-
-
-def _generate_fallback_narrative(scenario_request: Any, results: Dict) -> str:
-    """Fallback narrative when LLM unavailable"""
-    delta = results.get('delta_total', 0)
-    delta_pct = results.get('delta_percent_total', 0)
-    affected_units = list(results.get('unit_aggregation', {}).keys())
-    
-    if delta > 0:
-        direction = "increase"
-        significance = "positive" if delta_pct > 5 else "minor positive"
-    else:
-        direction = "decrease"
-        significance = "significant negative" if delta_pct < -5 else "minor negative"
-    
-    narrative = f"""
-The proposed scenario predicts a {significance} {direction} of {abs(delta):.1f} lions ({abs(delta_pct):.1f}%) in the Seka Kama landscape.
-
-Most affected conservancies: {', '.join(affected_units[:3])}.
-
-**Recommendation**: Based on model sensitivity to longterm_slope_mean (nightlight trend), consider mitigating light pollution in the affected area through shielded lighting or seasonal restrictions.
-
-*Disclaimer: Predictions are based on a statistical model (SekaNet XGBoost) and should be validated with field data. Model accuracy is ±15% for large changes.*
-"""
-    return narrative.strip()
+        narrative = _stream_completion(prompt)
+        return _post_process(narrative, scenario_results)
+    except Exception as exc:
+        logger.warning("NVIDIA NIM narrative call failed: %s", exc)
+        return _fallback_narrative(scenario_request, scenario_results)
 
 
 async def generate_explanation(
-    features: Dict[str, float],
-    prediction: float,
-    shap_values: Optional[Dict] = None
+    features:    Dict[str, float],
+    prediction:  float,
+    shap_values: Optional[Dict] = None,
 ) -> str:
     """
-    Generate explanation for a single prediction
-    
-    Args:
-        features: Feature values for the grid cell
-        prediction: Model prediction
-        shap_values: Optional SHAP values for explanation
-        
-    Returns:
-        Explanation text
+    Generate a short natural-language explanation for a single grid-cell prediction.
     """
-    prompt = f"""Explain why a grid cell in the Seka Kama landscape has a predicted lion density of {prediction:.2f} lions per km².
+    prompt = (
+        f"Explain why a grid cell in the Seka Kama landscape (Kenya) has a predicted "
+        f"lion density of {prediction:.2f} lions per km².\n\n"
+        f"Key environmental features of this cell:\n"
+        f"- Nightlight intensity (all_mean_mean):     {features.get('all_mean_mean', 0):.4f}\n"
+        f"- Nightlight trend (longterm_slope_mean):   {features.get('longterm_slope_mean', 0):.4f}\n"
+        f"- Distance to protected area (km):          {features.get('dist_to_protected_km', 0):.1f}\n"
+        f"- Spatial heterogeneity (all_skew_mean):    {features.get('all_skew_mean', 0):.3f}\n\n"
+        f"Write exactly 2–3 sentences. Be concise and avoid technical jargon."
+    )
 
-Key features of this cell:
-- Nightlight intensity (all_mean): {features.get('all_mean_mean', 0):.3f}
-- Nightlight trend (longterm_slope): {features.get('longterm_slope_mean', 0):.3f}
-- Distance to protected area: {features.get('dist_to_protected_km', 0):.1f} km
-- Spatial heterogeneity (skew): {features.get('all_skew_mean', 0):.2f}
-
-Write 2-3 sentences explaining what drives this prediction."""
-    
-    # Similar API call as above
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                "http://localhost:11434/api/generate",
-                json={"model": "llama3", "prompt": prompt, "stream": False}
-            )
-            if response.status_code == 200:
-                return response.json().get('response', 'Explanation unavailable.')
-    except Exception:
-        pass
-    
-    # Simple fallback explanation
+        return _stream_completion(prompt, max_tokens=256)
+    except Exception as exc:
+        logger.warning("NVIDIA NIM explanation call failed: %s", exc)
+        return _fallback_explanation(features, prediction)
+
+
+# ── Internal helpers ──────────────────────────────────────────────────────────
+
+def _build_narrative_prompt(
+    user_query:    str,
+    modifications: Dict[str, float],
+    delta:         float,
+    delta_pct:     float,
+    unit_agg:      Dict,
+) -> str:
+    import json
+
+    top_units = list(unit_agg.keys())[:5]
+    unit_lines = "\n".join(
+        f"  - {u}: {unit_agg[u].get('delta', 0):+.1f} lions "
+        f"({unit_agg[u].get('delta_pct', 0):+.1f}%)"
+        for u in top_units
+    )
+
+    return f"""You are an ecological analyst for the Seka Kama landscape in Kenya,
+specialising in lion (Panthera leo) conservation and nightlight-driven habitat modelling.
+
+A stakeholder has proposed the following development scenario:
+  "{user_query or 'User modified landscape features within a drawn polygon.'}"
+
+Modified environmental features:
+{json.dumps(modifications, indent=2)}
+
+SekaNet XGBoost model predictions:
+  Total lion abundance change: {delta:+.1f} lions ({delta_pct:+.1f}%)
+
+Per-conservancy breakdown (top units):
+{unit_lines or '  (no per-unit data)'}
+
+Top model drivers (for context):
+  1. longterm_slope_mean — nightlight trend (most important)
+  2. dist_to_protected_km — distance to safe zones
+  3. all_skew_std — spatial heterogeneity
+
+─────────────────────────────────────────
+Write a **3–4 sentence ecological interpretation** aimed at a conservancy manager.
+Include:
+  1. Whether the predicted change is ecologically significant (threshold: ±5%)
+  2. Which conservancies are most impacted
+  3. One concrete, actionable mitigation or opportunity
+  4. A brief disclaimer about model uncertainty (±15%)
+
+Be professional, concise, and free of unexplained jargon.
+Do NOT invent data not provided above."""
+
+
+def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:
+    """Call NVIDIA NIM with streaming and return the assembled text."""
+    client = _get_client()
+
+    stream = client.chat.completions.create(
+        model       = _LLM_MODEL,
+        messages    = [{"role": "user", "content": prompt}],
+        temperature = _TEMPERATURE,
+        top_p       = _TOP_P,
+        max_tokens  = max_tokens,
+        stream      = True,
+    )
+
+    parts: list[str] = []
+    for chunk in stream:
+        if not getattr(chunk, "choices", None):
+            continue
+        delta = chunk.choices[0].delta
+        # Capture reasoning traces if the model emits them
+        reasoning = getattr(delta, "reasoning_content", None)
+        if reasoning:
+            logger.debug("Reasoning: %s", reasoning)
+        if delta.content:
+            parts.append(delta.content)
+
+    return "".join(parts).strip()
+
+
+def _post_process(narrative: str, results: Dict) -> str:
+    """Trim and annotate LLM output."""
+    if len(narrative) > 1200:
+        narrative = narrative[:1200].rsplit(".", 1)[0] + "."
+
+    if abs(results.get("delta_percent_total", 0)) > 10:
+        narrative += (
+            "\n\n⚠️ **Note**: This scenario predicts a >10% change in lion abundance. "
+            "Independent field validation is strongly recommended before any decisions are made."
+        )
+    return narrative
+
+
+# ── Fallbacks ─────────────────────────────────────────────────────────────────
+
+def _fallback_narrative(scenario_request: Any, results: Dict) -> str:
+    delta     = results.get("delta_total", 0)
+    delta_pct = results.get("delta_percent_total", 0)
+    units     = list(results.get("unit_aggregation", {}).keys())
+
+    direction    = "increase" if delta >= 0 else "decrease"
+    significance = (
+        "significant" if abs(delta_pct) > 5 else "minor"
+    )
+    unit_str = ", ".join(units[:3]) if units else "the selected area"
+
+    return (
+        f"The proposed scenario predicts a {significance} {direction} of "
+        f"{abs(delta):.1f} lions ({abs(delta_pct):.1f}%) across the Seka Kama landscape. "
+        f"The most affected conservancies are: {unit_str}. "
+        f"Based on SekaNet's sensitivity to nightlight trends (longterm_slope_mean), "
+        f"consider mitigating artificial light through shielded fixtures or seasonal "
+        f"lighting restrictions in the affected area. "
+        f"*Model accuracy is approximately ±15% for large predicted changes — "
+        f"field surveys are advised before acting on this output.*"
+    )
+
+
+def _fallback_explanation(features: Dict[str, float], prediction: float) -> str:
+    nightlight = features.get("all_mean_mean", 0)
+    dist       = features.get("dist_to_protected_km", 0)
+
     if prediction > 10:
-        return f"This cell has high predicted lion density ({prediction:.1f} lions/km²), likely due to its proximity to protected areas ({features.get('dist_to_protected_km', 0):.1f} km) and relatively low nightlight intensity."
-    else:
-        return f"This cell has low predicted lion density ({prediction:.1f} lions/km²), likely due to elevated nightlight intensity ({features.get('all_mean_mean', 0):.3f}) and human activity trends."
+        return (
+            f"This cell has high predicted lion density ({prediction:.1f} lions/km²), "
+            f"likely driven by its proximity to protected areas ({dist:.1f} km) "
+            f"and relatively low nightlight intensity ({nightlight:.4f})."
+        )
+    return (
+        f"This cell has low predicted lion density ({prediction:.1f} lions/km²), "
+        f"associated with elevated nightlight intensity ({nightlight:.4f}) and "
+        f"increased human activity trends in the surrounding landscape."
+    )
