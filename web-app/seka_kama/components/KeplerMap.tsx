@@ -18,6 +18,8 @@ interface KeplerMapProps {
   managementUnit?: string;
   onSelectionComplete?: (selectedCells: GridCell[]) => void;
   onCellClick?: (cell: GridCell) => void;
+  onCellSelect?: (cellId: any) => void;
+  onScenarioApply?: (cells: any, modifications: any) => void;
 }
 
 const reducers = combineReducers({
@@ -26,7 +28,13 @@ const reducers = combineReducers({
 
 const store = createStore(reducers, {}, applyMiddleware(taskMiddleware));
 
-function KeplerMapInner({ managementUnit, onSelectionComplete, onCellClick }: KeplerMapProps) {
+function KeplerMapInner({ 
+  managementUnit, 
+  onSelectionComplete, 
+  onCellClick,
+  onCellSelect,
+  onScenarioApply 
+}: KeplerMapProps) {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,10 +158,11 @@ function KeplerMapInner({ managementUnit, onSelectionComplete, onCellClick }: Ke
   }, [loadData]);
 
   const handleKeplerGlClick = useCallback((layer: any, info: any) => {
-    if (info.object && onCellClick) {
-      onCellClick(info.object);
+    if (info.object) {
+      if (onCellClick) onCellClick(info.object);
+      if (onCellSelect) onCellSelect(info.object.id || info.object.cellId || info.object);
     }
-  }, [onCellClick]);
+  }, [onCellClick, onCellSelect]);
 
   if (error) {
     return (
