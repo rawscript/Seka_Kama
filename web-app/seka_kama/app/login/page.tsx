@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { Mail, Lock, Loader2, ArrowRight, ShieldCheck, Globe } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,237 +18,133 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/token`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          username: email,
+          password: password,
+        }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.detail || 'Login failed');
+        throw new Error(data.detail || 'Authentication failed');
       }
 
       const data = await response.json();
       localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('token_type', data.token_type);
-      
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid email or password');
+      setError(err instanceof Error ? err.message : 'Invalid credentials');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <h1>Seka Kama</h1>
-          <p>Digital Twin Platform</p>
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#020617] relative overflow-hidden p-4">
+      {/* Background Decor */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-emerald-500/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] animate-pulse delay-1000" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-lg">
+        {/* Logo/Header */}
+        <div className="text-center mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
+          <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
+            <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-all">
+                <Globe className="w-8 h-8 text-emerald-400" />
+            </div>
+          </Link>
+          <h1 className="text-4xl font-black text-white tracking-tight mb-2">Welcome Back</h1>
+          <p className="text-gray-400 font-medium">Access the Seka Kama Digital Twin Platform</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="analyst@sekakama.org"
-              required
-              disabled={isLoading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              disabled={isLoading}
-            />
-          </div>
-
-          {error && (
-            <div className="error-message">
-              {error}
+        {/* Login Card */}
+        <div className="glass-panel p-8 md:p-10 rounded-[2.5rem] border border-white/10 shadow-2xl backdrop-blur-3xl bg-white/5 animate-in fade-in zoom-in-95 duration-500">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Email Authority</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="analyst@sekakama.org"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
+                  required
+                />
+              </div>
             </div>
-          )}
 
-          <button type="submit" className="login-button" disabled={isLoading}>
-            {isLoading ? 'Authenticating...' : 'Sign In'}
-          </button>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Secure Key</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
+                  required
+                />
+              </div>
+            </div>
 
-          <div className="login-footer">
-            <Link href="/forgot-password">Forgot password?</Link>
-            <span>|</span>
-            <Link href="/register">Create account</Link>
+            {error && (
+              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-sm font-medium animate-in shake duration-300">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-2xl font-black text-lg transition-all shadow-[0_10px_30px_rgba(16,185,129,0.2)] hover:shadow-[0_10px_40px_rgba(16,185,129,0.4)] disabled:opacity-50 flex items-center justify-center gap-3 active:scale-[0.98]"
+            >
+              {isLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : (
+                <>
+                  Authenticate
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-8 pt-8 border-t border-white/10 flex flex-col gap-4 text-center">
+             <Link href="/register" className="text-sm font-bold text-gray-400 hover:text-white transition-colors">
+                New to Seka Kama? <span className="text-emerald-400">Create an Account</span>
+             </Link>
+             <Link href="/" className="text-xs font-bold text-white/20 hover:text-white/40 uppercase tracking-widest transition-colors">
+                Return to Intelligence Briefing
+             </Link>
           </div>
-        </form>
+        </div>
 
-        <div className="demo-credentials">
-          <p>Demo Access:</p>
-          <code>analyst@sekakama.org / demo123</code>
+        {/* Demo Footer */}
+        <div className="mt-8 flex items-center justify-center gap-2 text-white/20">
+            <ShieldCheck className="w-4 h-4" />
+            <span className="text-[10px] font-bold uppercase tracking-widest leading-none">Encrypted Session &middot; Seka Kama Core v2.0</span>
         </div>
       </div>
 
-      <style jsx>{`
-        .login-container {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, #0a0a2a 0%, #1a1a3e 100%);
-          padding: 2rem;
+      <style jsx global>{`
+        .glass-panel {
+          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
-
-        .login-card {
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
-          border-radius: 16px;
-          padding: 2rem;
-          width: 100%;
-          max-width: 400px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
         }
-
-        .login-header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .login-header h1 {
-          font-size: 2rem;
-          font-weight: 700;
-          background: linear-gradient(135deg, #fff 0%, #4CAF50 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          margin-bottom: 0.5rem;
-        }
-
-        .login-header p {
-          color: #ccc;
-          font-size: 0.875rem;
-        }
-
-        .login-form {
-          display: flex;
-          flex-direction: column;
-          gap: 1.25rem;
-        }
-
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .form-group label {
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: #e0e0e0;
-        }
-
-        .form-group input {
-          padding: 0.75rem;
-          border-radius: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          background: rgba(0, 0, 0, 0.3);
-          color: white;
-          font-size: 1rem;
-          transition: all 0.3s ease;
-        }
-
-        .form-group input:focus {
-          outline: none;
-          border-color: #4CAF50;
-          background: rgba(0, 0, 0, 0.5);
-        }
-
-        .form-group input:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .form-group input::placeholder {
-          color: #888;
-        }
-
-        .error-message {
-          background: rgba(244, 67, 54, 0.2);
-          border: 1px solid #f44336;
-          border-radius: 8px;
-          padding: 0.75rem;
-          color: #f44336;
-          font-size: 0.875rem;
-          text-align: center;
-        }
-
-        .login-button {
-          padding: 0.75rem;
-          border-radius: 8px;
-          border: none;
-          background: #4CAF50;
-          color: white;
-          font-size: 1rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          margin-top: 0.5rem;
-        }
-
-        .login-button:hover:not(:disabled) {
-          background: #45a049;
-          transform: translateY(-1px);
-        }
-
-        .login-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .login-footer {
-          display: flex;
-          justify-content: center;
-          gap: 1rem;
-          margin-top: 0.5rem;
-          font-size: 0.875rem;
-        }
-
-        .login-footer a {
-          color: #4CAF50;
-          text-decoration: none;
-        }
-
-        .login-footer a:hover {
-          text-decoration: underline;
-        }
-
-        .demo-credentials {
-          margin-top: 2rem;
-          padding-top: 1rem;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-          text-align: center;
-          font-size: 0.75rem;
-          color: #888;
-        }
-
-        .demo-credentials code {
-          display: inline-block;
-          margin-top: 0.5rem;
-          padding: 0.25rem 0.5rem;
-          background: rgba(0, 0, 0, 0.3);
-          border-radius: 4px;
-          font-family: monospace;
+        .animate-shake {
+            animation: shake 0.2s ease-in-out 0s 2;
         }
       `}</style>
     </div>

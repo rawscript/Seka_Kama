@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { User, Mail, Lock, Building, Loader2, ArrowRight, ShieldCheck, Globe } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,7 +19,6 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -54,220 +54,161 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="register-container">
-      <div className="register-card">
-        <div className="register-header">
-          <h1>Create Account</h1>
-          <p>Join the Seka Kama Digital Twin Platform</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="register-form">
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="full_name">Full Name</label>
-              <input
-                id="full_name"
-                type="text"
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="organization">Organization</label>
-              <input
-                id="organization"
-                type="text"
-                value={formData.organization}
-                onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                required
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-              disabled={isLoading}
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm Password</label>
-              <input
-                id="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                required
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          {error && <div className="error-message">{error}</div>}
-
-          <button type="submit" className="register-button" disabled={isLoading}>
-            {isLoading ? 'Creating Account...' : 'Register'}
-          </button>
-
-          <div className="register-footer">
-            Already have an account? <Link href="/login">Sign in</Link>
-          </div>
-        </form>
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#020617] relative overflow-hidden p-4">
+      {/* Background Decor */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-1/3 -right-20 w-[30rem] h-[30rem] bg-emerald-500/10 rounded-full blur-[140px] animate-pulse" />
+        <div className="absolute bottom-1/3 -left-20 w-[30rem] h-[30rem] bg-cyan-500/10 rounded-full blur-[140px] animate-pulse delay-1000" />
       </div>
 
-      <style jsx>{`
-        .register-container {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, #0a0a2a 0%, #1a1a3e 100%);
-          padding: 2rem;
-        }
+      <div className="relative z-10 w-full max-w-2xl px-4 py-12">
+        {/* Logo/Header */}
+        <div className="text-center mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
+          <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
+            <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-all">
+                <Globe className="w-8 h-8 text-emerald-400" />
+            </div>
+          </Link>
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Enlistment</h1>
+          <p className="text-gray-400 font-medium max-w-sm mx-auto text-sm md:text-base">Join the frontlines of digital conservation monitoring and spatial intelligence.</p>
+        </div>
 
-        .register-card {
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
-          border-radius: 16px;
-          padding: 2rem;
-          width: 100%;
-          max-width: 500px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-        }
+        {/* Register Card */}
+        <div className="glass-panel p-8 md:p-12 rounded-[3rem] border border-white/10 shadow-2xl backdrop-blur-3xl bg-white/5 animate-in fade-in zoom-in-95 duration-500">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Full Identity</label>
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+                  <input
+                    type="text"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    placeholder="Dr. Sarah Kanga"
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium"
+                    required
+                  />
+                </div>
+              </div>
 
-        .register-header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Affiliation</label>
+                <div className="relative group">
+                  <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+                  <input
+                    type="text"
+                    value={formData.organization}
+                    onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                    placeholder="UNEP / Mara Conservancy"
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium"
+                  />
+                </div>
+              </div>
 
-        .register-header h1 {
-          font-size: 1.75rem;
-          font-weight: 600;
-          color: white;
-          margin-bottom: 0.5rem;
-        }
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Signal Channel</label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="sarah@mara-research.org"
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
 
-        .register-header p {
-          color: #ccc;
-          font-size: 0.875rem;
-        }
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Access Protocol</label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="Create Password"
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium"
+                    required
+                  />
+                </div>
+              </div>
 
-        .register-form {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Verify Protocol</label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+                  <input
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    placeholder="Confirm Password"
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium"
+                    required
+                  />
+                </div>
+              </div>
 
-        .form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-        }
+              {error && (
+                <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-xs font-bold uppercase tracking-widest text-center animate-in shake duration-300">
+                  {error}
+                </div>
+              )}
 
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-2xl font-black text-lg transition-all shadow-[0_10px_30px_rgba(16,185,129,0.2)] hover:shadow-[0_10px_40px_rgba(16,185,129,0.4)] disabled:opacity-50 flex items-center justify-center gap-3 active:scale-[0.98] mt-2"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-white/50" />
+                ) : (
+                  <>
+                    Initialize Account
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
 
-        .form-group label {
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: #e0e0e0;
-        }
+          <div className="mt-10 pt-8 border-t border-white/10 flex flex-col items-center gap-4">
+             <Link href="/login" className="text-sm font-bold text-gray-400 hover:text-white transition-colors">
+                Already registered? <span className="text-emerald-400">Sign in Here</span>
+             </Link>
+             <Link href="/" className="text-[10px] font-bold text-white/20 hover:text-white/40 uppercase tracking-[0.2em] transition-colors">
+                Landholding &amp; Territory Policy
+             </Link>
+          </div>
+        </div>
 
-        .form-group input {
-          padding: 0.75rem;
-          border-radius: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          background: rgba(0, 0, 0, 0.3);
-          color: white;
-          font-size: 0.875rem;
-          transition: all 0.3s ease;
-        }
+        {/* Security Footer */}
+        <div className="mt-10 flex flex-col items-center gap-3 text-white/20">
+            <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Seka Kama Encrypted Provisioning</span>
+            </div>
+            <p className="max-w-xs text-center text-[9px] font-bold uppercase tracking-[0.1em] leading-relaxed">
+                By enlisting, you agree to the data sovereignty and conservation ethics protocol of the Seka Kama Digital Twin initiative.
+            </p>
+        </div>
+      </div>
 
-        .form-group input:focus {
-          outline: none;
-          border-color: #4CAF50;
-          background: rgba(0, 0, 0, 0.5);
+      <style jsx global>{`
+        .glass-panel {
+          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
         }
-
-        .error-message {
-          background: rgba(244, 67, 54, 0.2);
-          border: 1px solid #f44336;
-          border-radius: 8px;
-          padding: 0.75rem;
-          color: #f44336;
-          font-size: 0.875rem;
-          text-align: center;
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
         }
-
-        .register-button {
-          padding: 0.75rem;
-          border-radius: 8px;
-          border: none;
-          background: #4CAF50;
-          color: white;
-          font-size: 1rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          margin-top: 0.5rem;
-        }
-
-        .register-button:hover:not(:disabled) {
-          background: #45a049;
-        }
-
-        .register-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .register-footer {
-          text-align: center;
-          margin-top: 1rem;
-          font-size: 0.875rem;
-          color: #ccc;
-        }
-
-        .register-footer a {
-          color: #4CAF50;
-          text-decoration: none;
-        }
-
-        .register-footer a:hover {
-          text-decoration: underline;
-        }
-
-        @media (max-width: 640px) {
-          .form-row {
-            grid-template-columns: 1fr;
-          }
+        .animate-shake {
+            animation: shake 0.2s ease-in-out 0s 2;
         }
       `}</style>
     </div>

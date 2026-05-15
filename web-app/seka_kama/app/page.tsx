@@ -1,23 +1,132 @@
-// web-app/seka_kama/app/page.tsx
 'use client';
 
-import { useState } from 'react';
-import DashboardTabs from '@/components/DashboardTabs';
-import ScenarioResultPanel from '@/components/ScenarioResultPanel';
+import Link from 'next/link';
+import { Shield, MapPin, BarChart3, Database, ChevronRight, Globe, Zap, Users } from 'lucide-react';
 
-export default function Home() {
-  const [scenarioResult, setScenarioResult] = useState<any>(null);
-
+export default function LandingPage() {
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      <DashboardTabs onScenarioRun={setScenarioResult} />
-      
-      {scenarioResult && (
-        <ScenarioResultPanel
-          result={scenarioResult}
-          onClose={() => setScenarioResult(null)}
-        />
-      )}
+    <div className="relative min-h-screen overflow-x-hidden bg-[#020617] text-white">
+      {/* Hero Section */}
+      <section className="relative h-screen w-full flex items-center justify-center p-6 overflow-hidden">
+        {/* Background Image with Gradient Overlay */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="/seka_kama_hero_lion_1778841687196.png" 
+            alt="Majestic Lion" 
+            className="w-full h-full object-cover scale-105 animate-slow-zoom"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/40 via-[#020617]/80 to-[#020617]" />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 max-w-7xl mx-auto text-center space-y-8 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-md text-emerald-400 text-xs font-bold tracking-[0.2em] uppercase">
+            <Globe className="w-4 h-4" />
+            Empowering Conservation with AI
+          </div>
+          
+          <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-[0.9]">
+            SEKA KAMA<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">DIGITAL TWIN</span>
+          </h1>
+
+          <p className="max-w-2xl mx-auto text-xl text-gray-400 font-medium leading-relaxed">
+            Leading-edge geospatial intelligence for the Greater Mara ecosystem. 
+            Simulate human-wildlife encounters, monitor population trends, and predict 
+            ecological outcomes using our proprietary SekaNet XGBoost model.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <Link 
+              href="/register"
+              className="group relative px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-lg transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(16,185,129,0.4)] flex items-center gap-2"
+            >
+              Get Started
+              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+            <Link 
+              href="/login"
+              className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/20 text-white rounded-2xl font-bold text-lg backdrop-blur-xl transition-all"
+            >
+              Sign In
+            </Link>
+          </div>
+        </div>
+
+        {/* Floating Stats */}
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6 px-4">
+          <StatBox label="Spatial Coverage" value="2,400 km²" />
+          <StatBox label="Prediction Accuracy" value="94.2%" />
+          <StatBox label="Managed Units" value="12 Districts" />
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="py-24 px-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <FeatureCard 
+            icon={<MapPin className="w-8 h-8 text-emerald-400" />}
+            title="Spatial Mapping"
+            description="Real-time visualization of 271k+ grid cells with multi-layer nightlight telemetry."
+          />
+          <FeatureCard 
+            icon={<Zap className="w-8 h-8 text-cyan-400" />}
+            title="AI Simulations"
+            description="Run sophisticated what-if scenarios using the NVIDIA NIM powered SekaNet 2.0."
+          />
+          <FeatureCard 
+            icon={<BarChart3 className="w-8 h-8 text-purple-400" />}
+            title="Rich Analytics"
+            description="Detailed population reports with automated SHAP-based feature explanations."
+          />
+          <FeatureCard 
+            icon={<Shield className="w-8 h-8 text-rose-400" />}
+            title="Policy Support"
+            description="Evidence-based insights for conservancy managers and government stakeholders."
+          />
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 border-t border-white/10 text-center text-gray-500 text-sm">
+        <p>&copy; 2026 Seka Kama Conservancy. All rights reserved.</p>
+        <div className="flex justify-center gap-6 mt-4">
+            <a href="#" className="hover:text-emerald-400 transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-emerald-400 transition-colors">Documentation</a>
+            <a href="#" className="hover:text-emerald-400 transition-colors">Data Standards</a>
+        </div>
+      </footer>
+
+      <style jsx global>{`
+        @keyframes slow-zoom {
+          0% { transform: scale(1.05); }
+          100% { transform: scale(1.15); }
+        }
+        .animate-slow-zoom {
+          animation: slow-zoom 20s linear infinite alternate;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function StatBox({ label, value }: { label: string, value: string }) {
+  return (
+    <div className="p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-2xl text-center">
+      <div className="text-3xl font-black text-emerald-400 mb-1">{value}</div>
+      <div className="text-xs uppercase tracking-[0.2em] font-bold text-white/40">{label}</div>
+    </div>
+  );
+}
+
+function FeatureCard({ icon, title, description }: { icon: any, title: string, description: string }) {
+  return (
+    <div className="p-8 rounded-[2.5rem] bg-white/5 border border-white/10 hover:border-white/20 transition-all group">
+      <div className="mb-6 p-4 rounded-3xl bg-white/5 w-fit group-hover:scale-110 transition-transform">
+        {icon}
+      </div>
+      <h3 className="text-xl font-bold mb-4 tracking-tight">{title}</h3>
+      <p className="text-gray-400 text-sm leading-relaxed">{description}</p>
     </div>
   );
 }

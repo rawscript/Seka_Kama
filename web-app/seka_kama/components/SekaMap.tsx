@@ -1,193 +1,199 @@
-// web-app/seka_kama/components/SekaMap.tsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import maplibregl from 'maplibre-gl';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import Map, { Source, Layer, MapRef, MapProvider, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { api } from '@/lib/api';
 import ScenarioDrawer from './ScenarioDrawer';
+import { Loader2, Filter, Layers, Info } from 'lucide-react';
 
 interface SekaMapProps {
   onScenarioRun?: (result: any) => void;
 }
 
 export default function SekaMap({ onScenarioRun }: SekaMapProps) {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<maplibregl.Map | null>(null);
+  return (
+    <MapProvider>
+      <div className="relative w-full h-full bg-[#0a0a20]">
+        <SekaMapContent onScenarioRun={onScenarioRun} />
+      </div>
+    </MapProvider>
+  );
+}
+
+function SekaMapContent({ onScenarioRun }: SekaMapProps) {
+  const { current: mapMain } = useMap();
   const [loading, setLoading] = useState(true);
   const [selectedUnit, setSelectedUnit] = useState<string>('');
+  const [baselineData, setBaselineData] = useState<any>(null);
+  const [protectedData, setProtectedData] = useState<any>(null);
+  const [viewState, setViewState] = useState({
+    longitude: 35.1,
+    latitude: -1.25,
+    zoom: 9,
+    pitch: 45,
+    bearing: 0
+  });
+
+  const loadData = useCallback(async () => {
+    try {
+      const [baseline, protected_areas] = await Promise.all([
+        api.getBaseline(selectedUnit || undefined),
+        api.getProtectedAreas()
+      ]);
+      setBaselineData(baseline);
+      setProtectedData(protected_areas);
+      setLoading(false);
+    } catch (error) {
+      console.error("Failed to load map data:", error);
+      setLoading(false);
+    }
+  }, [selectedUnit]);
 
   useEffect(() => {
-    if (!mapContainer.current) return;
+    loadData();
+  }, [loadData]);
 
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap',
-          },
-        },
-        layers: [
-          {
-            id: 'osm',
-            type: 'raster',
-            source: 'osm',
-            minzoom: 0,
-            maxzoom: 19,
-          },
-        ],
-      },
-      center: [35.1, -1.25], // Seka Kama center
-      zoom: 9,
-    });
-
-    map.current.on('load', async () => {
-      setLoading(false);
-      await loadBaselineData();
-      await loadProtectedAreas();
-    });
-
-    return () => map.current?.remove();
-  }, []);
-
-  const loadBaselineData = async () => {
-    const bounds = map.current?.getBounds();
-    const bbox = bounds ? {
-      minLon: bounds.getWest(),
-      minLat: bounds.getSouth(),
-      maxLon: bounds.getEast(),
-      maxLat: bounds.getNorth(),
-    } : undefined;
-
-    const data = await api.getBaseline(selectedUnit || undefined, bbox);
-    
-    if (map.current?.getSource('lions')) {
-      (map.current.getSource('lions') as maplibregl.GeoJSONSource).setData(data);
-    } else {
-      map.current?.addSource('lions', {
-        type: 'geojson',
-        data: data as any,
-      });
-      
-      map.current?.addLayer({
-        id: 'lions',
-        type: 'circle',
-        source: 'lions',
-        paint: {
-          'circle-radius': [
-            'interpolate',
-            ['linear'],
-            ['get', 'lion_density'],
-            0, 4,
-            10, 8,
-            20, 12,
-            30, 16,
-          ],
-          'circle-color': [
-            'interpolate',
-            ['linear'],
-            ['get', 'lion_density'],
-            0, '#feb24c',
-            10, '#fd8d3c',
-            20, '#f03b20',
-            30, '#bd0026',
-          ],
-          'circle-opacity': 0.7,
-          'circle-stroke-width': 1,
-          'circle-stroke-color': '#fff',
-        },
-      });
-    }
-  };
-
-  const loadProtectedAreas = async () => {
-    const data = await api.getProtectedAreas();
-    
-    if (map.current?.getSource('protected')) {
-      (map.current.getSource('protected') as maplibregl.GeoJSONSource).setData(data);
-    } else {
-      map.current?.addSource('protected', {
-        type: 'geojson',
-        data: data as any,
-      });
-      
-      map.current?.addLayer({
-        id: 'protected',
-        type: 'fill',
-        source: 'protected',
-        paint: {
-          'fill-color': '#2c7fb8',
-          'fill-opacity': 0.3,
-          'fill-outline-color': '#1c5a8a',
-        },
-      });
-    }
-  };
-
-  const handleDrawComplete = async (geometry: GeoJSON.Polygon, modifications: Record<string, number>, query: string) => {
-    const result = await api.runScenario({
-      geometry,
-      feature_modifications: modifications,
-      management_units: selectedUnit ? [selectedUnit] : undefined,
-      user_query: query,
-    });
-    
+  const handleScenarioRun = (result: any) => {
     onScenarioRun?.(result);
-    
-    // Show popup with results
-    new maplibregl.Popup()
-      .setLngLat(geometry.coordinates[0][0] as [number, number])
-      .setHTML(`
-        <div style="padding: 10px;">
-          <h3>Scenario Result</h3>
-          <p>Lion change: ${result.delta_lions.toFixed(1)} (${result.delta_percent.toFixed(1)}%)</p>
-          <p>Total: ${result.predicted_total_lions.toFixed(0)} lions</p>
-          <small>${result.llm_narrative.substring(0, 200)}...</small>
-        </div>
-      `)
-      .addTo(map.current!);
   };
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
-      
-      <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 1000 }}>
-        <select 
-          value={selectedUnit} 
-          onChange={(e) => setSelectedUnit(e.target.value)}
-          style={{ padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
-        >
-          <option value="">All Conservancies</option>
-          <option value="Mara North">Mara North</option>
-          <option value="Olare-Motorogi">Olare-Motorogi</option>
-          <option value="Naboisho">Naboisho</option>
-          <option value="Ol Kinyei">Ol Kinyei</option>
-        </select>
-      </div>
-      
-      <ScenarioDrawer onDrawComplete={handleDrawComplete} />
-      
+    <>
+      <Map
+        {...viewState}
+        onMove={evt => setViewState(evt.viewState)}
+        mapStyle={{
+          version: 8,
+          sources: {
+            'satellite': {
+              type: 'raster',
+              tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+              tileSize: 256,
+              attribution: 'Esri, Maxar'
+            }
+          },
+          layers: [
+            {
+              id: 'satellite-layer',
+              type: 'raster',
+              source: 'satellite',
+              paint: { 'raster-opacity': 0.8 }
+            }
+          ]
+        }}
+        id="main-map"
+      >
+        {/* Protected Areas Layer */}
+        {protectedData && (
+          <Source id="protected-areas" type="geojson" data={protectedData}>
+            <Layer
+              id="protected-areas-fill"
+              type="fill"
+              paint={{
+                'fill-color': '#10b981',
+                'fill-opacity': 0.2,
+                'fill-outline-color': '#059669'
+              }}
+            />
+          </Source>
+        )}
+
+        {/* Lion Density Grid Layer */}
+        {baselineData && (
+          <Source id="lion-density" type="geojson" data={baselineData}>
+            <Layer
+              id="lions-heatmap"
+              type="circle"
+              paint={{
+                'circle-radius': [
+                  'interpolate', ['linear'], ['zoom'],
+                  8, ['interpolate', ['linear'], ['get', 'density'], 0, 1, 30, 8],
+                  12, ['interpolate', ['linear'], ['get', 'density'], 0, 3, 30, 25]
+                ],
+                'circle-color': [
+                  'interpolate', ['linear'], ['get', 'density'],
+                  0, '#fef3c7',
+                  5, '#fcd34d',
+                  15, '#f59e0b',
+                  30, '#b45309'
+                ],
+                'circle-opacity': 0.8,
+                'circle-blur': 0.2
+              }}
+            />
+          </Source>
+        )}
+
+        {/* Custom Controls Overlay */}
+        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+          <div className="glass-panel p-4 rounded-xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 text-white">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-semibold uppercase tracking-wider">Conservancy</span>
+            </div>
+            <select
+              value={selectedUnit}
+              onChange={(e) => setSelectedUnit(e.target.value)}
+              className="w-full bg-white/5 border border-white/20 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            >
+              <option value="" className="bg-[#1a1a2e]">All Landscapes</option>
+              {['Mara North', 'Olare-Motorogi', 'Naboisho', 'Ol Kinyei'].map(u => (
+                <option key={u} value={u} className="bg-[#1a1a2e]">{u}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="glass-panel p-4 rounded-xl border border-white/10 shadow-2xl backdrop-blur-md bg-black/40 text-white">
+            <div className="flex items-center gap-2 mb-3">
+              <Layers className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-semibold uppercase tracking-wider">Legend</span>
+            </div>
+            <div className="space-y-2">
+              <LegendItem color="#b45309" label="High Density" />
+              <LegendItem color="#f59e0b" label="Medium Density" />
+              <LegendItem color="#fef3c7" label="Low Density" />
+              <div className="pt-2 border-t border-white/10">
+                <LegendItem color="#10b981" label="Protected Area" opacity={0.3} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ScenarioDrawer onScenarioRun={handleScenarioRun} />
+      </Map>
+
       {loading && (
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'white',
-          padding: 20,
-          borderRadius: 8,
-          boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-          zIndex: 1000,
-        }}>
-          Loading Seka Kama Digital Twin...
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0a0a20]/80 backdrop-blur-sm">
+          <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-4" />
+          <p className="text-emerald-100 font-medium tracking-widest uppercase text-xs">Synchronizing Ecosystem Digital Twin</p>
         </div>
       )}
+
+      <style jsx global>{`
+        .glass-panel {
+          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .maplibregl-ctrl-attrib {
+          background: rgba(0,0,0,0.5) !important;
+          color: #ccc !important;
+        }
+        .maplibregl-ctrl-attrib a {
+          color: #4ade80 !important;
+        }
+      `}</style>
+    </>
+  );
+}
+
+function LegendItem({ color, label, opacity = 1 }: { color: string; label: string; opacity?: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div 
+        className="w-3 h-3 rounded-full border border-white/20" 
+        style={{ backgroundColor: color, opacity }} 
+      />
+      <span className="text-[10px] text-gray-300 font-medium">{label}</span>
     </div>
   );
 }

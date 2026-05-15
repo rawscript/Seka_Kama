@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime
 from core.database import get_supabase_client
 from core.auth import (
@@ -82,6 +83,39 @@ async def login(user: UserLogin):
     supabase.table("users").update({
         "last_login": datetime.utcnow().isoformat()
     }).eq("id", db_user["id"]).execute()
+    
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=60 * 24
+    )
+
+@router.post("/token", response_model=Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    """OAuth2 compatible token login, retrieving an access token."""
+    supabase = get_supabase_client()
+    
+    result = supabase.table("users").select("*").eq("email", form_data.username).execute()
+    
+    if not result.data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    db_user = result.data[0]
+    
+    if not verify_password(form_data.password, db_user["password_hash"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    access_token = create_access_token(
+        data={"sub": db_user["email"], "user_id": db_user["id"], "role": db_user["role"]}
+    )
     
     return Token(
         access_token=access_token,
