@@ -30,7 +30,7 @@ app = FastAPI(
 )
 
 # CORS — extend ALLOWED_ORIGINS in .env for staging/prod
-_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://seka-kama.vercel.app").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in _origins],
