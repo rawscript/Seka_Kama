@@ -6,6 +6,7 @@ import os
 
 from api.routes import router
 from api.auth_routes import router as auth_router
+from api.key_routes import router as keys_router
 from core.config import settings
 from core.database import init_supabase
 
@@ -40,6 +41,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/api")
+app.include_router(keys_router, prefix="/api")
 app.include_router(router, prefix="/api")
 
 @app.get("/health")

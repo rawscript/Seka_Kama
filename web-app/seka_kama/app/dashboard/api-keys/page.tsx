@@ -1,221 +1,226 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
-
-// ── The API key feature is currently a UI skeleton. ──────────────────────────
-// When the /api/keys backend endpoints are implemented, replace the mock
-// functions below with real fetch calls.
+import { api } from '@/services/api';
+import { Key, Plus, Trash2, Copy, Check, AlertCircle, Loader2, BookOpen } from 'lucide-react';
 
 interface ApiKey {
-  id: string;
+  id: number;
   name: string;
   prefix: string;
   created_at: string;
   last_used: string | null;
-  scopes: string[];
+  is_active: boolean;
 }
-
-const MOCK_KEYS: ApiKey[] = [
-  {
-    id: 'key_001',
-    name: 'Default Analyst Key',
-    prefix: 'sk-seka-****',
-    created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-    last_used: new Date(Date.now() - 3600000).toISOString(),
-    scopes: ['baseline:read', 'scenario:run'],
-  },
-];
-
-const SCOPE_LABELS: Record<string, string> = {
-  'baseline:read':   'Read baseline data',
-  'scenario:run':    'Run scenarios',
-  'scenario:read':   'Read scenario history',
-  'export:download': 'Download exports',
-  'admin:*':         'Full admin access',
-};
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-function relativeTime(iso: string | null) {
-  if (!iso) return 'Never';
-  const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
-  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
-  return `${Math.floor(sec / 86400)}d ago`;
-}
-
-// ── component ─────────────────────────────────────────────────────────────────
 
 export default function ApiKeysPage() {
-  const [keys, setKeys] = useState<ApiKey[]>(MOCK_KEYS);
+  const [keys, setKeys] = useState<ApiKey[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newKeyName, setNewKeyName] = useState('');
   const [creating, setCreating] = useState(false);
   const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [revoking, setRevoking] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [revoking, setRevoking] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchKeys();
+  }, []);
+
+  const fetchKeys = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get('/keys');
+      setKeys(data);
+    } catch (err) {
+      setError('Failed to load API keys');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKeyName.trim()) return;
-    setCreating(true);
-
-    // Placeholder — replace with real API call
-    await new Promise(r => setTimeout(r, 600));
-    const generated = `sk-seka-${Math.random().toString(36).slice(2, 18)}`;
-    const newKey: ApiKey = {
-      id: `key_${Date.now()}`,
-      name: newKeyName.trim(),
-      prefix: `sk-seka-${generated.slice(8, 12)}****`,
-      created_at: new Date().toISOString(),
-      last_used: null,
-      scopes: ['baseline:read', 'scenario:run'],
-    };
-
-    setKeys(prev => [newKey, ...prev]);
-    setNewKeyValue(generated);
-    setNewKeyName('');
-    setCreating(false);
+    
+    try {
+      setCreating(true);
+      setError(null);
+      const result = await api.post('/keys', { name: newKeyName.trim() });
+      
+      setNewKeyValue(result.key);
+      setKeys(prev => [result, ...prev]);
+      setNewKeyName('');
+    } catch (err) {
+      setError('Failed to create API key');
+    } finally {
+      setCreating(false);
+    }
   };
 
-  const handleRevoke = async (id: string) => {
-    if (!confirm('Revoke this API key? This cannot be undone.')) return;
-    setRevoking(id);
-    await new Promise(r => setTimeout(r, 400));
-    setKeys(prev => prev.filter(k => k.id !== id));
-    setRevoking(null);
+  const handleRevoke = async (id: number) => {
+    if (!confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) return;
+    
+    try {
+      setRevoking(id);
+      await api.delete(`/keys/${id}`);
+      setKeys(prev => prev.filter(k => k.id !== id));
+    } catch (err) {
+      setError('Failed to revoke API key');
+    } finally {
+      setRevoking(null);
+    }
   };
 
-  const copyToClipboard = async (text: string, id: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <ProtectedRoute>
-      <div style={s.page}>
-        <h1 style={s.title}>API Keys</h1>
-        <p style={s.subtitle}>
-          Use API keys to authenticate programmatic access to the Seka Kama API.
-          Keys are shown once at creation — store them securely.
-        </p>
-
-        {/* New key reveal banner */}
-        {newKeyValue && (
-          <div style={s.keyReveal}>
-            <span style={s.keyRevealLabel}>⚠️ Save this key — it won't be shown again:</span>
-            <div style={s.keyRevealRow}>
-              <code style={s.keyCode}>{newKeyValue}</code>
-              <button
-                style={s.copyBtn}
-                onClick={() => copyToClipboard(newKeyValue, 'new')}
-              >
-                {copiedId === 'new' ? '✓ Copied' : 'Copy'}
-              </button>
+      <div className="max-w-5xl mx-auto p-8 space-y-8 animate-in fade-in duration-700">
+        <header className="space-y-2">
+          <div className="flex items-center gap-3 text-emerald-400 mb-2">
+            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <Key className="w-5 h-5" />
             </div>
-            <button style={s.dismissBtn} onClick={() => setNewKeyValue(null)}>Dismiss</button>
+            <span className="text-xs font-black uppercase tracking-[0.3em]">Developer Portal</span>
+          </div>
+          <h1 className="text-4xl font-black tracking-tight">API Management</h1>
+          <p className="text-gray-400 max-w-2xl leading-relaxed">
+            Programmatic access tokens for the Seka Kama Digital Twin.
+            Integrate lion population models into your own conservation workflows.
+          </p>
+        </header>
+
+        {error && (
+          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center gap-3 text-rose-400 text-sm animate-in slide-in-from-top-2">
+            <AlertCircle className="w-5 h-5" />
+            {error}
           </div>
         )}
 
-        {/* Create form */}
-        <div style={s.card}>
-          <h2 style={s.cardTitle}>Create New Key</h2>
-          <form onSubmit={handleCreate} style={s.createRow}>
-            <input
-              id="key-name"
-              style={s.nameInput}
-              placeholder="e.g. My Analysis Script"
-              value={newKeyName}
-              onChange={e => setNewKeyName(e.target.value)}
-              required
-              maxLength={60}
-            />
-            <button type="submit" style={s.createBtn} disabled={creating || !newKeyName.trim()}>
-              {creating ? 'Creating…' : '+ Create Key'}
-            </button>
-          </form>
-          <p style={s.scopeNote}>New keys are granted <strong>baseline:read</strong> + <strong>scenario:run</strong> scopes by default.</p>
-        </div>
+        {/* New Key Reveal - Security Priority */}
+        {newKeyValue && (
+          <div className="p-8 rounded-[2.5rem] bg-emerald-500/10 border-2 border-emerald-500/30 backdrop-blur-3xl space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold flex items-center gap-2 text-emerald-400">
+                <Check className="w-6 h-6" /> Key Created Successfully
+              </h3>
+              <p className="text-sm text-emerald-400/70 font-medium">
+                Make sure to copy your new API key now. You won't be able to see it again for security reasons.
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-emerald-500/20">
+              <code className="flex-1 font-mono text-lg text-emerald-300 break-all select-all">
+                {newKeyValue}
+              </code>
+              <button 
+                onClick={() => copyToClipboard(newKeyValue)}
+                className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold transition-all h-fit"
+              >
+                {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                {copied ? 'Copied!' : 'Copy Key'}
+              </button>
+            </div>
 
-        {/* Keys list */}
-        <div style={s.card}>
-          <h2 style={s.cardTitle}>Active Keys ({keys.length})</h2>
-          {keys.length === 0 && (
-            <p style={s.emptyNote}>No API keys. Create one above.</p>
-          )}
-          <div style={s.keyList}>
-            {keys.map(k => (
-              <div key={k.id} style={s.keyRow}>
-                <div style={s.keyInfo}>
-                  <div style={s.keyName}>{k.name}</div>
-                  <div style={s.keyPrefix}>{k.prefix}</div>
-                  <div style={s.keyMeta}>
-                    Created {relativeTime(k.created_at)} &nbsp;·&nbsp; Last used: {relativeTime(k.last_used)}
-                  </div>
-                  <div style={s.scopeRow}>
-                    {k.scopes.map(sc => (
-                      <span key={sc} style={s.scopeTag} title={SCOPE_LABELS[sc] ?? sc}>{sc}</span>
-                    ))}
-                  </div>
+            <button 
+              onClick={() => setNewKeyValue(null)}
+              className="text-sm font-bold text-white/40 hover:text-white transition-colors"
+            >
+              I've saved my key securely
+            </button>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* List Section */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="glass-effect p-8 rounded-[2.5rem] border border-white/10 space-y-6">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                Active Tokens <span className="text-xs bg-white/10 px-2 py-1 rounded-full text-white/50">{keys.length}</span>
+              </h2>
+
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-4 text-white/20">
+                  <Loader2 className="w-10 h-10 animate-spin" />
+                  <span className="text-sm font-bold uppercase tracking-widest">Loading keys...</span>
                 </div>
-                <div style={s.keyActions}>
-                  <button
-                    style={s.revokeBtn}
-                    onClick={() => handleRevoke(k.id)}
-                    disabled={revoking === k.id}
-                  >
-                    {revoking === k.id ? 'Revoking…' : 'Revoke'}
-                  </button>
+              ) : keys.length === 0 ? (
+                <div className="text-center py-12 space-y-2 text-white/30 border-2 border-dashed border-white/5 rounded-3xl">
+                  <Key className="w-12 h-12 mx-auto opacity-20" />
+                  <p className="font-medium">No active API keys found.</p>
                 </div>
+              ) : (
+                <div className="space-y-4">
+                  {keys.map(key => (
+                    <div key={key.id} className="p-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between group hover:bg-white/[0.08] transition-all">
+                      <div className="space-y-1">
+                        <div className="font-bold tracking-tight text-lg">{key.name}</div>
+                        <div className="flex items-center gap-3">
+                          <code className="text-xs font-mono text-emerald-400/70">{key.prefix}</code>
+                          <span className="text-[10px] text-white/20 uppercase font-bold tracking-widest">
+                            Created {new Date(key.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <button 
+                        onClick={() => handleRevoke(key.id)}
+                        disabled={revoking === key.id}
+                        className="p-3 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                      >
+                        {revoking === key.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Creation Section */}
+          <div className="space-y-6">
+            <div className="glass-effect p-8 rounded-[2.5rem] border border-white/10 space-y-6 sticky top-8">
+              <h2 className="text-xl font-bold">New Connection</h2>
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] items-center uppercase font-black tracking-[0.2em] text-white/40 block">Key Description</label>
+                  <input 
+                    type="text" 
+                    value={newKeyName}
+                    onChange={(e) => setNewKeyName(e.target.value)}
+                    placeholder="e.g. Wildlife Monitoring Bot" 
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  disabled={creating || !newKeyName.trim()}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-white/10 disabled:text-white/20 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-[0_10px_30px_rgba(16,185,129,0.2)]"
+                >
+                  {creating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                  Generate Token
+                </button>
+              </form>
+
+              <div className="pt-6 border-t border-white/10">
+                <a href="#" className="flex items-center gap-3 text-sm font-bold text-emerald-400/60 hover:text-emerald-400 transition-colors group">
+                  <div className="p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10 group-hover:bg-emerald-500/20 transition-all">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  System Documentation
+                </a>
               </div>
-            ))}
+            </div>
           </div>
         </div>
-
-        {/* Docs link */}
-        <p style={s.docsNote}>
-          See the{' '}
-          <a href="https://github.com/rawscript/Seka_Kama" target="_blank" rel="noopener noreferrer" style={s.docsLink}>
-            API documentation
-          </a>{' '}
-          for usage examples.
-        </p>
       </div>
     </ProtectedRoute>
   );
 }
-
-// ── styles ────────────────────────────────────────────────────────────────────
-
-const s: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 800, margin: '0 auto', padding: '2rem 1.5rem', fontFamily: 'Inter, system-ui, sans-serif' },
-  title: { margin: '0 0 0.5rem', fontSize: '1.5rem', fontWeight: 700, color: '#1a1a2e' },
-  subtitle: { margin: '0 0 1.5rem', fontSize: '0.875rem', color: '#666', lineHeight: 1.6 },
-  keyReveal: { background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '1.5rem' },
-  keyRevealLabel: { display: 'block', fontWeight: 600, fontSize: '0.875rem', color: '#e65100', marginBottom: '0.5rem' },
-  keyRevealRow: { display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' },
-  keyCode: { flex: 1, padding: '0.4rem 0.75rem', background: '#fff', borderRadius: 6, border: '1px solid #ffe082', fontSize: '0.875rem', fontFamily: 'monospace', wordBreak: 'break-all' },
-  copyBtn: { padding: '0.4rem 0.9rem', borderRadius: 6, border: 'none', background: '#FB8C00', color: '#fff', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' },
-  dismissBtn: { background: 'none', border: 'none', color: '#888', fontSize: '0.8rem', cursor: 'pointer', padding: 0 },
-  card: { background: '#fff', border: '1px solid #e0e0e0', borderRadius: 12, padding: '1.5rem', marginBottom: '1.5rem' },
-  cardTitle: { margin: '0 0 1rem', fontSize: '1rem', fontWeight: 700, color: '#1a1a2e' },
-  createRow: { display: 'flex', gap: '0.75rem' },
-  nameInput: { flex: 1, padding: '0.6rem 0.75rem', borderRadius: 8, border: '1px solid #ddd', fontSize: '0.9rem', color: '#333', outline: 'none' },
-  createBtn: { padding: '0.6rem 1.25rem', borderRadius: 8, border: 'none', background: '#4CAF50', color: '#fff', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap' },
-  scopeNote: { margin: '0.5rem 0 0', fontSize: '0.78rem', color: '#888' },
-  emptyNote: { fontSize: '0.875rem', color: '#aaa', textAlign: 'center', padding: '1rem' },
-  keyList: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
-  keyRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '0.875rem 1rem', background: '#f8f9fa', borderRadius: 8, border: '1px solid #eee' },
-  keyInfo: { flex: 1 },
-  keyName: { fontWeight: 600, fontSize: '0.9rem', color: '#1a1a2e', marginBottom: '0.2rem' },
-  keyPrefix: { fontFamily: 'monospace', fontSize: '0.82rem', color: '#555', marginBottom: '0.25rem' },
-  keyMeta: { fontSize: '0.75rem', color: '#aaa', marginBottom: '0.4rem' },
-  scopeRow: { display: 'flex', flexWrap: 'wrap', gap: '0.35rem' },
-  scopeTag: { padding: '0.15rem 0.5rem', borderRadius: 999, background: '#e8f5e9', color: '#2e7d32', fontSize: '0.72rem', fontWeight: 500, fontFamily: 'monospace' },
-  keyActions: { marginLeft: '1rem' },
-  revokeBtn: { padding: '0.4rem 0.85rem', borderRadius: 6, border: '1px solid #ffcdd2', background: '#fff', color: '#e53935', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' },
-  docsNote: { fontSize: '0.8rem', color: '#888', textAlign: 'center' },
-  docsLink: { color: '#4CAF50', textDecoration: 'none', fontWeight: 500 },
-};

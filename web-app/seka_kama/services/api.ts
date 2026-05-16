@@ -59,6 +59,69 @@ export interface Scenario extends ScenarioResponse {
 
 export const api = {
   /**
+   * Centralized request helper to automatically inject authentication headers 
+   * and handle common JSON response behaviors.
+   */
+  async request(endpoint: string, options: RequestInit = {}) {
+    // Gracefully handle server-side rendering scenarios where localStorage isn't available
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    
+    const headers = new Headers(options.headers);
+    
+    if (!headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    // Ensure endpoint starts with a slash
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+    const response = await fetch(`${API_URL}${normalizedEndpoint}`, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: Failed to fetch ${endpoint}`);
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
+      return response.json();
+    }
+    return response.text();
+  },
+
+  /**
+   * Generic HTTP GET
+   */
+  async get(endpoint: string): Promise<any> {
+    return this.request(endpoint);
+  },
+
+  /**
+   * Generic HTTP POST
+   */
+  async post(endpoint: string, body: any): Promise<any> {
+    return this.request(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  /**
+   * Generic HTTP DELETE
+   */
+  async delete(endpoint: string): Promise<any> {
+    return this.request(endpoint, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
    * Fetches baseline population and nightlight data.
    * Leverages Supabase/PostGIS for BBOX queries.
    */

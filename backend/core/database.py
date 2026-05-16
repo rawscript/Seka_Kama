@@ -282,6 +282,46 @@ class SupabaseService:
         ).execute()
         return result.data[0] if result.data else {}
 
+    # ========== API Key Operations ==========
+    
+    def list_api_keys(self, user_id: int) -> List[Dict[str, Any]]:
+        """
+        List all active API keys for a user.
+        """
+        result = self.client.table("api_keys")\
+            .select("*")\
+            .eq("user_id", user_id)\
+            .order("created_at", desc=True)\
+            .execute()
+        return result.data
+        
+    def create_api_key(self, user_id: int, name: str, key_hash: str, prefix: str) -> Dict[str, Any]:
+        """
+        Create a new API key record.
+        """
+        from datetime import datetime
+        key_data = {
+            "user_id": user_id,
+            "name": name,
+            "key_hash": key_hash,
+            "prefix": prefix,
+            "created_at": datetime.utcnow().isoformat(),
+            "is_active": True
+        }
+        result = self.client.table("api_keys").insert(key_data).execute()
+        return result.data[0] if result.data else {}
+        
+    def revoke_api_key(self, user_id: int, key_id: int) -> bool:
+        """
+        Deactivate an API key.
+        """
+        result = self.client.table("api_keys")\
+            .update({"is_active": False})\
+            .eq("id", key_id)\
+            .eq("user_id", user_id)\
+            .execute()
+        return len(result.data) > 0
+
 # ========== Database Functions for RPC (Run in Supabase SQL Editor) ==========
 
 RPC_FUNCTIONS_SQL = """
