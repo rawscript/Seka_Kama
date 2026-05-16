@@ -1,6 +1,3 @@
-# Database
-SUPABASE_URL=https://nblwzayxayqjpxqjpxqj.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1ZnBmYXp6eWhmeG1kcHVwdXBsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODY2NDEyNCwiZXhwIjoyMDk0MjQwMTI0fQ.ehbM1zPFhE0VDn48lxSOZ3Y_59AOecvchzIGCC7TaZ0
 
 # Auth
 JWT_SECRET_KEY=jwt-Key
