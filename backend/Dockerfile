@@ -36,9 +36,6 @@ RUN apt-get update && apt-get install -y \
 # Copy application code
 COPY . .
 
-# Copy models from parent directory (adjust path as needed)
-COPY ../models ./models
-
 # Create non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
