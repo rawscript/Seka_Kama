@@ -13,9 +13,6 @@ const nextConfig: NextConfig = {
     'react-palm',
     'styled-components'
   ],
-  turbopack: {
-    root: '.',
-  },
 };
 
 export default nextConfig;
