@@ -12,6 +12,7 @@ ALLOWED_ORIGINS=http://localhost:3000,https://seka-kama.vercel.app
 # Local Paths
 MODELS_DIR=/backend/models
 
-# LLM (Local or Cloud)
-LLM_API_URL=http://localhost:11434/api/generate
-LLM_MODEL=llama3
+# LLM (Driven by NVIDIA NIM)
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
+NVIDIA_API_KEY=nv-aH21961600-4557-426a-898b-920777e21d3d
+LLM_MODEL=stepfun-ai/step-3.5-flash
