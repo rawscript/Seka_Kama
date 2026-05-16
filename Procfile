@@ -1,1 +1,1 @@
-web: python3 backend/main.py
+web: bash backend/start.sh

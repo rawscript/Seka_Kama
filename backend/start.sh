@@ -6,4 +6,4 @@ if [ -d "backend" ]; then
 fi
 
 # Run the FastAPI server
-gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
