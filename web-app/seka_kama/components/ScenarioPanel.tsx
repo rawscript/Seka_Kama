@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { api } from '@/services/api';
 
 interface Scenario {
   scenario_id: number;

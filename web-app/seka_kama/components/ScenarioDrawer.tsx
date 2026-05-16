@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
-import { api } from '@/lib/api';
+import { api } from '@/services/api';
 import { Play, Trash2, Edit3, Save, X, Lightbulb, TrendingUp, AlertTriangle } from 'lucide-react';
 
 interface ScenarioDrawerProps {

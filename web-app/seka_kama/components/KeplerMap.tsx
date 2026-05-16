@@ -11,8 +11,8 @@ import { keplerGlReducer } from '@kepler.gl/reducers';
 // KeplerGlState type is removed as it was unused and missing from @kepler.gl/types in this version.
 // If needed in the future, it can be imported from @kepler.gl/reducers.
 
-import { api, type GridCell, type ProtectedArea } from '@/lib/api';
-import { createKeplerConfig } from '@/lib/kepler-config';
+import { api, type GridCell, type ProtectedArea } from '@/services/api';
+import { createKeplerConfig } from '@/services/kepler-config';
 
 interface KeplerMapProps {
   managementUnit?: string;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { api, Scenario } from '@/lib/api';
+import { api, Scenario } from '@/services/api';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

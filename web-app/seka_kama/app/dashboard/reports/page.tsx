@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { api } from '@lib/api';
+import { api } from '@/services/api';
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
