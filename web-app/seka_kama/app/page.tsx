@@ -13,7 +13,7 @@ export default function LandingPage() {
           <img 
             src="/seka_kama_hero_lion_1778841687196.png" 
             alt="Majestic Lion" 
-            className="w-full h-full object-cover scale-105 animate-slow-zoom"
+            className="w-full h-full object-cover object-top scale-100"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/40 via-[#020617]/80 to-[#020617]" />
         </div>
