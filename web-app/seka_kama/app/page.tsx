@@ -39,14 +39,15 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link 
               href="/register"
-              className="group relative px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-lg transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(16,185,129,0.4)] flex items-center gap-2"
+              className="group relative px-10 py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-lg transition-all hover:scale-105 hover:shadow-[0_0_50px_rgba(16,185,129,0.5)] flex items-center gap-3 overflow-hidden"
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               Get Started
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link 
               href="/login"
-              className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/20 text-white rounded-2xl font-bold text-lg backdrop-blur-xl transition-all"
+              className="px-10 py-5 glass-effect text-white rounded-2xl font-bold text-lg transition-all hover:bg-white/10"
             >
               Sign In
             </Link>
@@ -112,21 +113,21 @@ export default function LandingPage() {
 
 function StatBox({ label, value }: { label: string, value: string }) {
   return (
-    <div className="p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-2xl text-center">
-      <div className="text-3xl font-black text-emerald-400 mb-1">{value}</div>
-      <div className="text-xs uppercase tracking-[0.2em] font-bold text-white/40">{label}</div>
+    <div className="p-8 rounded-3xl glass-effect text-center group hover:scale-105 transition-all cursor-default">
+      <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-2">{value}</div>
+      <div className="text-[10px] uppercase tracking-[0.3em] font-black text-white/30 group-hover:text-emerald-400/50 transition-colors">{label}</div>
     </div>
   );
 }
 
 function FeatureCard({ icon, title, description }: { icon: any, title: string, description: string }) {
   return (
-    <div className="p-8 rounded-[2.5rem] bg-white/5 border border-white/10 hover:border-white/20 transition-all group">
-      <div className="mb-6 p-4 rounded-3xl bg-white/5 w-fit group-hover:scale-110 transition-transform">
+    <div className="p-8 rounded-[2.5rem] glass-effect hover:border-emerald-500/30 transition-all group hover:-translate-y-2">
+      <div className="mb-6 p-4 rounded-3xl bg-white/5 w-fit group-hover:bg-emerald-500/10 transition-colors">
         {icon}
       </div>
-      <h3 className="text-xl font-bold mb-4 tracking-tight">{title}</h3>
-      <p className="text-gray-400 text-sm leading-relaxed">{description}</p>
+      <h3 className="text-xl font-bold mb-4 tracking-tight group-hover:text-emerald-400 transition-colors">{title}</h3>
+      <p className="text-gray-400 text-sm leading-relaxed group-hover:text-gray-300 transition-colors">{description}</p>
     </div>
   );
 }

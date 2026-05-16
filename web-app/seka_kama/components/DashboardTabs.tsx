@@ -21,74 +21,40 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
   const [selectedCells, setSelectedCells] = useState<any[]>([]);
 
   return (
-    <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="w-full h-screen flex flex-col bg-[#020617] text-white">
       {/* Tab Bar */}
-      <div style={{
-        display: 'flex',
-        backgroundColor: '#2c3e50',
-        padding: '0 20px',
-        gap: 4,
-        zIndex: 100,
-      }}>
-        <button
+      <div className="flex bg-black/40 backdrop-blur-md border-b border-white/10 px-6 gap-2 z-50">
+        <TabButton 
+          active={activeTab === 'analysis'} 
           onClick={() => setActiveTab('analysis')}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: activeTab === 'analysis' ? '#34495e' : 'transparent',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: 16,
-            fontWeight: activeTab === 'analysis' ? 'bold' : 'normal',
-            borderBottom: activeTab === 'analysis' ? '3px solid #4CAF50' : 'none',
-          }}
-        >
-          🗺️ Spatial Analysis
-        </button>
-        <button
+          icon="🗺️"
+          label="Spatial Analysis"
+        />
+        <TabButton 
+          active={activeTab === 'kepler'} 
           onClick={() => setActiveTab('kepler')}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: activeTab === 'kepler' ? '#34495e' : 'transparent',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: 16,
-            fontWeight: activeTab === 'kepler' ? 'bold' : 'normal',
-            borderBottom: activeTab === 'kepler' ? '3px solid #4CAF50' : 'none',
-          }}
-        >
-          📊 Kepler.gl Explorer
-        </button>
-        <button
+          icon="📊"
+          label="Kepler.gl Explorer"
+        />
+        <TabButton 
+          active={activeTab === 'scenarios'} 
           onClick={() => setActiveTab('scenarios')}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: activeTab === 'scenarios' ? '#34495e' : 'transparent',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: 16,
-            fontWeight: activeTab === 'scenarios' ? 'bold' : 'normal',
-            borderBottom: activeTab === 'scenarios' ? '3px solid #4CAF50' : 'none',
-          }}
-        >
-          🔮 Scenario History
-        </button>
+          icon="🔮"
+          label="Scenario History"
+        />
       </div>
 
       {/* Tab Content */}
-      <div style={{ flex: 1, position: 'relative' }}>
-        {activeTab === 'analysis' && (
+      <div className="flex-1 relative overflow-hidden">
+        <div className={`absolute inset-0 transition-opacity duration-500 ${activeTab === 'analysis' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
           <SekaMap onScenarioRun={onScenarioRun} />
-        )}
+        </div>
         
-        {activeTab === 'kepler' && (
+        <div className={`absolute inset-0 transition-opacity duration-500 ${activeTab === 'kepler' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
           <KeplerMapNoSSR
             onCellSelect={(cellId) => console.log('Selected cell:', cellId)}
             onScenarioApply={(cells, modifications) => {
               setSelectedCells(cells);
-              // Trigger scenario with selected cells
               onScenarioRun({
                 type: 'selection',
                 cells: cells,
@@ -96,15 +62,37 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
               });
             }}
           />
-        )}
+        </div>
         
-        {activeTab === 'scenarios' && (
+        <div className={`absolute inset-0 transition-opacity duration-500 ${activeTab === 'scenarios' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
           <ScenarioPanel onScenarioSelect={(scenario) => {
-            // Load and display previous scenario
             console.log('Loading scenario:', scenario);
           }} />
-        )}
+        </div>
       </div>
     </div>
+  );
+}
+
+function TabButton({ 
+  active, 
+  onClick, 
+  icon, 
+  label 
+}: { active: boolean; onClick: () => void; icon: string; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        px-6 py-4 flex items-center gap-2 text-sm font-bold tracking-tight transition-all relative
+        ${active ? 'text-white' : 'text-gray-400 hover:text-gray-200'}
+      `}
+    >
+      <span className="text-base">{icon}</span>
+      <span className="uppercase tracking-[0.1em]">{label}</span>
+      {active && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.8)]" />
+      )}
+    </button>
   );
 }
