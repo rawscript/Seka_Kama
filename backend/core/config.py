@@ -5,9 +5,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# The .pkl files live in web-app/models/ (sibling of the backend/ directory)
+# When deployed with rootDirectory=backend, models are in ./models/
+# For local dev, they're in ../web-app/models/
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent  # …/Seka_Kama/
-_MODELS_DIR = os.getenv("MODELS_DIR", str(_REPO_ROOT / "web-app" / "models"))
+_LOCAL_MODELS = Path(__file__).resolve().parent.parent / "models"  # ./models/ (in backend)
+_REPO_MODELS = _REPO_ROOT / "web-app" / "models"  # ../web-app/models/ (for local dev)
+
+# Use local models if they exist, otherwise fall back to repo models
+if _LOCAL_MODELS.exists():
+    _MODELS_DIR = str(_LOCAL_MODELS)
+else:
+    _MODELS_DIR = str(_REPO_MODELS)
+
+# Allow override via environment variable
+_MODELS_DIR = os.getenv("MODELS_DIR", _MODELS_DIR)
 
 class Settings(BaseSettings):
     # Supabase
@@ -29,3 +40,4 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
 settings = Settings()
+
