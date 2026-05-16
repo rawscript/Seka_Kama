@@ -1,4 +1,4 @@
-# Seka Kama: Contributor Code of Conduct
+# Contributor Code of Conduct
 
 ## 1. Our Pledge
 
