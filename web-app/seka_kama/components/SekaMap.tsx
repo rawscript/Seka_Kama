@@ -189,9 +189,9 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
 function LegendItem({ color, label, opacity = 1 }: { color: string; label: string; opacity?: number }) {
   return (
     <div className="flex items-center gap-2">
-      <div 
-        className="w-3 h-3 rounded-full border border-white/20" 
-        style={{ backgroundColor: color, opacity }} 
+      <div
+        className="w-3 h-3 rounded-full border border-white/20"
+        style={{ backgroundColor: color, opacity }}
       />
       <span className="text-[10px] text-gray-300 font-medium">{label}</span>
     </div>
