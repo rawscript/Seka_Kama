@@ -4,11 +4,15 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import os
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing with explicit bcrypt configuration
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12
+)
 
 # JWT configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
@@ -33,6 +37,38 @@ class UserCreate(BaseModel):
     full_name: str
     organization: str
     role: str = "analyst"
+    
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        """Validate email format"""
+        if not v or '@' not in v:
+            raise ValueError('Invalid email format')
+        return v.lower().strip()
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v):
+        """Validate password: min 8 chars, max 72 bytes (bcrypt limit)"""
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if len(v.encode('utf-8')) > 72:
+            raise ValueError('Password too long (max 72 bytes)')
+        return v
+    
+    @field_validator('full_name')
+    @classmethod
+    def validate_full_name(cls, v):
+        if not v or len(v.strip()) == 0:
+            raise ValueError('Full name cannot be empty')
+        return v.strip()
+    
+    @field_validator('organization')
+    @classmethod
+    def validate_organization(cls, v):
+        if not v or len(v.strip()) == 0:
+            raise ValueError('Organization cannot be empty')
+        return v.strip()
 
 class UserLogin(BaseModel):
     email: str
@@ -48,10 +84,22 @@ class UserResponse(BaseModel):
     last_login: Optional[datetime]
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify password with error handling"""
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Password verification failed: {str(e)}")
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    """Hash password with validation and error handling"""
+    # Double-check password length (should be caught by validator, but defensive)
+    if len(password.encode('utf-8')) > 72:
+        raise ValueError("Password cannot be longer than 72 bytes")
+    
+    try:
+        return pwd_context.hash(password)
+    except (ValueError, TypeError, RuntimeError) as e:
+        raise RuntimeError(f"Password hashing failed: {str(e)}")
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
