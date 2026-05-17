@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, field_validator
 import os
 
 # Password hashing with explicit bcrypt configuration
@@ -32,11 +32,19 @@ class TokenData(BaseModel):
     role: str
 
 class UserCreate(BaseModel):
-    email: EmailStr
+    email: str
     password: str
     full_name: str
     organization: str
     role: str = "analyst"
+    
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        """Validate email format"""
+        if not v or '@' not in v:
+            raise ValueError('Invalid email format')
+        return v.lower().strip()
     
     @field_validator('password')
     @classmethod
@@ -63,7 +71,7 @@ class UserCreate(BaseModel):
         return v.strip()
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 class UserResponse(BaseModel):
