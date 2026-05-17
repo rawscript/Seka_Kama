@@ -35,6 +35,9 @@ const nextConfig: NextConfig = {
     '@math.gl/web-mercator'
   ],
   webpack: (config, { isServer }) => {
+    // Disable minification to prevent SWC WorkerError crash with large deck.gl chunks
+    config.optimization.minimize = false;
+    
     if (!isServer) {
         config.resolve.fallback = {
             ...config.resolve.fallback,
