@@ -81,7 +81,7 @@ export default function ScenariosPage() {
         {/* Empty state */}
         {!loading && !error && scenarios.length === 0 && (
           <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>🦁</div>
+            <div style={styles.emptyIcon}></div>
             <p style={styles.emptyText}>No scenarios yet.</p>
             <p style={styles.emptyHint}>
               Run a what-if simulation from the Spatial Analysis view to see results here.
