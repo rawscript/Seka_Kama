@@ -17,7 +17,13 @@
     "@deck.gl/mesh-layers": "9.2.11",
     "@deck.gl/extensions": "9.2.11",
     "@deck.gl/aggregation-layers": "9.2.11",
-    "@deck.gl/json": "9.2.11"
+    "@deck.gl/json": "9.2.11",
+    "@luma.gl/constants": "9.2.6",
+    "@luma.gl/core": "9.2.6",
+    "@luma.gl/engine": "9.2.6",
+    "@luma.gl/shadertools": "9.2.6",
+    "@luma.gl/webgl": "9.2.6",
+    "@luma.gl/gltools": "9.2.6"
   },
   "dependencies": {
     "@mapbox/mapbox-gl-draw": "^1.5.1",
