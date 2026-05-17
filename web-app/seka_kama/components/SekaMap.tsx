@@ -14,7 +14,7 @@ interface SekaMapProps {
 export default function SekaMap({ onScenarioRun }: SekaMapProps) {
   return (
     <MapProvider>
-      <div className="relative w-full h-full bg-[#0a0a20]">
+      <div className="relative w-full flex-1 bg-[#0a0a20] min-h-[500px]">
         <SekaMapContent onScenarioRun={onScenarioRun} />
       </div>
     </MapProvider>

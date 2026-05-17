@@ -251,6 +251,8 @@ export default function DashboardLayout({
         .dashboard-main {
           flex: 1;
           position: relative;
+          display: flex;
+          flex-direction: column;
         }
       `}</style>
     </div>
