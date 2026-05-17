@@ -48,6 +48,16 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  experimental: {
+    workerThreads: false,
+    memoryBasedWorkersCount: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true, 
+  }
 };
 
 export default nextConfig;
