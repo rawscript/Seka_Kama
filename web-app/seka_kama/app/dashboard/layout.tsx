@@ -30,7 +30,7 @@ export default function DashboardLayout({
       }
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (response.ok) {
