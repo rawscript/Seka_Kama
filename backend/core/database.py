@@ -240,10 +240,12 @@ class SupabaseService:
         """
         Retrieve scenario history for a user or all scenarios.
         """
-        query = self.client.table("scenario_history").select("*").order("created_at", desc=True).limit(limit)
+        query = self.client.table("scenario_history").select("*")
         
         if user_id:
             query = query.eq("user_id", user_id)
+            
+        query = query.order("created_at", desc=True).limit(limit)
         
         result = query.execute()
         return result.data
