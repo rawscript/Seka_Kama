@@ -101,6 +101,7 @@ export default function DashboardLayout({
 
         .dashboard-nav {
           background: white;
+          color: #333;
           border-bottom: 1px solid #e0e0e0;
           padding: 0 2rem;
           height: 64px;
