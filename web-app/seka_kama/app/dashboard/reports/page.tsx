@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { api } from '@/services/api';
+import { Activity, Shield, Thermometer, Map, Target, AlertTriangle } from 'lucide-react';
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -86,12 +87,12 @@ export default function ReportsPage() {
         <section style={s.section}>
           <h2 style={s.sectionTitle}>Population Overview</h2>
           <div style={s.cardGrid}>
-            <StatCard icon="🦁" label="Total Lions" value={stats?.total_lions.toFixed(0) ?? '—'} loading={loading} />
-            <StatCard icon="📐" label="Area (km²)" value={stats?.total_area_km2.toLocaleString() ?? '—'} loading={loading} />
-            <StatCard icon="📊" label="Avg Density" value={stats ? `${stats.avg_lion_density.toFixed(3)}/km²` : '—'} loading={loading} />
-            <StatCard icon="🏞️" label="Protected Area" value={stats ? `${stats.protected_area_coverage_km2.toFixed(0)} km²` : '—'} loading={loading} />
-            <StatCard icon="💡" label="Nightlight Trend" value={stats ? `${stats.avg_nightlight_trend >= 0 ? '+' : ''}${stats.avg_nightlight_trend.toFixed(4)}` : '—'} loading={loading} accent={stats && stats.avg_nightlight_trend > 0 ? '#ffebee' : '#e8f5e9'} />
-            <StatCard icon="⚠️" label="High-Risk Cells" value={stats?.high_risk_cell_count.toLocaleString() ?? '—'} loading={loading} accent="#fff8e1" />
+            <StatCard icon={<Activity className="w-6 h-6 text-emerald-600" />} label="Total Lions" value={stats?.total_lions.toFixed(0) ?? '—'} loading={loading} />
+            <StatCard icon={<Map className="w-6 h-6 text-blue-600" />} label="Area (km²)" value={stats?.total_area_km2.toLocaleString() ?? '—'} loading={loading} />
+            <StatCard icon={<Target className="w-6 h-6 text-indigo-600" />} label="Avg Density" value={stats ? `${stats.avg_lion_density.toFixed(3)}/km²` : '—'} loading={loading} />
+            <StatCard icon={<Shield className="w-6 h-6 text-teal-600" />} label="Protected Area" value={stats ? `${stats.protected_area_coverage_km2.toFixed(0)} km²` : '—'} loading={loading} />
+            <StatCard icon={<Thermometer className="w-6 h-6 text-orange-600" />} label="Nightlight Trend" value={stats ? `${stats.avg_nightlight_trend >= 0 ? '+' : ''}${stats.avg_nightlight_trend.toFixed(4)}` : '—'} loading={loading} accent={stats && stats.avg_nightlight_trend > 0 ? '#ffebee' : '#e8f5e9'} />
+            <StatCard icon={<AlertTriangle className="w-6 h-6 text-amber-600" />} label="High-Risk Cells" value={stats?.high_risk_cell_count.toLocaleString() ?? '—'} loading={loading} accent="#fff8e1" />
           </div>
         </section>
 
@@ -145,7 +146,7 @@ export default function ReportsPage() {
 
 function StatCard({
   icon, label, value, loading, accent
-}: { icon: string; label: string; value: string; loading: boolean; accent?: string }) {
+}: { icon: React.ReactNode; label: string; value: string; loading: boolean; accent?: string }) {
   return (
     <div style={{ ...s.statCard, background: accent ?? '#fff' }}>
       <span style={s.cardIcon}>{icon}</span>
@@ -173,7 +174,7 @@ const s: Record<string, React.CSSProperties> = {
   sectionHint: { margin: '0 0 1rem', fontSize: '0.8rem', color: '#888' },
   cardGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' },
   statCard: { border: '1px solid #e0e0e0', borderRadius: 12, padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' },
-  cardIcon: { fontSize: '1.5rem' },
+  cardIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center' },
   cardLabel: { fontSize: '0.75rem', color: '#888', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' },
   cardValue: { fontSize: '1.35rem', fontWeight: 700, color: '#1a1a2e', marginTop: 2 },
   skeleton: { display: 'inline-block', width: 80, height: 22, background: '#e0e0e0', borderRadius: 6, animation: 'pulse 1.5s ease infinite' },

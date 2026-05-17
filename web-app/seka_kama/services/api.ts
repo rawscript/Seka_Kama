@@ -136,9 +136,7 @@ export const api = {
     }
     
     try {
-      const response = await fetch(`${API_URL}/baseline?${params}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}: Failed to fetch baseline`);
-      return await response.json();
+      return await this.get(`/baseline?${params}`);
     } catch (error) {
       console.error("Baseline fetch error:", error);
       throw error;
@@ -156,31 +154,21 @@ export const api = {
       params.append('max_lon', bbox.maxLon.toString());
       params.append('max_lat', bbox.maxLat.toString());
     }
-    const response = await fetch(`${API_URL}/protected-areas?${params}`);
-    if (!response.ok) throw new Error(`Protected Areas API error: ${response.status}`);
-    return response.json();
+    return this.get(`/protected-areas?${params}`);
   },
 
   /**
    * Runs the predictive XGBoost simulation.
    */
   async runScenario(request: ScenarioRequest): Promise<ScenarioResponse> {
-    const response = await fetch(`${API_URL}/scenario`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) throw new Error(`Simulation error: ${response.status}`);
-    return response.json();
+    return this.post('/scenario', request);
   },
 
   /**
    * Pulls previous simulation runs from Supabase memory.
    */
   async getScenarioHistory(limit: number = 50): Promise<Scenario[]> {
-    const response = await fetch(`${API_URL}/scenarios/history?limit=${limit}`);
-    if (!response.ok) throw new Error(`History API error: ${response.status}`);
-    return response.json();
+    return this.get(`/scenarios/history?limit=${limit}`);
   },
 
   /**
@@ -191,9 +179,7 @@ export const api = {
     top_feature: string;
     top_importance: number;
   }> {
-    const response = await fetch(`${API_URL}/feature-importance`);
-    if (!response.ok) throw new Error(`Feature Importance error: ${response.status}`);
-    return response.json();
+    return this.get('/feature-importance');
   },
 
   /**
@@ -204,8 +190,6 @@ export const api = {
     explanation: string;
     features: Record<string, number>;
   }> {
-    const response = await fetch(`${API_URL}/explain/${cellId}`);
-    if (!response.ok) throw new Error(`Explanation API error: ${response.status}`);
-    return response.json();
+    return this.get(`/explain/${cellId}`);
   },
 };
