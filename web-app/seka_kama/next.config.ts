@@ -42,25 +42,23 @@ const nextConfig: NextConfig = {
     '@loaders.gl/schema'
   ],
 
-  turbopack: {
-    resolveAlias: {
-      fs: '',
-      path: '',
-      crypto: '',
-      canvas: '',
-      child_process: '',
-      os: '',
-      net: '',
-      tls: '',
-    },
-  },
-
+  // Bypasses Next.js 16's strict Turbopack enforcement out of the box
+  turbopack: {},
 
   webpack: (config) => {
+    // Disable minification to prevent SWC WorkerError crashes with massive deck.gl chunks
     config.optimization.minimize = false;
+
     config.resolve.fallback = {
       ...config.resolve.fallback,
-      fs: false, path: false, crypto: false, canvas: false, child_process: false, os: false, net: false, tls: false
+      fs: false,
+      path: false,
+      crypto: false,
+      canvas: false,
+      child_process: false,
+      os: false,
+      net: false,
+      tls: false
     };
     return config;
   },
