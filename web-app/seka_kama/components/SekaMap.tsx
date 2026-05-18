@@ -97,20 +97,10 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
         }}
         id="main-map"
       >
-        {/* Land-X Layer from External URL */}
-        {landXSourceUrl && (
-          <Source id="landx-source" type="geojson" data={landXSourceUrl}>
-            <Layer
-              id="landx-layer"
-              type="fill"
-              paint={{
-                'fill-color': '#4ade80',
-                'fill-opacity': 0.15,
-                'fill-outline-color': '#22c55e'
-              }}
-            />
-          </Source>
-        )}
+        {/*
+          Removed Land-X Layer from External URL to prevent crashing because the layer size is almost 1GB.
+          This ensures the platform is usable without memory/network timeouts.
+        */}
 
         {/* Protected Areas Layer */}
         {protectedData && (
