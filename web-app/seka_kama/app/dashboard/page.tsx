@@ -3,12 +3,12 @@
 import ProtectedRoute from '@/components/ProtectedRoute';
 import dynamic from 'next/dynamic';
 
-const SekaMap = dynamic(() => import('@/components/SekaMap'), { ssr: false });
+const DashboardTabs = dynamic(() => import('@/components/DashboardTabs'), { ssr: false });
 
 export default function DashboardPage() {
   return (
     <ProtectedRoute>
-      <SekaMap />
+      <DashboardTabs onScenarioRun={(result) => console.log('Scenario result:', result)} />
     </ProtectedRoute>
   );
 }

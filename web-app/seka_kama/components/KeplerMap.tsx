@@ -164,35 +164,44 @@ function KeplerMapInner({
     }
   }, [onCellClick, onCellSelect]);
 
-  if (error) {
+  if (error || !process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
+    const isTokenMissing = !process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
     return (
       <div style={{
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         height: '100%',
-        backgroundColor: '#fafafa',
-        color: '#d32f2f',
+        backgroundColor: '#1a1a2e',
+        color: '#ff6b6b',
         padding: '20px',
         textAlign: 'center',
       }}>
-        <div>
-          <h3>Data Loading Error</h3>
-          <p>{error}</p>
-          <button
-            onClick={() => loadData()}
-            style={{
-              marginTop: '12px',
-              padding: '8px 16px',
-              backgroundColor: '#1976d2',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Retry
-          </button>
+        <div style={{ background: 'rgba(0,0,0,0.5)', padding: '2rem', borderRadius: '12px', border: '1px solid rgba(255,107,107,0.3)' }}>
+          <h3 style={{ margin: '0 0 1rem 0', fontWeight: 'bold' }}>
+            {isTokenMissing ? 'Mapbox Token Required' : 'Data Loading Error'}
+          </h3>
+          <p style={{ margin: '0 0 1.5rem 0' }}>
+            {isTokenMissing 
+              ? 'Please provide a valid NEXT_PUBLIC_MAPBOX_TOKEN in your environment variables to use Kepler.gl.'
+              : error}
+          </p>
+          {!isTokenMissing && (
+            <button
+              onClick={() => loadData()}
+              style={{
+                padding: '8px 24px',
+                backgroundColor: '#10b981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+              }}
+            >
+              Retry
+            </button>
+          )}
         </div>
       </div>
     );
@@ -202,13 +211,17 @@ function KeplerMapInner({
     return (
       <div style={{
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
         height: '100%',
-        backgroundColor: '#1a1a2e',
-        color: 'white',
+        backgroundColor: '#0a0a20',
+        color: '#4ade80',
       }}>
-        Loading spatial data...
+        <div className="animate-spin mb-4" style={{ width: '40px', height: '40px', border: '3px solid rgba(74, 222, 128, 0.3)', borderTopColor: '#4ade80', borderRadius: '50%' }} />
+        <div style={{ fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.875rem' }}>
+          Initializing Geospatial Engine...
+        </div>
       </div>
     );
   }

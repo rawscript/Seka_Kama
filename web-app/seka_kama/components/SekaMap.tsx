@@ -7,6 +7,16 @@ import { api } from '@/services/api';
 import ScenarioDrawer from './ScenarioDrawer';
 import { Loader2, Filter, Layers, Info } from 'lucide-react';
 
+function getDirectDriveLink(url: string) {
+  if (!url) return '';
+  const fileIdMatch = url.match(/[-\w]{25,}/);
+  if (fileIdMatch && fileIdMatch[0]) {
+    // Return direct download link for Google Drive, or TileJSON if applicable
+    // For GeoJSON, use raw download link.
+    return `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}`;
+  }
+  return url;
+}
 interface SekaMapProps {
   onScenarioRun?: (result: any) => void;
 }
@@ -23,6 +33,9 @@ export default function SekaMap({ onScenarioRun }: SekaMapProps) {
 
 function SekaMapContent({ onScenarioRun }: SekaMapProps) {
   const { current: mapMain } = useMap();
+  const envLandXUrl = process.env.NEXT_PUBLIC_LANDX_TILE_URL || '';
+  const landXSourceUrl = getDirectDriveLink(envLandXUrl);
+  
   const [loading, setLoading] = useState(true);
   const [selectedUnit, setSelectedUnit] = useState<string>('');
   const [baselineData, setBaselineData] = useState<any>(null);
@@ -84,6 +97,21 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
         }}
         id="main-map"
       >
+        {/* Land-X Layer from External URL */}
+        {landXSourceUrl && (
+          <Source id="landx-source" type="geojson" data={landXSourceUrl}>
+            <Layer
+              id="landx-layer"
+              type="fill"
+              paint={{
+                'fill-color': '#4ade80',
+                'fill-opacity': 0.15,
+                'fill-outline-color': '#22c55e'
+              }}
+            />
+          </Source>
+        )}
+
         {/* Protected Areas Layer */}
         {protectedData && (
           <Source id="protected-areas" type="geojson" data={protectedData}>
@@ -156,6 +184,11 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
               <div className="pt-2 border-t border-white/10">
                 <LegendItem color="#10b981" label="Protected Area" opacity={0.3} />
               </div>
+              {landXSourceUrl && (
+                <div className="pt-2 border-t border-white/10">
+                  <LegendItem color="#4ade80" label="Land-X Layer" opacity={0.4} />
+                </div>
+              )}
             </div>
           </div>
         </div>

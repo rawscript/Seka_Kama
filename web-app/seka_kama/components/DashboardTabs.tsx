@@ -45,12 +45,18 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 relative overflow-hidden">
-        <div className={`absolute inset-0 transition-opacity duration-500 ${activeTab === 'analysis' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+      <div className="flex-1 relative bg-[#0a0a20]">
+        <div 
+          className={`absolute inset-0 transition-opacity duration-500 ${activeTab === 'analysis' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`} 
+          style={{ height: '100%', width: '100%' }}
+        >
           <SekaMap onScenarioRun={onScenarioRun} />
         </div>
         
-        <div className={`absolute inset-0 transition-opacity duration-500 ${activeTab === 'kepler' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+        <div 
+          className={`absolute inset-0 transition-opacity duration-500 flex flex-col ${activeTab === 'kepler' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+          style={{ height: '100%', width: '100%' }}
+        >
           <KeplerMapNoSSR
             onCellSelect={(cellId) => console.log('Selected cell:', cellId)}
             onScenarioApply={(cells, modifications) => {
@@ -64,7 +70,10 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
           />
         </div>
         
-        <div className={`absolute inset-0 transition-opacity duration-500 ${activeTab === 'scenarios' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+        <div 
+          className={`absolute inset-0 transition-opacity duration-500 overflow-y-auto ${activeTab === 'scenarios' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+          style={{ height: '100%', width: '100%' }}
+        >
           <ScenarioPanel onScenarioSelect={(scenario) => {
             console.log('Loading scenario:', scenario);
           }} />
