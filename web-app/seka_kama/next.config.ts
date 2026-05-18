@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  turbopack: {},
   transpilePackages: [
     'kepler.gl',
     '@kepler.gl/components',
@@ -33,28 +32,36 @@ const nextConfig: NextConfig = {
     '@luma.gl/gltf',
     '@math.gl/core',
     '@math.gl/proj4',
-    '@math.gl/web-mercator'
+    '@math.gl/web-mercator',
+    '@loaders.gl/core',
+    '@loaders.gl/images',
+    '@loaders.gl/textures',
+    '@loaders.gl/gltf',
+    '@loaders.gl/loader-utils',
+    '@loaders.gl/worker-utils',
+    '@loaders.gl/schema'
   ],
   webpack: (config, { isServer }) => {
     // Disable minification to prevent SWC WorkerError crash with large deck.gl chunks
     config.optimization.minimize = false;
     
-    if (!isServer) {
-        config.resolve.fallback = {
-            ...config.resolve.fallback,
-            fs: false,
-            path: false,
-            crypto: false,
-            canvas: false,
-            child_process: false,
-            os: false
-        };
-    }
+    config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+        canvas: false,
+        child_process: false,
+        os: false,
+        net: false,
+        tls: false
+    };
     return config;
   },
   experimental: {
     workerThreads: false,
     memoryBasedWorkersCount: true,
+    serverComponentsExternalPackages: ['ssr-window']
   },
   eslint: {
     ignoreDuringBuilds: true,
