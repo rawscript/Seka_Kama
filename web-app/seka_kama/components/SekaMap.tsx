@@ -76,6 +76,7 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
       <Map
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
+        style={{ width: '100%', height: '100%' }}
         mapStyle={{
           version: 8,
           sources: {
@@ -182,9 +183,9 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
             </div>
           </div>
         </div>
-
-        <ScenarioDrawer onScenarioRun={handleScenarioRun} />
       </Map>
+
+      <ScenarioDrawer onScenarioRun={handleScenarioRun} />
 
       {loading && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0a0a20]/80 backdrop-blur-sm">
@@ -193,7 +194,7 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
         </div>
       )}
 
-      <style jsx global>{`
+      <style>{`
         .glass-panel {
           box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
