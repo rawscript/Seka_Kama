@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { useMap } from 'react-map-gl/maplibre';
+import { useMap, useControl } from 'react-map-gl/maplibre';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { api } from '@/services/api';
@@ -17,24 +17,20 @@ const DEFAULT_MODIFICATIONS = {
 
 export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
   const { 'main-map': map } = useMap();
-  const [draw, setDraw] = useState<MapboxDraw | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawnGeometry, setDrawnGeometry] = useState<any>(null);
   const [modifications, setModifications] = useState(DEFAULT_MODIFICATIONS);
   const [userQuery, setUserQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!map || draw) return;
-
-    const drawInstance = new MapboxDraw({
+  const draw = useControl<any>(
+    () => new MapboxDraw({
       displayControlsDefault: false,
       controls: {
         polygon: true,
         trash: true
       },
       styles: [
-        // Active Polygon
         {
           'id': 'gl-draw-polygon-fill-active',
           'type': 'fill',
@@ -60,26 +56,37 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
           }
         }
       ]
-    });
+    }),
+    {
+      position: 'top-left'
+    }
+  );
 
-    map.addControl(drawInstance as any);
-    setDraw(drawInstance);
+  useEffect(() => {
+    if (!map || !draw) return;
 
-    const updateGeometry = (e: any) => {
-      const data = drawInstance.getAll();
-      if (data.features.length > 0) {
-        setDrawnGeometry(data.features[0]);
-      }
+    const nativeMap = map.getMap();
+    if (!nativeMap) return;
+
+    const updateGeometry = () => {
+      try {
+        const data = draw.getAll();
+        if (data && data.features.length > 0) {
+          setDrawnGeometry(data.features[0]);
+        }
+      } catch(e) {}
     };
 
-    map.on('draw.create', updateGeometry);
-    map.on('draw.update', updateGeometry);
-    map.on('draw.delete', () => setDrawnGeometry(null));
+    nativeMap.on('draw.create', updateGeometry);
+    nativeMap.on('draw.update', updateGeometry);
+    
+    const handleDelete = () => setDrawnGeometry(null);
+    nativeMap.on('draw.delete', handleDelete);
 
     return () => {
-      if (map && drawInstance) {
-        map.removeControl(drawInstance as any);
-      }
+      nativeMap.off('draw.create', updateGeometry);
+      nativeMap.off('draw.update', updateGeometry);
+      nativeMap.off('draw.delete', handleDelete);
     };
   }, [map, draw]);
 
@@ -220,7 +227,7 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .glass-effect {
           background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
           backdrop-filter: blur(40px);
