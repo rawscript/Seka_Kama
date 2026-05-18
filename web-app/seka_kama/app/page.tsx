@@ -98,7 +98,7 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      <style jsx global>{`
+      <style>{`
         @keyframes slow-zoom {
           0% { transform: scale(1.05); }
           100% { transform: scale(1.15); }
