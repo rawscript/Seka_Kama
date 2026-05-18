@@ -41,21 +41,21 @@ const nextConfig: NextConfig = {
     '@loaders.gl/worker-utils',
     '@loaders.gl/schema'
   ],
-  // 1. Configure Turbopack aliases to replicate your Webpack fallbacks
+
   turbopack: {
     resolveAlias: {
-      fs: false,
-      path: false,
-      crypto: false,
-      canvas: false,
-      child_process: false,
-      os: false,
-      net: false,
-      tls: false,
+      fs: '',
+      path: '',
+      crypto: '',
+      canvas: '',
+      child_process: '',
+      os: '',
+      net: '',
+      tls: '',
     },
   },
 
-  // 2. Keep this as a fallback just in case some parts of the build still route through Webpack
+
   webpack: (config) => {
     config.optimization.minimize = false;
     config.resolve.fallback = {
