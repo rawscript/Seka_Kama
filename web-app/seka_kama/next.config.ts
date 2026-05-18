@@ -41,30 +41,37 @@ const nextConfig: NextConfig = {
     '@loaders.gl/worker-utils',
     '@loaders.gl/schema'
   ],
-  webpack: (config, { isServer }) => {
-    // Disable minification to prevent SWC WorkerError crash with large deck.gl chunks
+  // 1. Configure Turbopack aliases to replicate your Webpack fallbacks
+  turbopack: {
+    resolveAlias: {
+      fs: false,
+      path: false,
+      crypto: false,
+      canvas: false,
+      child_process: false,
+      os: false,
+      net: false,
+      tls: false,
+    },
+  },
+
+  // 2. Keep this as a fallback just in case some parts of the build still route through Webpack
+  webpack: (config) => {
     config.optimization.minimize = false;
-    
     config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-        crypto: false,
-        canvas: false,
-        child_process: false,
-        os: false,
-        net: false,
-        tls: false
+      ...config.resolve.fallback,
+      fs: false, path: false, crypto: false, canvas: false, child_process: false, os: false, net: false, tls: false
     };
     return config;
   },
+
   serverExternalPackages: ['ssr-window'],
   experimental: {
     workerThreads: false,
     memoryBasedWorkersCount: true,
   },
   typescript: {
-    ignoreBuildErrors: true, 
+    ignoreBuildErrors: true,
   }
 };
 
