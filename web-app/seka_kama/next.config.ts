@@ -58,15 +58,11 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
+  serverExternalPackages: ['ssr-window'],
   experimental: {
     workerThreads: false,
     memoryBasedWorkersCount: true,
-    serverComponentsExternalPackages: ['ssr-window']
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
     ignoreBuildErrors: true, 
   }
 };
