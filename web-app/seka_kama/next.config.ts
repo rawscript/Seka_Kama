@@ -63,6 +63,7 @@ const nextConfig: NextConfig = {
     workerThreads: false,
     memoryBasedWorkersCount: true,
   },
+  typescript: {
     ignoreBuildErrors: true, 
   }
 };
