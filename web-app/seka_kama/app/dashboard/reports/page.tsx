@@ -47,7 +47,7 @@ export default function ReportsPage() {
   useEffect(() => {
     api.getFeatureImportance()
       .then(d => setImportance(d.feature_importance.slice(0, 12)))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Load stats whenever selectedUnit changes
@@ -132,7 +132,7 @@ export default function ReportsPage() {
                 rel="noopener noreferrer"
                 style={s.exportBtn}
               >
-                ⬇ {fmt.toUpperCase()}
+                {fmt.toUpperCase()}
               </a>
             ))}
           </div>

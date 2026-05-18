@@ -81,7 +81,7 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
       overflow: 'auto',
     }}>
       <h1 style={{ marginBottom: 20 }}>Scenario History</h1>
-      
+
       <div style={{ display: 'grid', gap: 16 }}>
         {scenarios.map((scenario) => (
           <div
@@ -124,13 +124,13 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
                 {scenario.predicted_lion_delta >= 0 ? '+' : ''}{scenario.predicted_lion_delta.toFixed(1)} lions
               </div>
             </div>
-            
+
             <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 12, color: '#888' }}>
-              <span>📅 {new Date(scenario.created_at).toLocaleDateString()}</span>
-              <span>📍 {scenario.affected_cells} cells affected</span>
-              <span>🔧 {Object.keys(scenario.modified_features).join(', ')}</span>
+              <span> {new Date(scenario.created_at).toLocaleDateString()}</span>
+              <span> {scenario.affected_cells} cells affected</span>
+              <span> {Object.keys(scenario.modified_features).join(', ')}</span>
             </div>
-            
+
             <p style={{
               margin: '12px 0 0 0',
               fontSize: 14,
@@ -139,7 +139,7 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
             }}>
               {scenario.llm_narrative.substring(0, 150)}...
             </p>
-            
+
             <button
               style={{
                 marginTop: 12,
@@ -161,7 +161,7 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
           </div>
         ))}
       </div>
-      
+
       {scenarios.length === 0 && (
         <div style={{
           textAlign: 'center',
