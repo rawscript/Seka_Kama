@@ -24,7 +24,7 @@ interface SekaMapProps {
 export default function SekaMap({ onScenarioRun }: SekaMapProps) {
   return (
     <MapProvider>
-      <div className="relative w-full flex-1 bg-[#0a0a20] min-h-[500px]">
+      <div className="relative w-full h-full bg-[#0a0a20]" style={{ minHeight: '500px' }}>
         <SekaMapContent onScenarioRun={onScenarioRun} />
       </div>
     </MapProvider>
@@ -183,9 +183,9 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
             </div>
           </div>
         </div>
-      </Map>
 
-      <ScenarioDrawer onScenarioRun={handleScenarioRun} />
+        <ScenarioDrawer onScenarioRun={handleScenarioRun} />
+      </Map>
 
       {loading && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#0a0a20]/80 backdrop-blur-sm">
