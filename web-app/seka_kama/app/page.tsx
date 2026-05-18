@@ -7,7 +7,7 @@ export default function LandingPage() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#020617] text-white">
       {/* Hero Section */}
-      <section className="relative h-screen w-full flex items-center justify-center p-6 overflow-hidden">
+      <section className="relative min-h-[120vh] w-full flex items-center justify-center p-6 overflow-hidden">
         {/* Background Image with Gradient Overlay */}
         <div className="absolute inset-0 z-0">
           <img 
@@ -55,7 +55,7 @@ export default function LandingPage() {
         </div>
 
         {/* Floating Stats */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6 px-4">
+        <div className="relative mt-24 w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 px-4 z-10 transition-all animate-in fade-in slide-in-from-bottom-24 duration-1000 delay-300">
           <StatBox label="Spatial Coverage" value="2,400 km²" />
           <StatBox label="Prediction Accuracy" value="94.2%" />
           <StatBox label="Managed Units" value="12 Districts" />

@@ -26,9 +26,8 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
     const loadScenarios = async () => {
       try {
         // Fetch scenarios from backend
-        const response = await fetch('/api/scenarios/history');
-        const data = await response.json();
-        setScenarios(data);
+        const data = await api.getScenarioHistory(50);
+        setScenarios(Array.isArray(data) ? data : (data as any).scenarios ?? []);
       } catch (error) {
         console.error('Failed to load scenarios:', error);
         // Mock data for demo
