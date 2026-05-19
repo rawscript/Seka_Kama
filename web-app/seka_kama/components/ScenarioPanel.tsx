@@ -7,50 +7,149 @@ import { api } from '@/services/api';
 interface Scenario {
   scenario_id: number;
   created_at: string;
-  user_description: string;
-  modified_features: Record<string, number>;
-  predicted_lion_delta: number;
-  affected_cells: number;
-  llm_narrative: string;
+  user_description?: string;
+  modified_features?: Record<string, number>;
+  predicted_lion_delta?: number;
+  affected_cells?: number;
+  llm_narrative?: string;
+  // API response fields from ScenarioResponse
+  delta_lions?: number;
+  delta_percent?: number;
+  predicted_total_lions?: number;
+  baseline_total_lions?: number;
+  affected_units?: Record<string, number>;
+  request_data?: any;
 }
 
 interface ScenarioPanelProps {
   onScenarioSelect: (scenario: Scenario) => void;
 }
 
+// ── Icons as inline SVG components (no emoji) ─────────────────────────────
+
+const CalendarIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+  </svg>
+);
+
+const GridIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+  </svg>
+);
+
+const TagIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
+  </svg>
+);
+
+const PlayIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <polygon points="5 3 19 12 5 21 5 3"/>
+  </svg>
+);
+
+const AlertIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+);
+
+const SpinnerIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
+    <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+    <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+  </svg>
+);
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return '—';
+  }
+}
+
+function getDelta(s: Scenario): number | null {
+  if (s.predicted_lion_delta != null) return s.predicted_lion_delta;
+  if (s.delta_lions != null) return s.delta_lions;
+  return null;
+}
+
+function getNarrative(s: Scenario): string {
+  return s.llm_narrative || s.request_data?.user_query || '';
+}
+
+function getDescription(s: Scenario): string {
+  return s.user_description || s.request_data?.user_query || `Scenario #${s.scenario_id}`;
+}
+
+function getFeatureKeys(s: Scenario): string[] {
+  const src = s.modified_features ?? s.request_data?.feature_modifications ?? {};
+  return Object.keys(src).slice(0, 3);
+}
+
+function getAffectedCells(s: Scenario): number | null {
+  if (s.affected_cells != null) return s.affected_cells;
+  return null;
+}
+
+// ── Mock data for when API is unavailable ────────────────────────────────
+
+const MOCK_SCENARIOS: Scenario[] = [
+  {
+    scenario_id: 1,
+    created_at: new Date().toISOString(),
+    user_description: 'New lodge development in Mara North',
+    modified_features: { longterm_slope_mean: 0.15, all_skew_std: 0.05 },
+    predicted_lion_delta: -12.5,
+    affected_cells: 145,
+    llm_narrative: 'Development would introduce significant nightlight pressure across the northern corridors. Simulations indicate a 12.5 individual reduction in lion abundance within the 145 affected grid cells, primarily driven by increased anthropogenic light intrusion fragmenting established movement patterns.',
+  },
+  {
+    scenario_id: 2,
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+    user_description: 'Road expansion near Olare-Motorogi',
+    modified_features: { longterm_slope_mean: 0.25, all_skew_std: 0.1 },
+    predicted_lion_delta: -28.3,
+    affected_cells: 320,
+    llm_narrative: 'Road expansion would significantly fragment high-priority lion habitat in the Olare-Motorogi conservancy. The projected loss equals 28.3 individuals across 320 cells, with the eastern dispersal corridor showing the highest sensitivity to this intervention.',
+  },
+  {
+    scenario_id: 3,
+    created_at: new Date(Date.now() - 172800000).toISOString(),
+    user_description: 'Nightlight reduction pilot — Naboisho',
+    modified_features: { longterm_slope_mean: -0.20 },
+    predicted_lion_delta: 8.1,
+    affected_cells: 89,
+    llm_narrative: 'Reducing nightlight intensity by 20% in the Naboisho conservancy boundary correlates with a projected gain of 8.1 lions over a 5-year horizon, supporting the hypothesis that managed darkness corridors can rehabilitate marginal habitat.',
+  },
+];
+
+// ── Main component ────────────────────────────────────────────────────────
+
 export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
     const loadScenarios = async () => {
       try {
-        // Fetch scenarios from backend
         const data = await api.getScenarioHistory(50);
-        setScenarios(Array.isArray(data) ? data : (data as any).scenarios ?? []);
-      } catch (error) {
-        console.error('Failed to load scenarios:', error);
-        // Mock data for demo
-        setScenarios([
-          {
-            scenario_id: 1,
-            created_at: new Date().toISOString(),
-            user_description: 'New lodge in Mara North',
-            modified_features: { longterm_slope_mean: 0.15 },
-            predicted_lion_delta: -12.5,
-            affected_cells: 145,
-            llm_narrative: 'Development would displace approximately 12 lions...',
-          },
-          {
-            scenario_id: 2,
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            user_description: 'Road expansion near Olare-Motorogi',
-            modified_features: { longterm_slope_mean: 0.25, all_skew_std: 0.1 },
-            predicted_lion_delta: -28.3,
-            affected_cells: 320,
-            llm_narrative: 'Road expansion would significantly fragment habitat...',
-          },
-        ]);
+        const list = Array.isArray(data) ? data : (data as any).scenarios ?? [];
+        setScenarios(list.length > 0 ? list : MOCK_SCENARIOS);
+      } catch {
+        // Silently fall back to demo data
+        setScenarios(MOCK_SCENARIOS);
+        setError('Backend unavailable — showing demo scenarios');
       } finally {
         setLoading(false);
       }
@@ -60,116 +159,242 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100%',
-        backgroundColor: '#f5f5f5',
-      }}>
-        Loading scenario history...
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#0b0f1a', gap: '14px' }}>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <SpinnerIcon />
+        <p style={{ fontSize: '12px', color: '#475569', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Loading Scenario History</p>
       </div>
     );
   }
 
   return (
-    <div style={{
-      padding: 20,
-      backgroundColor: '#f5f5f5',
-      height: '100%',
-      overflow: 'auto',
-    }}>
-      <h1 style={{ marginBottom: 20 }}>Scenario History</h1>
+    <div style={{ padding: '28px 32px', background: '#0b0f1a', minHeight: '100%' }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .scenario-card:hover { border-color: rgba(16,185,129,0.2) !important; background: rgba(20,24,36,0.9) !important; }
+        .load-btn:hover { background: rgba(16,185,129,0.2) !important; color: #10b981 !important; }
+        .expand-link:hover { color: #10b981 !important; }
+      `}</style>
 
-      <div style={{ display: 'grid', gap: 16 }}>
-        {scenarios.map((scenario) => (
-          <div
-            key={scenario.scenario_id}
-            style={{
-              backgroundColor: 'white',
-              borderRadius: 8,
-              padding: 16,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              cursor: 'pointer',
-              transition: 'transform 0.2s, box-shadow 0.2s',
-            }}
-            onClick={() => onScenarioSelect(scenario)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-              <div>
-                <h3 style={{ margin: '0 0 8px 0' }}>
-                  Scenario #{scenario.scenario_id}
-                </h3>
-                <p style={{ margin: '0 0 8px 0', color: '#666', fontSize: 14 }}>
-                  {scenario.user_description || 'Custom scenario'}
-                </p>
-              </div>
-              <div style={{
-                padding: '4px 12px',
-                borderRadius: 20,
-                backgroundColor: scenario.predicted_lion_delta < 0 ? '#ffebee' : '#e8f5e9',
-                color: scenario.predicted_lion_delta < 0 ? '#c62828' : '#2e7d32',
-                fontSize: 14,
-                fontWeight: 'bold',
-              }}>
-                {scenario.predicted_lion_delta >= 0 ? '+' : ''}{scenario.predicted_lion_delta.toFixed(1)} lions
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 12, color: '#888' }}>
-              <span> {new Date(scenario.created_at).toLocaleDateString()}</span>
-              <span> {scenario.affected_cells} cells affected</span>
-              <span> {Object.keys(scenario.modified_features).join(', ')}</span>
-            </div>
-
-            <p style={{
-              margin: '12px 0 0 0',
-              fontSize: 14,
-              color: '#555',
-              lineHeight: 1.5,
-            }}>
-              {scenario.llm_narrative.substring(0, 150)}...
-            </p>
-
-            <button
-              style={{
-                marginTop: 12,
-                padding: '6px 16px',
-                backgroundColor: '#2196F3',
-                color: 'white',
-                border: 'none',
-                borderRadius: 4,
-                cursor: 'pointer',
-                fontSize: 12,
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onScenarioSelect(scenario);
-              }}
-            >
-              Load & Re-run
-            </button>
-          </div>
-        ))}
+      {/* Header */}
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.4px' }}>Scenario History</h1>
+        <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#475569' }}>
+          Review and reload past ecosystem simulations
+        </p>
       </div>
 
+      {/* Error / info banner */}
+      {error && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px',
+          padding: '10px 14px', marginBottom: '20px',
+          background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.2)',
+          borderRadius: '10px',
+        }}>
+          <AlertIcon />
+          <span style={{ fontSize: '12.5px', color: '#fbbf24' }}>{error}</span>
+        </div>
+      )}
+
+      {/* Stats row */}
+      {scenarios.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+          {[
+            {
+              label: 'Total Scenarios',
+              value: scenarios.length,
+              color: '#10b981',
+            },
+            {
+              label: 'Negative Impact',
+              value: scenarios.filter(s => (getDelta(s) ?? 0) < 0).length,
+              color: '#f87171',
+            },
+            {
+              label: 'Positive Impact',
+              value: scenarios.filter(s => (getDelta(s) ?? 0) > 0).length,
+              color: '#34d399',
+            },
+          ].map(stat => (
+            <div key={stat.label} style={{
+              padding: '14px 16px',
+              background: '#111827',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: '10px',
+            }}>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: stat.color, fontVariantNumeric: 'tabular-nums' }}>{stat.value}</div>
+              <div style={{ fontSize: '11px', color: '#475569', fontWeight: 500, marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Scenario cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {scenarios.map((scenario) => {
+          const delta = getDelta(scenario);
+          const isNegative = delta != null && delta < 0;
+          const isExpanded = expandedId === scenario.scenario_id;
+          const narrative = getNarrative(scenario);
+          const features = getFeatureKeys(scenario);
+          const cells = getAffectedCells(scenario);
+
+          return (
+            <div
+              key={scenario.scenario_id}
+              className="scenario-card"
+              style={{
+                background: '#111827',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: '12px',
+                padding: '18px 20px',
+                cursor: 'default',
+                transition: 'border-color 0.2s, background 0.2s',
+              }}
+            >
+              {/* Card Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{
+                      fontSize: '11px', fontWeight: 700, color: '#475569',
+                      fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em',
+                    }}>#{scenario.scenario_id.toString().padStart(3, '0')}</span>
+                  </div>
+                  <h3 style={{
+                    margin: 0,
+                    fontSize: '14px', fontWeight: 600, color: '#e2e8f0',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {getDescription(scenario)}
+                  </h3>
+                </div>
+
+                {/* Delta Badge */}
+                {delta != null && (
+                  <div style={{
+                    flexShrink: 0,
+                    padding: '5px 12px',
+                    borderRadius: '20px',
+                    background: isNegative ? 'rgba(248,113,113,0.1)' : 'rgba(52,211,153,0.1)',
+                    border: `1px solid ${isNegative ? 'rgba(248,113,113,0.25)' : 'rgba(52,211,153,0.25)'}`,
+                    fontSize: '13px', fontWeight: 700,
+                    color: isNegative ? '#f87171' : '#34d399',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    {delta >= 0 ? '+' : ''}{delta.toFixed(1)} lions
+                  </div>
+                )}
+              </div>
+
+              {/* Metadata row */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginTop: '12px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#475569' }}>
+                  <CalendarIcon /> {formatDate(scenario.created_at)}
+                </span>
+                {cells != null && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#475569' }}>
+                    <GridIcon /> {cells.toLocaleString()} cells
+                  </span>
+                )}
+                {features.length > 0 && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#475569' }}>
+                    <TagIcon /> {features.join(', ')}
+                  </span>
+                )}
+              </div>
+
+              {/* Narrative section */}
+              {narrative && (
+                <div style={{
+                  marginTop: '14px',
+                  padding: '12px 14px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: '8px',
+                }}>
+                  <p style={{
+                    margin: 0,
+                    fontSize: '12.5px', lineHeight: 1.6, color: '#64748b',
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitBoxOrient: 'vertical',
+                    WebkitLineClamp: isExpanded ? 99 : 2,
+                  } as React.CSSProperties}>
+                    {narrative}
+                  </p>
+                  {narrative.length > 120 && (
+                    <button
+                      className="expand-link"
+                      onClick={() => setExpandedId(isExpanded ? null : scenario.scenario_id)}
+                      style={{
+                        display: 'inline-block',
+                        marginTop: '6px',
+                        background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                        fontSize: '11.5px', fontWeight: 600, color: '#475569',
+                        transition: 'color 0.15s',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {isExpanded ? 'Show less' : 'Read more'}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Actions row */}
+              <div style={{ marginTop: '14px', display: 'flex', gap: '8px' }}>
+                <button
+                  className="load-btn"
+                  onClick={() => onScenarioSelect(scenario)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '7px 14px',
+                    background: 'rgba(16,185,129,0.08)',
+                    border: '1px solid rgba(16,185,129,0.2)',
+                    borderRadius: '8px',
+                    color: '#6ee7b7',
+                    fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <PlayIcon /> Load & Re-run
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Empty state */}
       {scenarios.length === 0 && (
         <div style={{
-          textAlign: 'center',
-          padding: 40,
-          color: '#888',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          padding: '80px 40px', textAlign: 'center',
         }}>
-          No scenarios yet. Create your first scenario using the Spatial Analysis tab.
+          <div style={{
+            width: '48px', height: '48px', marginBottom: '16px',
+            background: 'rgba(255,255,255,0.04)', borderRadius: '12px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <HistoryIcon />
+          </div>
+          <h3 style={{ margin: '0 0 8px', fontSize: '15px', fontWeight: 600, color: '#334155' }}>No scenarios yet</h3>
+          <p style={{ margin: 0, fontSize: '13px', color: '#1e293b' }}>
+            Switch to the Spatial Analysis tab, draw a polygon on the map and run your first simulation.
+          </p>
         </div>
       )}
     </div>
+  );
+}
+
+function HistoryIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
   );
 }
