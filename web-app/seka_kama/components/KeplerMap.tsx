@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import './react-polyfill';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { createStore, combineReducers, applyMiddleware } from 'redux';
 import { taskMiddleware } from 'react-palm/tasks';
@@ -50,13 +52,13 @@ function KeplerMapInner({
         api.getProtectedAreas(),
       ]);
 
-      const gridCellsData = baselineResponse.features.map((feature: any) => ({
+      const gridCellsData = (baselineResponse.features || []).map((feature: any) => ({
         ...feature.properties,
-        latitude: feature.geometry.coordinates[1],
-        longitude: feature.geometry.coordinates[0],
+        latitude: feature.geometry?.coordinates?.[1],
+        longitude: feature.geometry?.coordinates?.[0],
       }));
 
-      const protectedAreasData = protectedResponse.features.map((feature: any) => ({
+      const protectedAreasData = (protectedResponse.features || []).map((feature: any) => ({
         ...feature.properties,
         geometry: feature.geometry,
       }));

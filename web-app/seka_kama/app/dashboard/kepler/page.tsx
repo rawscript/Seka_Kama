@@ -8,7 +8,7 @@ const KeplerMap = dynamic(() => import('@/components/KeplerMap'), { ssr: false }
 export default function KeplerPage() {
   return (
     <ProtectedRoute>
-      <div style={{ width: '100%', height: 'calc(100vh - 64px)', position: 'relative' }}>
+      <div style={{ width: '100%', height: 'calc(100vh - 58px)', position: 'relative', overflow: 'hidden' }}>
         <KeplerMap />
       </div>
     </ProtectedRoute>
