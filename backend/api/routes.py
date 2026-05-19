@@ -336,8 +336,8 @@ async def explain_cell_by_id(
         "features": {k: v for k, v in features.items() if v != 0},
         "management_unit": cell.get("management_unit"),
         "location": {
-            "longitude": cell.get("pt_lon"),
-            "latitude": cell.get("pt_lat")
+            "longitude": cell.get("pt_lon") or cell.get("longitude") or cell.get("x"),
+            "latitude": cell.get("pt_lat") or cell.get("latitude") or cell.get("y")
         }
     }
 
