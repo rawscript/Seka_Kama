@@ -56,10 +56,10 @@ _allowed_origins = list(dict.fromkeys(_allowed_origins))
 if os.getenv("DEBUG") == "True" or os.getenv("ALLOW_ALL_ORIGINS") == "True":
     _allowed_origins = ["*"]
 
+# CORS — temporarily allow all for debugging
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins,
-    allow_origin_regex="https://seka-kama.*\.vercel\.app",
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
