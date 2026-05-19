@@ -30,14 +30,24 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS — extend ALLOWED_ORIGINS in .env for staging/prod
-_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://seka-kama.vercel.app").split(",")
+# CORS — allow local dev and production Vercel app
+_origins_str = os.getenv("ALLOWED_ORIGINS", "")
+_allowed_origins = ["http://localhost:3000", "https://seka-kama.vercel.app","https://integrate.api.nvidia.com"]
+
+if _origins_str:
+    _extra = [o.strip() for o in _origins_str.split(",") if o.strip()]
+    _allowed_origins.extend(_extra)
+
+# Remove duplicates while preserving order
+_allowed_origins = list(dict.fromkeys(_allowed_origins))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in _origins],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 app.include_router(auth_router, prefix="/api")

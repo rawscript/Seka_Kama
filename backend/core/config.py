@@ -31,8 +31,9 @@ class Settings(BaseSettings):
     FEATURE_NAMES_PATH: str = os.path.join(_MODELS_DIR, "feature_names.pkl")
     
     # LLM (local or cloud)
-    LLM_API_URL: str = os.getenv("LLM_API_URL", "http://localhost:11434/api/generate")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "llama3")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "stepfun-ai/step-3.5-flash")
+    LLM_API_URL: str = os.getenv("LLM_API_URL", "http://localhost:11434/api/generate","https://integrate.api.nvidia.com/v1")
+    LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
     
     # API settings
     API_HOST: str = "0.0.0.0"
