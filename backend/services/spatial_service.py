@@ -29,12 +29,8 @@ async def get_baseline_grid(
     if management_unit:
         query = query.eq("management_unit", management_unit)
     
-    if bbox:
-        # Fixed: Use 3-argument filter with bounding box criteria
-        # We use a simple filter for the centroid if available, or just fetch and filter in memory
-        # to ensure compatibility with Supabase-py 2.x
-        query = query.gte("pt_lon", bbox['min_lon']).lte("pt_lon", bbox['max_lon']) \
-                     .gte("pt_lat", bbox['min_lat']).lte("pt_lat", bbox['max_lat'])
+    # Database-side bbox filtering is skipped if pt_lon/pt_lat are missing.
+    # We fetch by management unit or global limit and return.
     
     query = query.limit(limit)
     result = query.execute()
@@ -64,35 +60,43 @@ async def get_affected_cells(
     management_units: Optional[List[str]] = None
 ) -> List[Dict]:
     """
-    Find grid cells that intersect a drawn polygon using a robust hybrid approach
+    Find grid cells that intersect a drawn polygon using in-memory geometry math.
+    This avoids dependency on PostGIS/PostgREST custom operators and missing columns.
     """
     import shapely.geometry as sg
-    from shapely.ops import transform
     
-    # Create shapely shape
-    poly = sg.shape(geometry_geojson)
-    bounds = poly.bounds # (minx, miny, maxx, maxy)
-    
-    # 1. Broad filter: Bounding Box (Fast)
+    # 1. Fetch cells (narrowed by management unit if possible)
     query = supabase.table("grid_cells").select("*")
-    query = query.gte("pt_lon", bounds[0]).lte("pt_lon", bounds[2]) \
-                 .gte("pt_lat", bounds[1]).lte("pt_lat", bounds[3])
-    
     if management_units and len(management_units) > 0:
         query = query.in_("management_unit", management_units)
     
+    # If no unit, limit to a reasonable simulation cap (e.g. 15k cells)
+    if not management_units:
+        query = query.limit(15000)
+        
     result = query.execute()
-    candidate_cells = result.data
+    candidates = result.data or []
     
-    # 2. Precise filter: In-memory intersection (Accurate)
+    # 2. Precise filter: In-memory intersection
+    poly = sg.shape(geometry_geojson)
     affected_cells = []
-    for cell in candidate_cells:
-        # Check if centroid is provided or build from lat/lon
-        if 'pt_lon' in cell and 'pt_lat' in cell:
-            point = sg.Point(cell['pt_lon'], cell['pt_lat'])
-            if poly.intersects(point):
-                affected_cells.append(cell)
     
+    for cell in candidates:
+        try:
+            # Use 'geom' column which contains GeoJSON
+            geom_data = cell.get('geom')
+            if isinstance(geom_data, str):
+                import json
+                geom_data = json.loads(geom_data)
+            
+            if geom_data:
+                cell_shape = sg.shape(geom_data)
+                # Check intersection between drawn polygon and cell geometry
+                if poly.intersects(cell_shape):
+                    affected_cells.append(cell)
+        except Exception:
+            continue
+            
     return affected_cells
 
 

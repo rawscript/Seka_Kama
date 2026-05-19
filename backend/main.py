@@ -1,8 +1,10 @@
+from typing import List, Dict, Optional
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import joblib
 import os
+import json
 
 from api.routes import router
 from api.auth_routes import router as auth_router
@@ -63,47 +65,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
-
-async def get_affected_cells(
-    supabase: Client,
-    geometry_geojson: Dict,
-    management_units: Optional[List[str]] = None
-) -> List[Dict]:
-    """
-    Find grid cells that intersect a drawn polygon.
-    Uses in-memory filtering with Shapely to bypass PostgREST spatial limitations
-    and missing numeric coordinate columns (like pt_lon/pt_lat).
-    """
-    import shapely.geometry as sg
-    
-    # 1. Fetch relevant cells (filtered by unit if possible)
-    query = supabase.table("grid_cells").select("*")
-    if management_units and len(management_units) > 0:
-        query = query.in_("management_unit", management_units)
-    
-    result = query.execute()
-    all_cells = result.data or []
-    
-    # 2. Precise filter: In-memory intersection
-    poly = sg.shape(geometry_geojson)
-    affected_cells = []
-    
-    for cell in all_cells:
-        try:
-            # Use 'geom' column which contains GeoJSON
-            geom_data = cell.get('geom')
-            if isinstance(geom_data, str):
-                import json
-                geom_data = json.loads(geom_data)
-            
-            if geom_data:
-                cell_shape = sg.shape(geom_data)
-                if poly.intersects(cell_shape):
-                    affected_cells.append(cell)
-        except Exception:
-            continue
-            
-    return affected_cells
 
 @app.get("/api/proxy-geojson")
 async def proxy_geojson(url: str):
