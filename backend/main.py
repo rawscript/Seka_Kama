@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import joblib
@@ -30,21 +30,30 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS — allow local dev and production Vercel app
+# CORS — robust origin handling
 _origins_str = os.getenv("ALLOWED_ORIGINS", "")
-_allowed_origins = ["http://localhost:3000", "https://seka-kama.vercel.app","https://integrate.api.nvidia.com"]
+_allowed_origins = [
+    "http://localhost:3000", 
+    "http://localhost:3001",
+    "https://seka-kama.vercel.app",
+    "https://integrate.api.nvidia.com"
+]
 
 if _origins_str:
     _extra = [o.strip() for o in _origins_str.split(",") if o.strip()]
     _allowed_origins.extend(_extra)
 
-# Remove duplicates while preserving order
+# Remove duplicates
 _allowed_origins = list(dict.fromkeys(_allowed_origins))
+
+# If in debug mode or explicitly requested, allow all to unblock
+if os.getenv("DEBUG") == "True" or os.getenv("ALLOW_ALL_ORIGINS") == "True":
+    _allowed_origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
-    allow_credentials=True,
+    allow_credentials=True if "*" not in _allowed_origins else False,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
@@ -56,4 +65,16 @@ app.include_router(router, prefix="/api")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "model_loaded": True}
+    return {
+        "status": "healthy", 
+        "model_loaded": hasattr(app.state, 'model'),
+        "origins_allowed": _allowed_origins
+    }
+
+@app.get("/api/cors-check")
+async def cors_check(request: Request):
+    return {
+        "origin": request.headers.get("origin"),
+        "allowed": _allowed_origins,
+        "match": request.headers.get("origin") in _allowed_origins or "*" in _allowed_origins
+    }
