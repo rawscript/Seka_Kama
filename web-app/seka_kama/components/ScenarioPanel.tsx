@@ -100,38 +100,6 @@ function getAffectedCells(s: Scenario): number | null {
   return null;
 }
 
-// ── Mock data for when API is unavailable ────────────────────────────────
-
-const MOCK_SCENARIOS: Scenario[] = [
-  {
-    scenario_id: 1,
-    created_at: new Date().toISOString(),
-    user_description: 'New lodge development in Mara North',
-    modified_features: { longterm_slope_mean: 0.15, all_skew_std: 0.05 },
-    predicted_lion_delta: -12.5,
-    affected_cells: 145,
-    llm_narrative: 'Development would introduce significant nightlight pressure across the northern corridors. Simulations indicate a 12.5 individual reduction in lion abundance within the 145 affected grid cells, primarily driven by increased anthropogenic light intrusion fragmenting established movement patterns.',
-  },
-  {
-    scenario_id: 2,
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    user_description: 'Road expansion near Olare-Motorogi',
-    modified_features: { longterm_slope_mean: 0.25, all_skew_std: 0.1 },
-    predicted_lion_delta: -28.3,
-    affected_cells: 320,
-    llm_narrative: 'Road expansion would significantly fragment high-priority lion habitat in the Olare-Motorogi conservancy. The projected loss equals 28.3 individuals across 320 cells, with the eastern dispersal corridor showing the highest sensitivity to this intervention.',
-  },
-  {
-    scenario_id: 3,
-    created_at: new Date(Date.now() - 172800000).toISOString(),
-    user_description: 'Nightlight reduction pilot — Naboisho',
-    modified_features: { longterm_slope_mean: -0.20 },
-    predicted_lion_delta: 8.1,
-    affected_cells: 89,
-    llm_narrative: 'Reducing nightlight intensity by 20% in the Naboisho conservancy boundary correlates with a projected gain of 8.1 lions over a 5-year horizon, supporting the hypothesis that managed darkness corridors can rehabilitate marginal habitat.',
-  },
-];
-
 // ── Main component ────────────────────────────────────────────────────────
 
 export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) {
@@ -145,11 +113,13 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
       try {
         const data = await api.getScenarioHistory(50);
         const list = Array.isArray(data) ? data : (data as any).scenarios ?? [];
-        setScenarios(list.length > 0 ? list : MOCK_SCENARIOS);
-      } catch {
-        // Silently fall back to demo data
-        setScenarios(MOCK_SCENARIOS);
-        setError('Backend unavailable — showing demo scenarios');
+        setScenarios(list);
+      } catch (err: any) {
+        const msg = err?.message?.includes('404')
+          ? 'No scenario history found. Run your first simulation on the Spatial Analysis tab.'
+          : 'Could not reach the backend. Check your connection or API URL.';
+        setError(msg);
+        setScenarios([]);
       } finally {
         setLoading(false);
       }
