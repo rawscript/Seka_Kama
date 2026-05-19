@@ -39,6 +39,10 @@ _allowed_origins = [
     "https://integrate.api.nvidia.com"
 ]
 
+# Add Vercel branch/preview domains
+if os.getenv("VERCEL_URL"):
+    _allowed_origins.append(f"https://{os.getenv('VERCEL_URL')}")
+
 if _origins_str:
     _extra = [o.strip() for o in _origins_str.split(",") if o.strip()]
     _allowed_origins.extend(_extra)
@@ -53,11 +57,20 @@ if os.getenv("DEBUG") == "True" or os.getenv("ALLOW_ALL_ORIGINS") == "True":
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
-    allow_credentials=True if "*" not in _allowed_origins else False,
+    allow_origin_regex="https://seka-kama.*\.vercel\.app",
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+@app.get("/api/proxy-geojson")
+async def proxy_geojson(url: str):
+    """Proxy for external GeoJSON files that don't support CORS (like Google Drive)"""
+    import httpx
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, follow_redirects=True)
+        return response.json()
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(keys_router, prefix="/api")

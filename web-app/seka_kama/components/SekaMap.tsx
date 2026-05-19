@@ -11,7 +11,10 @@ function getDirectDriveLink(url: string) {
   if (!url) return '';
   const fileIdMatch = url.match(/[-\w]{25,}/);
   if (fileIdMatch && fileIdMatch[0]) {
-    return `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}`;
+    const rawUrl = `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}`;
+    // Use backend proxy to bypass Google Drive's strict CORS
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    return `${apiUrl}/proxy-geojson?url=${encodeURIComponent(rawUrl)}`;
   }
   return url;
 }
