@@ -1,5 +1,15 @@
-// web-app/seka_kama/lib/api.ts
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const getApiUrl = () => {
+  let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+  
+  // Force HTTPS for production Railway URLs to prevent Mixed Content errors
+  if (url.includes('up.railway.app') && url.startsWith('http://')) {
+    url = url.replace('http://', 'https://');
+  }
+  
+  return url;
+};
+
+const API_URL = getApiUrl();
 
 /**
  * SekaNet Core Interfaces
