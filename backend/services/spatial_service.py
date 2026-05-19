@@ -20,15 +20,6 @@ async def get_baseline_grid(
 ) -> List[Dict]:
     """
     Get baseline grid cells with predictions
-    
-    Args:
-        supabase: Supabase client
-        management_unit: Optional filter by management unit
-        bbox: Optional bounding box {min_lon, min_lat, max_lon, max_lat}
-        limit: Maximum number of cells to return
-        
-    Returns:
-        List of grid cell features with geometry and properties
     """
     query = supabase.table("grid_cells").select(
         "cell_id, geom, centroid, management_unit, baseline_lion_density, "
@@ -39,13 +30,11 @@ async def get_baseline_grid(
         query = query.eq("management_unit", management_unit)
     
     if bbox:
-        # Use PostGIS bounding box filter
-        query = query.filter(
-            "centroid && ST_MakeEnvelope({},{},{},{}, 4326)".format(
-                bbox['min_lon'], bbox['min_lat'], 
-                bbox['max_lon'], bbox['max_lat']
-            )
-        )
+        # Fixed: Use 3-argument filter with bounding box criteria
+        # We use a simple filter for the centroid if available, or just fetch and filter in memory
+        # to ensure compatibility with Supabase-py 2.x
+        query = query.gte("pt_lon", bbox['min_lon']).lte("pt_lon", bbox['max_lon']) \
+                     .gte("pt_lat", bbox['min_lat']).lte("pt_lat", bbox['max_lat'])
     
     query = query.limit(limit)
     result = query.execute()
@@ -75,31 +64,36 @@ async def get_affected_cells(
     management_units: Optional[List[str]] = None
 ) -> List[Dict]:
     """
-    Find grid cells that intersect a drawn polygon
-    
-    Args:
-        supabase: Supabase client
-        geometry_geojson: GeoJSON polygon from frontend draw tool
-        management_units: Optional list of units to restrict query
-        
-    Returns:
-        List of grid cell dicts with all feature columns
+    Find grid cells that intersect a drawn polygon using a robust hybrid approach
     """
-    # Convert GeoJSON to WKT for PostGIS
-    geom_wkt = await geojson_to_wkt(geometry_geojson)
+    import shapely.geometry as sg
+    from shapely.ops import transform
     
-    # Build query
+    # Create shapely shape
+    poly = sg.shape(geometry_geojson)
+    bounds = poly.bounds # (minx, miny, maxx, maxy)
+    
+    # 1. Broad filter: Bounding Box (Fast)
     query = supabase.table("grid_cells").select("*")
-    
-    # Spatial intersection
-    query = query.filter("ST_Intersects(centroid, ST_GeomFromText('{}', 4326))".format(geom_wkt))
+    query = query.gte("pt_lon", bounds[0]).lte("pt_lon", bounds[2]) \
+                 .gte("pt_lat", bounds[1]).lte("pt_lat", bounds[3])
     
     if management_units and len(management_units) > 0:
         query = query.in_("management_unit", management_units)
     
     result = query.execute()
+    candidate_cells = result.data
     
-    return result.data
+    # 2. Precise filter: In-memory intersection (Accurate)
+    affected_cells = []
+    for cell in candidate_cells:
+        # Check if centroid is provided or build from lat/lon
+        if 'pt_lon' in cell and 'pt_lat' in cell:
+            point = sg.Point(cell['pt_lon'], cell['pt_lat'])
+            if poly.intersects(point):
+                affected_cells.append(cell)
+    
+    return affected_cells
 
 
 async def get_protected_areas(
