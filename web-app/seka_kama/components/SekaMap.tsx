@@ -7,6 +7,19 @@ import { api } from '@/services/api';
 import ScenarioDrawer from './ScenarioDrawer';
 import { Loader2, Filter, Layers, Info } from 'lucide-react';
 
+function getDirectDriveLink(url: string) {
+  if (!url) return '';
+  const fileIdMatch = url.match(/[-\w]{25,}/);
+  if (fileIdMatch && fileIdMatch[0]) {
+    return `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}`;
+  }
+  return url;
+}
+
+interface SekaMapProps {
+  onScenarioRun?: (result: any) => void;
+}
+
 const CONSERVANCY_COORDS: Record<string, { lng: number, lat: number, zoom: number }> = {
   'Mara North': { lng: 35.034, lat: -1.168, zoom: 11 },
   'Olare-Motorogi': { lng: 35.138, lat: -1.296, zoom: 11 },
