@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import joblib
@@ -64,13 +64,68 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+async def get_affected_cells(
+    supabase: Client,
+    geometry_geojson: Dict,
+    management_units: Optional[List[str]] = None
+) -> List[Dict]:
+    """
+    Find grid cells that intersect a drawn polygon.
+    Uses in-memory filtering with Shapely to bypass PostgREST spatial limitations
+    and missing numeric coordinate columns (like pt_lon/pt_lat).
+    """
+    import shapely.geometry as sg
+    
+    # 1. Fetch relevant cells (filtered by unit if possible)
+    query = supabase.table("grid_cells").select("*")
+    if management_units and len(management_units) > 0:
+        query = query.in_("management_unit", management_units)
+    
+    result = query.execute()
+    all_cells = result.data or []
+    
+    # 2. Precise filter: In-memory intersection
+    poly = sg.shape(geometry_geojson)
+    affected_cells = []
+    
+    for cell in all_cells:
+        try:
+            # Use 'geom' column which contains GeoJSON
+            geom_data = cell.get('geom')
+            if isinstance(geom_data, str):
+                import json
+                geom_data = json.loads(geom_data)
+            
+            if geom_data:
+                cell_shape = sg.shape(geom_data)
+                if poly.intersects(cell_shape):
+                    affected_cells.append(cell)
+        except Exception:
+            continue
+            
+    return affected_cells
+
 @app.get("/api/proxy-geojson")
 async def proxy_geojson(url: str):
-    """Proxy for external GeoJSON files that don't support CORS (like Google Drive)"""
+    """Proxy for external GeoJSON files with robust error handling"""
     import httpx
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, follow_redirects=True)
-        return response.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, follow_redirects=True, timeout=10.0)
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail="External source returned an error")
+            
+            # Check if it's actually JSON
+            try:
+                return response.json()
+            except Exception:
+                # If Google Drive shows a 'large file' warning page, it's HTML, not JSON
+                raise HTTPException(
+                    status_code=400, 
+                    detail="External source returned non-JSON data. The file might be too large for a direct Google Drive link (>100MB)."
+                )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Proxy error: {str(e)}")
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(keys_router, prefix="/api")
