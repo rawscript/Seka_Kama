@@ -97,15 +97,18 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
     if (!drawnGeometry) return;
     setLoading(true);
     try {
+      console.log('Starting scenario run with query:', userQuery);
       const result = await api.runScenario({
         geometry: drawnGeometry,
         feature_modifications: modifications,
         user_query: userQuery,
       });
+      console.log('Scenario result received:', result);
       onScenarioRun(result);
       cancelDrawing();
     } catch (error) {
       console.error('Scenario run failed:', error);
+      alert('Simulation failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setLoading(false);
     }

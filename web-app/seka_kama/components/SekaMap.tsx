@@ -7,24 +7,17 @@ import { api } from '@/services/api';
 import ScenarioDrawer from './ScenarioDrawer';
 import { Loader2, Filter, Layers, Info } from 'lucide-react';
 
-function getDirectDriveLink(url: string) {
-  if (!url) return '';
-  const fileIdMatch = url.match(/[-\w]{25,}/);
-  if (fileIdMatch && fileIdMatch[0]) {
-    // Return direct download link for Google Drive, or TileJSON if applicable
-    // For GeoJSON, use raw download link.
-    return `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}`;
-  }
-  return url;
-}
-interface SekaMapProps {
-  onScenarioRun?: (result: any) => void;
-}
+const CONSERVANCY_COORDS: Record<string, { lng: number, lat: number, zoom: number }> = {
+  'Mara North': { lng: 35.034, lat: -1.168, zoom: 11 },
+  'Olare-Motorogi': { lng: 35.138, lat: -1.296, zoom: 11 },
+  'Naboisho': { lng: 35.334, lat: -1.312, zoom: 11 },
+  'Ol Kinyei': { lng: 35.454, lat: -1.332, zoom: 11 },
+};
 
 export default function SekaMap({ onScenarioRun }: SekaMapProps) {
   return (
     <MapProvider>
-      <div className="relative w-full h-full bg-[#0a0a20]" style={{ minHeight: '500px' }}>
+      <div className="relative w-full h-full bg-[#0a0a20]" style={{ height: 'calc(100vh - 58px - 48px)' }}>
         <SekaMapContent onScenarioRun={onScenarioRun} />
       </div>
     </MapProvider>
@@ -32,7 +25,7 @@ export default function SekaMap({ onScenarioRun }: SekaMapProps) {
 }
 
 function SekaMapContent({ onScenarioRun }: SekaMapProps) {
-  const { current: mapMain } = useMap();
+  const { 'main-map': mapMain } = useMap();
   const envLandXUrl = process.env.NEXT_PUBLIC_LANDX_TILE_URL || '';
   const landXSourceUrl = getDirectDriveLink(envLandXUrl);
   
@@ -67,6 +60,19 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
     loadData();
   }, [loadData]);
 
+  // Redirection Logic
+  useEffect(() => {
+    if (selectedUnit && CONSERVANCY_COORDS[selectedUnit] && mapMain) {
+      const { lng, lat, zoom } = CONSERVANCY_COORDS[selectedUnit];
+      mapMain.flyTo({
+        center: [lng, lat],
+        zoom: zoom,
+        duration: 2000,
+        essential: true
+      });
+    }
+  }, [selectedUnit, mapMain]);
+
   const handleScenarioRun = (result: any) => {
     onScenarioRun?.(result);
   };
@@ -98,10 +104,28 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
         }}
         id="main-map"
       >
-        {/*
-          Removed Land-X Layer from External URL to prevent crashing because the layer size is almost 1GB.
-          This ensures the platform is usable without memory/network timeouts.
-        */}
+        {/* Land-X Layer (Boundaries) */}
+        {landXSourceUrl && (
+          <Source id="landx-boundaries" type="geojson" data={landXSourceUrl}>
+            <Layer
+              id="landx-line"
+              type="line"
+              paint={{
+                'line-color': '#4ade80',
+                'line-width': 1.5,
+                'line-opacity': 0.6
+              }}
+            />
+            <Layer
+              id="landx-fill"
+              type="fill"
+              paint={{
+                'fill-color': '#4ade80',
+                'fill-opacity': 0.05
+              }}
+            />
+          </Source>
+        )}
 
         {/* Protected Areas Layer */}
         {protectedData && (
@@ -157,7 +181,7 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
               className="w-full bg-white/5 border border-white/20 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             >
               <option value="" className="bg-[#1a1a2e]">All Landscapes</option>
-              {['Mara North', 'Olare-Motorogi', 'Naboisho', 'Ol Kinyei'].map(u => (
+              {Object.keys(CONSERVANCY_COORDS).map(u => (
                 <option key={u} value={u} className="bg-[#1a1a2e]">{u}</option>
               ))}
             </select>
@@ -177,7 +201,7 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
               </div>
               {landXSourceUrl && (
                 <div className="pt-2 border-t border-white/10">
-                  <LegendItem color="#4ade80" label="Land-X Layer" opacity={0.4} />
+                  <LegendItem color="#4ade80" label="Boundary (Land-X)" opacity={0.6} />
                 </div>
               )}
             </div>
