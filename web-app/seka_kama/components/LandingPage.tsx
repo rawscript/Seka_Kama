@@ -52,15 +52,18 @@ export default function LandingPage() {
   return (
     <div className="landing-container bg-slate-950 min-h-screen text-white">
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center justify-center text-center px-8 py-20 overflow-hidden">
+      <section className="relative min-h-[100vh] flex items-center justify-center text-center px-8 py-24 overflow-hidden">
         {/* Background Image Layer */}
         <div className="absolute inset-0 z-0">
           <img 
             src="/seka_kama_hero_lion_1778841687196.png" 
             alt="Majestic Lion Background" 
-            className="w-full h-full object-cover object-center opacity-40 scale-105"
+            className="w-full h-full object-cover object-center scale-100 transition-transform duration-[10s] hover:scale-105"
+            style={{ opacity: 0.75, filter: 'contrast(1.1) brightness(0.8)' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-slate-950/90 to-slate-950" />
+          {/* Refined gradient: Clearer at the top, very dark at the bottom for text contrast */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+          <div className="absolute inset-0 bg-slate-950/20" />
         </div>
 
         <div className="relative z-10 max-w-4xl">
