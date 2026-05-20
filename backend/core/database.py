@@ -301,17 +301,24 @@ class SupabaseService:
         """
         Create a new API key record.
         """
-        from datetime import datetime
-        key_data = {
-            "user_id": user_id,
-            "name": name,
-            "key_hash": key_hash,
-            "prefix": prefix,
-            "created_at": datetime.utcnow().isoformat(),
-            "is_active": True
-        }
-        result = self.client.table("api_keys").insert(key_data).execute()
-        return result.data[0] if result.data else {}
+        try:
+            key_data = {
+                "user_id": user_id,
+                "name": name,
+                "key_hash": key_hash,
+                "prefix": prefix,
+                "is_active": True
+                # created_at handled by database default
+            }
+            result = self.client.table("api_keys").insert(key_data).execute()
+            if not result.data:
+                logger.error(f"API key insertion returned no data for user {user_id}")
+                return {}
+            return result.data[0]
+        except Exception as e:
+            logger.error(f"Supabase error creating API key for user {user_id}: {str(e)}")
+            # If the table doesn't exist, this will catch it
+            return {}
         
     def revoke_api_key(self, user_id: int, key_id: int) -> bool:
         """
