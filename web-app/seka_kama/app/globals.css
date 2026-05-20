@@ -3,19 +3,33 @@
 @theme {
   --color-brand-emerald: #10b981;
   --color-brand-cyan: #06b6d4;
+  --color-brand-slate: #0f172a;
   
   --animate-slow-zoom: slow-zoom 20s linear infinite alternate;
   --animate-in: enter 0.6s ease-out;
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   
   @keyframes slow-zoom {
     from { transform: scale(1); }
     to { transform: scale(1.1); }
   }
+
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 }
 
 @utility glass-effect {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@utility glass-effect-heavy {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(32px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -23,45 +37,45 @@
   animation: enter 0.6s ease-out both;
 }
 
-@utility fade-in {
-  @keyframes enter {
-    from { opacity: 0; }
-    to { opacity: 1; }
+@utility enterprise-card {
+  @apply glass-effect rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.4)] hover:border-white/20 transition-all duration-300;
+}
+
+@utility enterprise-badge {
+  @apply px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border;
+}
+
+@layer base {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 2, 6, 23;
+    --background-end-rgb: 2, 6, 23;
   }
-}
 
-@utility slide-in-from-bottom-12 {
-  @keyframes enter {
-    from { transform: translateY(3rem); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+  body {
+    @apply m-0 p-0 font-sans antialiased text-slate-200;
+    background: rgb(var(--background-start-rgb));
+    overflow-x: hidden;
   }
+
+  /* Professional Typography Scale */
+  h1 { @apply text-3xl font-bold tracking-tight text-white mb-4; }
+  h2 { @apply text-2xl font-semibold tracking-tight text-white mb-3; }
+  h3 { @apply text-lg font-medium text-slate-300; }
 }
 
-:root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 2, 6, 23;
-  --background-end-rgb: 2, 6, 23;
+/* Custom scrollbar - Unified for Enterprise */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
 }
-
-body {
-  margin: 0;
-  padding: 0;
-  background: rgb(var(--background-start-rgb));
-  color: rgb(var(--foreground-rgb));
-  overflow-x: hidden;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(2, 6, 23, 0.2);
 }
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 10px;
 }
-::-webkit-scrollbar-track {
-  background: rgba(2, 6, 23, 0.5);
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.3);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.5);
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.4);
 }

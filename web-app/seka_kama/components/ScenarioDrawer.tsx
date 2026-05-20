@@ -3,7 +3,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useMap, Source, Layer } from 'react-map-gl/maplibre';
 import { api } from '@/services/api';
-import { Play, Edit3, X, Lightbulb, TrendingUp, AlertTriangle, MapPin } from 'lucide-react';
+import { 
+  Play, 
+  MapPin, 
+  X, 
+  Lightbulb, 
+  TrendingUp, 
+  AlertTriangle, 
+  Edit3,
+  Dna,
+  Cpu
+} from 'lucide-react';
 
 interface ScenarioDrawerProps {
   onScenarioRun: (result: any) => void;
@@ -22,7 +32,7 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
   const [userQuery, setUserQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // ── Drawing click handler ─────────────────────────────────────────
+  // -- Drawing handlers --
   const handleMapClick = useCallback((e: any) => {
     if (!isDrawingMode) return;
     const { lng, lat } = e.lngLat;
@@ -63,14 +73,10 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
     };
   }, [map, isDrawingMode, handleMapClick, handleMapDblClick]);
 
-  // ── Live preview GeoJSON ──────────────────────────────────────────
   const previewGeoJSON: GeoJSON.Feature | null = points.length >= 2 ? {
     type: 'Feature',
     properties: {},
-    geometry: {
-      type: 'LineString',
-      coordinates: points,
-    },
+    geometry: { type: 'LineString', coordinates: points },
   } : null;
 
   const drawnPolygonGeoJSON: GeoJSON.Feature | null = drawnGeometry ? {
@@ -79,7 +85,6 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
     geometry: drawnGeometry,
   } : null;
 
-  // ── Actions ───────────────────────────────────────────────────────
   const startDrawing = () => {
     setPoints([]);
     setDrawnGeometry(null);
@@ -97,13 +102,11 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
     if (!drawnGeometry) return;
     setLoading(true);
     try {
-      console.log('Starting scenario run with query:', userQuery);
       const result = await api.runScenario({
         geometry: drawnGeometry,
         feature_modifications: modifications,
         user_query: userQuery,
       });
-      console.log('Scenario result received:', result);
       onScenarioRun(result);
       cancelDrawing();
     } catch (error) {
@@ -116,13 +119,13 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
 
   return (
     <>
-      {/* Live drawing preview layers — must be inside <Map> context via siblings in SekaMap */}
+      {/* Map Layers for Draw State */}
       {previewGeoJSON && (
         <Source id="draw-preview" type="geojson" data={previewGeoJSON}>
           <Layer
             id="draw-preview-line"
             type="line"
-            paint={{ 'line-color': '#10b981', 'line-width': 2, 'line-dasharray': [2, 2] }}
+            paint={{ 'line-color': '#10b981', 'line-width': 3, 'line-dasharray': [2, 1], 'line-opacity': 0.8 }}
           />
         </Source>
       )}
@@ -131,148 +134,146 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
           <Layer
             id="draw-polygon-fill"
             type="fill"
-            paint={{ 'fill-color': '#10b981', 'fill-opacity': 0.15 }}
+            paint={{ 'fill-color': '#10b981', 'fill-opacity': 0.2 }}
           />
           <Layer
             id="draw-polygon-line"
             type="line"
-            paint={{ 'line-color': '#10b981', 'line-width': 2 }}
+            paint={{ 'line-color': '#10b981', 'line-width': 2.5 }}
           />
         </Source>
       )}
 
-      {/* UI Panel — rendering overlay on top of map */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-full max-w-2xl px-4">
+      {/* Control Surface */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[30] w-full max-w-2xl px-6 pointer-events-none">
         {isDrawingMode ? (
-          <div className="glass-effect p-4 rounded-2xl border border-emerald-500/30 bg-black/60 text-white text-center backdrop-blur-xl">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <MapPin className="w-5 h-5 text-emerald-400 animate-pulse" />
-              <span className="font-bold text-emerald-300 tracking-wide">Drawing Mode Active</span>
+          <div className="glass-effect-heavy p-5 rounded-2xl border-emerald-500/40 border-2 shadow-2xl animate-in fade-in slide-in-from-bottom-4 pointer-events-auto text-center">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="relative">
+                <MapPin className="w-5 h-5 text-emerald-400 animate-bounce" />
+                <div className="absolute inset-0 bg-emerald-500/40 blur-xl rounded-full" />
+              </div>
+              <span className="text-xs font-bold text-emerald-400 uppercase tracking-[0.2em]">Active Boundary Delineation</span>
             </div>
-            <p className="text-xs text-white/60 mb-3">
-              Click to add points · Double-click to close polygon
-              {points.length > 0 && ` · ${points.length} point${points.length > 1 ? 's' : ''} placed`}
-            </p>
+            <div className="text-[11px] text-slate-400 mb-4 font-mono">
+              [L_CLICK] to Segment · [DBL_CLICK] to Finalize Logic · <span className="text-emerald-500">{points.length} nodes active</span>
+            </div>
             <button
               onClick={cancelDrawing}
-              className="flex items-center gap-2 mx-auto px-4 py-2 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 text-sm hover:bg-red-500/30 transition-all"
+              className="px-6 py-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-widest hover:bg-rose-500/20 transition-all flex items-center gap-2 mx-auto"
             >
-              <X className="w-4 h-4" /> Cancel
+              <X className="w-3.5 h-3.5" /> Abort Sequence
             </button>
           </div>
         ) : !drawnGeometry ? (
-          <div className="flex justify-center flex-col items-center">
+          <div className="flex flex-col items-center gap-4 pointer-events-auto">
             <button
               onClick={startDrawing}
-              className="group flex items-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-white px-8 py-4 rounded-2xl font-bold shadow-2xl transition-all hover:scale-105 active:scale-95"
+              className="group relative px-10 py-5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-bold shadow-[0_20px_50px_rgba(16,185,129,0.3)] transition-all hover:scale-105 active:scale-95 overflow-hidden"
             >
-              <Edit3 className="w-5 h-5" />
-              <span className="tracking-tight text-lg">Propose Development Scenario</span>
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative flex items-center gap-3">
+                <Edit3 className="w-6 h-6" />
+                <span className="text-xl tracking-tight">Propose Scenario</span>
+              </div>
             </button>
-            <p className="mt-3 text-white/60 text-[10px] uppercase font-bold tracking-[0.2em] drop-shadow-md">
-              Draw a polygon on the map to start your simulation
-            </p>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full glass-effect border-white/5 animate-pulse">
+               <Cpu className="w-3 h-3 text-emerald-500" />
+               <span className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em]">Neural Engine Standby</span>
+            </div>
           </div>
         ) : (
-          <div className="glass-effect p-6 rounded-3xl border border-white/20 shadow-2xl backdrop-blur-2xl bg-black/40 text-white">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-emerald-500/20 rounded-xl">
-                  <Lightbulb className="w-6 h-6 text-emerald-400" />
+          <div className="glass-effect-heavy p-8 rounded-[2rem] border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.8)] pointer-events-auto animate-in slide-in-from-bottom-8">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-3.5 bg-emerald-500/15 rounded-2xl border border-emerald-500/20 shadow-inner">
+                  <Dna className="w-7 h-7 text-emerald-500" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold tracking-tight">Scenario Configuration</h3>
-                  <p className="text-xs text-white/50">Define environmental impacts for the selected area</p>
+                   <h3 className="text-xl font-extrabold text-white tracking-tight leading-none mb-1">Scenario Parameters</h3>
+                   <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest flex items-center gap-2">
+                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Defining Logic for {points.length} Node Segment
+                   </div>
                 </div>
               </div>
-              <button onClick={cancelDrawing} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                <X className="w-5 h-5 text-white/60" />
+              <button onClick={cancelDrawing} className="p-2.5 hover:bg-white/5 rounded-xl text-slate-500 hover:text-white transition-all">
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-5">
                 <label className="block">
-                  <span className="text-xs font-bold text-white/60 uppercase tracking-widest block mb-2">
-                    Ecological Narrative
-                  </span>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Lightbulb className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Proposed Intervention</span>
+                  </div>
                   <textarea
                     value={userQuery}
                     onChange={(e) => setUserQuery(e.target.value)}
-                    placeholder="e.g. Construction of a luxury lodge with perimeter nightlights..."
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 min-h-[120px] transition-all"
+                    placeholder="Describe the development or environmental change..."
+                    className="w-full bg-black/40 border-2 border-white/5 rounded-2xl p-5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500/50 min-h-[160px] transition-all placeholder:text-slate-700"
                   />
                 </label>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold text-white/60 uppercase tracking-widest flex items-center gap-2">
-                      <TrendingUp className="w-3 h-3 text-orange-400" />
-                      Nightlight Trend Offset
-                    </span>
-                    <span className="text-sm font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-amber-500" />
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Nightlight Intensity</span>
+                    </div>
+                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
                       {modifications.longterm_slope_mean > 0 ? '+' : ''}
                       {(modifications.longterm_slope_mean * 100).toFixed(0)}%
-                    </span>
+                    </div>
                   </div>
                   <input
-                    type="range"
-                    min="-0.5"
-                    max="0.5"
-                    step="0.01"
+                    type="range" min="-0.5" max="0.5" step="0.01"
                     value={modifications.longterm_slope_mean}
-                    onChange={(e) => setModifications({
-                      ...modifications,
-                      longterm_slope_mean: parseFloat(e.target.value),
-                    })}
-                    className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                    onChange={(e) => setModifications({ ...modifications, longterm_slope_mean: parseFloat(e.target.value) })}
+                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
                   />
-                  <div className="flex justify-between mt-2 text-[10px] text-white/30 font-bold">
-                    <span>-50% LIGHT</span>
-                    <span>NEUTRAL</span>
-                    <span>+50% LIGHT</span>
+                  <div className="flex justify-between mt-3 text-[9px] text-slate-600 font-bold uppercase tracking-tighter">
+                    <span>Diminished</span>
+                    <span>Stable</span>
+                    <span>Intense</span>
                   </div>
                 </div>
 
-                <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex gap-3">
-                  <AlertTriangle className="w-5 h-5 text-orange-400 flex-shrink-0" />
-                  <p className="text-[11px] text-orange-100/70 leading-relaxed font-medium">
-                    Increased nightlight is a primary driver in SekaNet. Simulating development near protected boundaries may show significant population displacement.
+                <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex gap-4">
+                  <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0" />
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Higher intensity values correlate with <span className="text-slate-200">urban encroachment</span> and <span className="text-slate-200">habitat fragmentation</span> within the SekaNet predictive engine.
                   </p>
                 </div>
 
                 <button
                   onClick={handleRun}
                   disabled={loading}
-                  className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/50 text-white py-4 rounded-2xl font-black text-lg shadow-[0_10px_30px_rgba(16,185,129,0.3)] transition-all flex items-center justify-center gap-3 active:scale-95"
+                  className="w-full relative group"
                 >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span className="uppercase tracking-widest text-sm">Simulating Ecosystem...</span>
-                    </div>
-                  ) : (
-                    <>
-                      <Play className="w-5 h-5 fill-current" />
-                      <span className="uppercase tracking-widest">Run Digital Twin Model</span>
-                    </>
-                  )}
+                  <div className="absolute inset-0 bg-emerald-500 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity" />
+                  <div className={`relative w-full h-16 rounded-2xl bg-emerald-500 flex items-center justify-center gap-3 transition-all ${loading ? 'opacity-80' : 'hover:-translate-y-1 active:translate-y-0 shadow-2xl shadow-emerald-500/20'}`}>
+                    {loading ? (
+                      <div className="flex items-center gap-3">
+                         <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                         <span className="text-sm font-black uppercase tracking-[0.2em] text-white">Synthesizing Digital Twin</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Play className="w-5 h-5 fill-current text-white" />
+                        <span className="text-sm font-black uppercase tracking-[0.2em] text-white">Execute Simulation</span>
+                      </>
+                    )}
+                  </div>
                 </button>
               </div>
             </div>
           </div>
         )}
       </div>
-
-      <style>{`
-        .glass-effect {
-          background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-          backdrop-filter: blur(40px);
-          -webkit-backdrop-filter: blur(40px);
-        }
-      `}</style>
     </>
   );
 }
