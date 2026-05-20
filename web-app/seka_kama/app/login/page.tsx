@@ -126,7 +126,7 @@ export default function LoginPage() {
              <Link href="/register" className="text-sm font-bold text-gray-400 hover:text-white transition-colors">
                 New to Seka Kama? <span className="text-emerald-400">Create an Account</span>
              </Link>
-             <Link href="/" className="text-xs font-bold text-white/20 hover:text-white/40 uppercase tracking-widest transition-colors">
+             <Link href="/" className="text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors">
                 Return to Intelligence Briefing
              </Link>
           </div>

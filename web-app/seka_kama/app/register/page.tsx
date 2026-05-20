@@ -180,8 +180,8 @@ export default function RegisterPage() {
              <Link href="/login" className="text-sm font-bold text-gray-400 hover:text-white transition-colors">
                 Already registered? <span className="text-emerald-400">Sign in Here</span>
              </Link>
-             <Link href="/" className="text-[10px] font-bold text-white/20 hover:text-white/40 uppercase tracking-[0.2em] transition-colors">
-                Landholding &amp; Territory Policy
+             <Link href="/privacy" className="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-[0.2em] transition-colors">
+                Privacy & Data Sovereignty Policy
              </Link>
           </div>
         </div>
