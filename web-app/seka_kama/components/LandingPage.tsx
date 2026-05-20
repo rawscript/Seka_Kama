@@ -52,22 +52,32 @@ export default function LandingPage() {
   return (
     <div className="landing-container bg-slate-950 min-h-screen text-white">
       {/* Hero Section */}
-      <section className="min-h-[80vh] flex items-center justify-center text-center px-8 py-16">
-        <div className="max-w-3xl">
-          <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-white to-emerald-500 bg-clip-text text-transparent">
+      <section className="relative min-h-[90vh] flex items-center justify-center text-center px-8 py-20 overflow-hidden">
+        {/* Background Image Layer */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="/seka_kama_hero_lion_1778841687196.png" 
+            alt="Majestic Lion Background" 
+            className="w-full h-full object-cover object-center opacity-40 scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/60 via-slate-950/90 to-slate-950" />
+        </div>
+
+        <div className="relative z-10 max-w-4xl">
+          <h1 className="text-7xl md:text-8xl font-black mb-6 bg-gradient-to-r from-white via-white to-emerald-500 bg-clip-text text-transparent tracking-tighter">
             Seka Kama
-            <span className="block text-2xl text-emerald-500 mt-2">Digital Twin</span>
+            <span className="block text-3xl text-emerald-400 mt-4 font-bold uppercase tracking-[0.3em]">Digital Twin</span>
           </h1>
-          <p className="text-xl text-slate-400 mb-8 leading-relaxed">
-            Advanced geospatial analytics for lion conservation.
-            Predict, simulate, and visualize the impact of human infrastructure on wildlife.
+          <p className="text-xl md:text-2xl text-slate-300 mb-10 leading-relaxed font-light max-w-2xl mx-auto">
+            Advanced geospatial analytics for the Greater Mara. 
+            Empowering conservation with predictive intelligence.
           </p>
-          <div className="flex gap-4 justify-center">
-            <Link href="/login" className="px-8 py-3 bg-emerald-500 rounded-xl font-bold hover:bg-emerald-400 transition-all">
-              Launch Application
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <Link href="/login" className="px-10 py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg hover:bg-emerald-400 transition-all shadow-[0_20px_50px_rgba(16,185,129,0.3)] hover:-translate-y-1">
+              Launch Intelligence Console
             </Link>
-            <Link href="/demo" className="px-8 py-3 border-2 border-emerald-500 rounded-xl font-bold hover:bg-emerald-500/10 transition-all">
-              View Demo
+            <Link href="/demo" className="px-10 py-4 border-2 border-white/10 backdrop-blur-xl rounded-2xl font-bold text-lg hover:bg-white/5 transition-all">
+              Platform Walkthrough
             </Link>
           </div>
         </div>
