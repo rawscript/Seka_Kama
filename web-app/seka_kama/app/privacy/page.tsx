@@ -4,67 +4,67 @@ import Link from 'next/link';
 import { ShieldCheck, Lock, Eye, FileText } from 'lucide-react';
 
 export default function PrivacyPage() {
-  return (
-    <div className="min-h-screen bg-[#020617] text-slate-200">
-      <nav className="h-16 flex items-center justify-between px-8 border-b border-white/5 glass-effect sticky top-0 z-50">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
-            <ShieldCheck className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-white tracking-tight">Seka Kama</span>
-        </Link>
-      </nav>
+   return (
+      <div className="min-h-screen bg-[#020617] text-slate-200">
+         <nav className="h-16 flex items-center justify-between px-8 border-b border-white/5 glass-effect sticky top-0 z-50">
+            <Link href="/" className="flex items-center gap-2">
+               <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                  <ShieldCheck className="w-5 h-5 text-white" />
+               </div>
+               <span className="font-bold text-white tracking-tight">Seka Kama</span>
+            </Link>
+         </nav>
 
-      <main className="max-w-3xl mx-auto py-24 px-8 space-y-12 animate-in fade-in duration-1000">
-        <div className="space-y-4">
-           <h1 className="text-4xl font-extrabold text-white tracking-tight">Privacy Policy</h1>
-           <p className="text-slate-500 font-mono text-xs uppercase tracking-widest">Last Updated: May 20, 2026</p>
-        </div>
+         <main className="max-w-3xl mx-auto py-24 px-8 space-y-12 animate-in fade-in duration-1000">
+            <div className="space-y-4">
+               <h1 className="text-4xl font-extrabold text-white tracking-tight">Privacy Policy</h1>
+               <p className="text-slate-500 font-mono text-xs uppercase tracking-widest">Last Updated: May 20, 2026</p>
+            </div>
 
-        <section className="space-y-6">
-           <div className="flex items-center gap-3 text-emerald-500 mb-2">
-              <Lock className="w-5 h-5" />
-              <h2 className="text-xl font-bold tracking-tight text-white">Data Sovereignty</h2>
-           </div>
-           <p className="text-slate-400 leading-relaxed">
-              At Seka Kama, we believe in the sovereignty of ecological data. All conservancy-specific 
-              datasets uploaded for simulation purposes remain the property of the respective 
-              management units. We do not sell or share granular spatial data with third parties.
-           </p>
-        </section>
+            <section className="space-y-6">
+               <div className="flex items-center gap-3 text-emerald-500 mb-2">
+                  <Lock className="w-5 h-5" />
+                  <h2 className="text-xl font-bold tracking-tight text-white">Data Sovereignty</h2>
+               </div>
+               <p className="text-slate-400 leading-relaxed">
+                  At Seka Kama, we believe in the sovereignty of ecological data. All conservancy-specific
+                  datasets uploaded for simulation purposes remain the property of the respective
+                  management units. We do not sell or share granular spatial data with third parties.
+               </p>
+            </section>
 
-        <section className="space-y-6">
-           <div className="flex items-center gap-3 text-emerald-500 mb-2">
-              <Eye className="w-5 h-5" />
-              <h2 className="text-xl font-bold tracking-tight text-white">User Analytics</h2>
-           </div>
-           <p className="text-slate-400 leading-relaxed">
-              We collect minimal usage telemetry to improve our digital twin algorithms. This includes 
-              anonymized interaction data with the map interface and simulation tool usage statistics. 
-              We utilize privacy-first analytics providers to ensure no personally identifiable 
-              information is tracked.
-           </p>
-        </section>
+            <section className="space-y-6">
+               <div className="flex items-center gap-3 text-emerald-500 mb-2">
+                  <Eye className="w-5 h-5" />
+                  <h2 className="text-xl font-bold tracking-tight text-white">User Analytics</h2>
+               </div>
+               <p className="text-slate-400 leading-relaxed">
+                  We collect minimal usage telemetry to improve our digital twin algorithms. This includes
+                  anonymized interaction data with the map interface and simulation tool usage statistics.
+                  We utilize privacy-first analytics providers to ensure no personally identifiable
+                  information is tracked.
+               </p>
+            </section>
 
-        <section className="space-y-6">
-           <div className="flex items-center gap-3 text-emerald-500 mb-2">
-              <FileText className="w-5 h-5" />
-              <h2 className="text-xl font-bold tracking-tight text-white">Ethical AI Usage</h2>
-           </div>
-           <p className="text-slate-400 leading-relaxed">
-              The narratives generated by our LLM integration are strictly for research and conservation 
-              planning. Results should not be used as the sole basis for legal or destructive 
-              environmental decisions without field verification by certified ecologists.
-           </p>
-        </section>
+            <section className="space-y-6">
+               <div className="flex items-center gap-3 text-emerald-500 mb-2">
+                  <FileText className="w-5 h-5" />
+                  <h2 className="text-xl font-bold tracking-tight text-white">Ethical AI Usage</h2>
+               </div>
+               <p className="text-slate-400 leading-relaxed">
+                  The narratives generated by our LLM integration are strictly for research and conservation
+                  planning. Results should not be used as the sole basis for legal or destructive
+                  environmental decisions without field verification by certified ecologists.
+               </p>
+            </section>
 
-        <div className="pt-12 border-t border-white/5">
-           <p className="text-sm text-slate-500">
-             If you have concerns regarding data usage or wish to request data deletion, please contact our 
-             Data Operations lead at <span className="text-emerald-500">data@sekakama.org</span>.
-           </p>
-        </div>
-      </main>
-    </div>
-  );
+            <div className="pt-12 border-t border-white/5">
+               <p className="text-sm text-slate-500">
+                  If you have concerns regarding data usage or wish to request data deletion, please contact our
+                  Data Operations lead at <span className="text-emerald-500">jasemwaura@gmail.com</span>.
+               </p>
+            </div>
+         </main>
+      </div>
+   );
 }

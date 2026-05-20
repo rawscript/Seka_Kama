@@ -58,11 +58,11 @@ export default function LandingPage() {
           <img 
             src="/seka_kama_hero_lion_1778841687196.png" 
             alt="Majestic Lion Background" 
-            className="w-full h-full object-cover object-center scale-100 transition-transform duration-[10s] hover:scale-105"
-            style={{ opacity: 0.75, filter: 'contrast(1.1) brightness(0.8)' }}
+            className="w-full h-full object-cover object-[center_25%] scale-100 transition-transform duration-[10s] hover:scale-105"
+            style={{ opacity: 0.85, filter: 'contrast(1.1) brightness(0.9)' }}
           />
           {/* Refined gradient: Clearer at the top, very dark at the bottom for text contrast */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
           <div className="absolute inset-0 bg-slate-950/20" />
         </div>
 
