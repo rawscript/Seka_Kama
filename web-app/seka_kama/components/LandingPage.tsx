@@ -131,7 +131,7 @@ export default function LandingPage() {
               { name: 'Kepler.gl', desc: 'Geospatial Analytics' },
               { name: 'FastAPI', desc: 'API Framework' },
               { name: 'Next.js', desc: 'Frontend Platform' },
-              { name: 'Llama 3', desc: 'LLM Integration' }
+              { name: 'StepFun AI', desc: 'LLM Integration' }
             ].map(tech => (
               <div key={tech.name}>
                 <span className="block font-bold text-white mb-1 tracking-tight">{tech.name}</span>
