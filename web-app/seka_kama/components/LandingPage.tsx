@@ -153,6 +153,7 @@ export default function LandingPage() {
           <div className="footer-links">
             <Link href="/about">About</Link>
             <Link href="/documentation">Documentation</Link>
+            <Link href="/data-standards">Data Standards</Link>
             <Link href="/privacy">Privacy Policy</Link>
             <Link href="/contact">Contact</Link>
           </div>
