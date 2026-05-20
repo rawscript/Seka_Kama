@@ -111,7 +111,7 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
           sources: {
             'satellite': {
               type: 'raster',
-              tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+              tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
               tileSize: 256,
               attribution: 'Esri, Maxar'
             }
