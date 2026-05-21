@@ -190,6 +190,8 @@ def _fallback_narrative(scenario_request: Any, results: Dict) -> str:
     significance = (
         "significant" if abs(delta_pct) > 5 else "minor"
     )
+    # Filter out any None values from the units list to prevent join errors
+    units = [u for u in units if u is not None]
     unit_str = ", ".join(units[:3]) if units else "the selected area"
 
     return (

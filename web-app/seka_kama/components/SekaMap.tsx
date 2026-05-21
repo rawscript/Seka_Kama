@@ -177,11 +177,11 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
                   paint={{
                     'circle-radius': [
                       'interpolate', ['linear'], ['zoom'],
-                      8, ['interpolate', ['linear'], ['get', 'density'], 0, 1.5, 30, 10],
-                      12, ['interpolate', ['linear'], ['get', 'density'], 0, 4, 30, 30]
+                      8, ['interpolate', ['linear'], ['coalesce', ['get', 'lion_density'], 0], 0, 1.5, 30, 10],
+                      12, ['interpolate', ['linear'], ['coalesce', ['get', 'lion_density'], 0], 0, 4, 30, 30]
                     ],
                     'circle-color': [
-                      'interpolate', ['linear'], ['get', 'density'],
+                      'interpolate', ['linear'], ['coalesce', ['get', 'lion_density'], 0],
                       0, '#fef3c7',
                       5, '#fbbf24',
                       15, '#f59e0b',

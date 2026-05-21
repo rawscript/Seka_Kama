@@ -121,7 +121,8 @@ class PredictionService:
             baseline_cells, baseline_predictions, scenario_predictions, 
             deltas, delta_percents
         ):
-            unit = cell.get('management_unit', 'Unknown')
+            # Use .get() but explicitly handle cases where the value is None
+            unit = cell.get('management_unit') or 'Unknown'
             if unit not in unit_aggregation:
                 unit_aggregation[unit] = {
                     'baseline': 0.0,

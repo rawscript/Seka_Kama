@@ -73,10 +73,14 @@ async def proxy_geojson(url: str):
     """Proxy for external GeoJSON files with robust error handling"""
     import httpx
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, follow_redirects=True, timeout=10.0)
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            # Increase timeout (Google Drive can be slow)
+            response = await client.get(url, timeout=20.0)
             if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail="External source returned an error")
+                raise HTTPException(
+                    status_code=response.status_code, 
+                    detail=f"External source returned error {response.status_code}"
+                )
             
             # Check if it's actually JSON
             try:
