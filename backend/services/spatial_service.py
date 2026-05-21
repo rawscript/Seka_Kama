@@ -44,10 +44,10 @@ async def get_baseline_grid(
             "properties": {
                 "cell_id": row['cell_id'],
                 "management_unit": row.get('management_unit'),
-                "lion_density": float(row.get('baseline_lion_density', 0)),
-                "nightlight_intensity": float(row.get('all_mean_mean', 0)),
-                "nightlight_trend": float(row.get('longterm_slope_mean', 0)),
-                "distance_to_protected_km": float(row.get('dist_to_protected_km', 0))
+                "lion_density": float(row.get('baseline_lion_density') or 0),
+                "nightlight_intensity": float(row.get('all_mean_mean') or 0),
+                "nightlight_trend": float(row.get('longterm_slope_mean') or 0),
+                "distance_to_protected_km": float(row.get('dist_to_protected_km') or 0)
             }
         })
     
@@ -138,7 +138,7 @@ async def get_protected_areas(
                 "name": row.get('site_name'),
                 "designation": row.get('designation'),
                 "iucn_category": row.get('iucn_category'),
-                "area_km2": float(row.get('area_km2', 0)) if row.get('area_km2') else None
+                "area_km2": float(row.get('area_km2') or 0.0) if row.get('area_km2') is not None else None
             }
         })
     

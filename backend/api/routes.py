@@ -43,7 +43,7 @@ async def get_baseline(
     
     # Get grid cells from spatial service (which uses Supabase)
     features = await get_baseline_grid(supabase, management_unit, bbox, limit=50000)
-    total_lions = sum(f["properties"].get("lion_density", 0) for f in features)
+    total_lions = sum(float(f["properties"].get("lion_density") or 0) for f in features)
     
     return BaselineResponse(
         type="FeatureCollection",
@@ -74,10 +74,10 @@ async def get_baseline_summary(
             "management_units": []
         }
     
-    lion_densities = [c.get("baseline_lion_density", 0) for c in cells]
-    nightlight_intensities = [c.get("all_mean_mean", 0) for c in cells]
-    nightlight_trends = [c.get("longterm_slope_mean", 0) for c in cells]
-    distances = [c.get("dist_to_protected_km", 0) for c in cells]
+    lion_densities = [float(c.get("baseline_lion_density") or 0) for c in cells]
+    nightlight_intensities = [float(c.get("all_mean_mean") or 0) for c in cells]
+    nightlight_trends = [float(c.get("longterm_slope_mean") or 0) for c in cells]
+    distances = [float(c.get("dist_to_protected_km") or 0) for c in cells]
     
     return {
         "total_lions": sum(lion_densities),
@@ -427,13 +427,13 @@ async def get_statistics(
         }
     
     # Calculate statistics
-    total_lions = sum(c.get("baseline_lion_density", 0) for c in cells)
-    lion_densities = [c.get("baseline_lion_density", 0) for c in cells]
+    total_lions = sum(float(c.get("baseline_lion_density") or 0) for c in cells)
+    lion_densities = [float(c.get("baseline_lion_density") or 0) for c in cells]
     
     # Count high-risk cells (lion density < 5 and nightlight trend > 0.1)
     high_risk_cells = sum(1 for c in cells 
-                         if c.get("baseline_lion_density", 0) < 5 
-                         and c.get("longterm_slope_mean", 0) > 0.1)
+                         if float(c.get("baseline_lion_density") or 0) < 5 
+                         and float(c.get("longterm_slope_mean") or 0) > 0.1)
     
     # Get protected area coverage
     protected_areas = db.get_protected_areas(limit=1000)
@@ -444,7 +444,7 @@ async def get_statistics(
         "total_area_km2": len(cells),  # Each cell is 1 km²
         "avg_lion_density": round(sum(lion_densities) / len(lion_densities), 2),
         "protected_area_coverage_km2": round(protected_area_km2, 1),
-        "avg_nightlight_trend": round(sum(c.get("longterm_slope_mean", 0) for c in cells) / len(cells), 4),
+        "avg_nightlight_trend": round(sum(float(c.get("longterm_slope_mean") or 0) for c in cells) / len(cells), 4),
         "high_risk_cell_count": high_risk_cells,
         "management_unit_count": len(set(c.get("management_unit") for c in cells if c.get("management_unit")))
     }

@@ -91,10 +91,11 @@ class PredictionService:
         # Extract features
         features = []
         for cell in baseline_cells:
-            feature_vector = [cell.get(feature, 0.0) for feature in self.feature_names]
+            # Explicitly handle None values from database by converting to 0.0
+            feature_vector = [float(cell.get(feature) or 0.0) for feature in self.feature_names]
             features.append(feature_vector)
         
-        features_array = np.array(features)
+        features_array = np.array(features, dtype=float)
         
         # Apply modifications
         modified_features = features_array.copy()
