@@ -243,6 +243,22 @@ async def get_scenario_history(
     }
 
 
+@router.get("/scenarios/trends")
+async def get_historical_trends(
+    management_unit: str = Query("Regional Total"),
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Get historical lion population trends for a management unit.
+    Used for comparison in the dashboard.
+    """
+    trends = db.get_historical_trends(management_unit=management_unit)
+    return {
+        "unit": management_unit,
+        "trends": trends
+    }
+
+
 @router.get("/scenarios/history/{scenario_id}")
 async def get_scenario_by_id(
     scenario_id: int,

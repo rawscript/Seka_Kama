@@ -249,6 +249,19 @@ class SupabaseService:
         
         result = query.execute()
         return result.data
+
+    # ========== Historical Trends Operations ==========
+
+    def get_historical_trends(self, management_unit: str = "Regional Total") -> List[Dict[str, Any]]:
+        """
+        Retrieve historical population trends for a management unit.
+        """
+        result = self.client.table("historical_stats")\
+            .select("*")\
+            .eq("management_unit", management_unit)\
+            .order("year")\
+            .execute()
+        return result.data
     
     # ========== Statistics and Aggregations ==========
     

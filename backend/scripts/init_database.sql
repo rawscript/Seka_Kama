@@ -209,3 +209,17 @@ VALUES (
     'Seka Kama Conservancy',
     'admin'
 ) ON CONFLICT (email) DO NOTHING;
+
+-- Historical Lion Population Trends
+CREATE TABLE IF NOT EXISTS historical_stats (
+    id SERIAL PRIMARY KEY,
+    year INTEGER NOT NULL,
+    management_unit VARCHAR(100) NOT NULL,
+    lion_count FLOAT DEFAULT 0,
+    source VARCHAR(255),
+    metadata JSONB DEFAULT '{}',
+    UNIQUE (year, management_unit)
+);
+
+-- Index for fast look‑ups
+CREATE INDEX IF NOT EXISTS idx_historical_unit_year ON historical_stats (management_unit, year);
