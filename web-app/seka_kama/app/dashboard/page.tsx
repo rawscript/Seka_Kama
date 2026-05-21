@@ -26,7 +26,7 @@ export default function DashboardPage() {
       <div className="relative w-full h-full bg-[#020617]">
         <SekaMap onScenarioRun={(result) => setScenarioResult(result)} />
         {scenarioResult && (
-          <div className="absolute top-6 right-6 z-[100]">
+          <div className="absolute top-24 left-6 z-[100]">
             <ScenarioResultPanel 
               result={scenarioResult} 
               onClose={() => setScenarioResult(null)} 
