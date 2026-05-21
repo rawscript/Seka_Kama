@@ -218,7 +218,8 @@ function UnitRow({ name, delta, max }: { name: string, delta: number, max: numbe
        <div className="flex justify-between items-center text-[11px]">
           <span className="text-slate-400 font-medium group-hover:text-slate-200 transition-colors truncate max-w-[150px]">{name}</span>
           <span className={`font-mono font-bold ${textColor}`}>
-            {delta > 0 ? '+' : ''}{delta.toFixed(1)}
+            {delta > 0 ? '+' : ''}
+            {(typeof delta === 'number' ? delta : 0).toFixed(1)}
           </span>
        </div>
        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">

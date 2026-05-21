@@ -13,8 +13,15 @@ function formatDate(iso: string) {
   });
 }
 
-function DeltaBadge({ delta }: { delta: number }) {
-  const positive = delta >= 0;
+function safeFixed(val: any, digits = 1): string {
+  const n = typeof val === 'number' ? val : parseFloat(val);
+  if (isNaN(n)) return '—';
+  return n.toFixed(digits);
+}
+
+function DeltaBadge({ delta }: { delta: any }) {
+  const n = typeof delta === 'number' ? delta : parseFloat(delta);
+  const positive = n >= 0;
   return (
     <span
       style={{
@@ -25,11 +32,11 @@ function DeltaBadge({ delta }: { delta: number }) {
         borderRadius: '999px',
         fontSize: '0.78rem',
         fontWeight: 600,
-        background: positive ? '#e8f5e9' : '#ffebee',
-        color: positive ? '#2e7d32' : '#c62828',
+        background: isNaN(n) ? '#f0f0f0' : (positive ? '#e8f5e9' : '#ffebee'),
+        color: isNaN(n) ? '#888' : (positive ? '#2e7d32' : '#c62828'),
       }}
     >
-      {positive ? '▲' : '▼'} {Math.abs(delta).toFixed(1)} lions
+      {!isNaN(n) && (positive ? '▲' : '▼')} {safeFixed(Math.abs(n))} lions
     </span>
   );
 }
@@ -118,9 +125,9 @@ export default function ScenariosPage() {
                   {isOpen && (
                     <div style={styles.cardBody}>
                       <div style={styles.statsRow}>
-                        <Stat label="Baseline" value={`${s.baseline_total_lions.toFixed(1)} lions`} />
-                        <Stat label="Predicted" value={`${s.predicted_total_lions.toFixed(1)} lions`} />
-                        <Stat label="Delta %" value={`${s.delta_percent >= 0 ? '+' : ''}${s.delta_percent.toFixed(1)}%`} />
+                        <Stat label="Baseline" value={`${safeFixed(s.baseline_total_lions)} lions`} />
+                        <Stat label="Predicted" value={`${safeFixed(s.predicted_total_lions)} lions`} />
+                        <Stat label="Delta %" value={`${(s.delta_percent ?? 0) >= 0 ? '+' : ''}${safeFixed(s.delta_percent)}%`} />
                       </div>
 
                       {s.llm_narrative && (
@@ -137,7 +144,7 @@ export default function ScenariosPage() {
                             {Object.entries(s.request_data.feature_modifications).map(([k, v]) => (
                               <div key={k} style={styles.featureChip}>
                                 <span style={styles.featureKey}>{k}</span>
-                                <span style={styles.featureVal}>{(v as number) >= 0 ? '+' : ''}{(v as number).toFixed(3)}</span>
+                                <span style={styles.featureVal}>{(v as number) >= 0 ? '+' : ''}{safeFixed(v, 3)}</span>
                               </div>
                             ))}
                           </div>
