@@ -53,14 +53,16 @@ if _origins_str:
 _allowed_origins = list(dict.fromkeys(_allowed_origins))
 
 # If in debug mode or explicitly requested, allow all to unblock
-if os.getenv("DEBUG") == "True" or os.getenv("ALLOW_ALL_ORIGINS") == "True":
+_allow_all = os.getenv("DEBUG") == "True" or os.getenv("ALLOW_ALL_ORIGINS") == "True"
+if _allow_all:
     _allowed_origins = ["*"]
 
-# CORS — temporarily allow all for debugging
+# CORS — robust configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_allowed_origins if not _allow_all else ["*"],
+    allow_origin_regex=r"https://seka-kama-.*\.vercel\.app" if not _allow_all else None,
+    allow_credentials=not _allow_all, # Credentials cannot be used with wildcard "*"
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
