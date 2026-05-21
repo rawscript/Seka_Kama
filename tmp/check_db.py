@@ -1,21 +1,16 @@
 import os
 from supabase import create_client
+from dotenv import load_dotenv
 
-def check_table():
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    client = create_client(url, key)
-    
-    try:
-        # Check users table
-        users = client.table("users").select("count").limit(1).execute()
-        print(f"Users table: OK")
-        
-        # Check api_keys table
-        keys = client.table("api_keys").select("count").limit(1).execute()
-        print(f"api_keys table: OK")
-    except Exception as e:
-        print(f"Error: {e}")
+load_dotenv("e:/Main/Projects/opensource/seka/Seka_Kama/backend/.env")
+url = os.getenv("SUPABASE_URL")
+key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+supabase = create_client(url, key)
 
-if __name__ == "__main__":
-    check_table()
+res = supabase.table("grid_cells").select("*").limit(1).execute()
+if res.data:
+    print(f"Columns: {list(res.data[0].keys())}")
+    print(f"Centroid type: {type(res.data[0].get('centroid'))}")
+    print(f"Centroid value: {res.data[0].get('centroid')}")
+else:
+    print("No data in grid_cells")

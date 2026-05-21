@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS grid_cells (
     ann_cv_mean FLOAT,
     ann_peak_month_mean FLOAT,
     dist_to_protected_km FLOAT,
+    land_cover_class INTEGER,
     
     -- Output columns
     baseline_lion_density FLOAT DEFAULT 0,
