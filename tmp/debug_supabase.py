@@ -4,7 +4,7 @@ from supabase import create_client
 from dotenv import load_dotenv
 
 # Search for .env relative to this script
-env_path = os.path.join("e:/Main/Projects/opensource/seka/Seka_Kama/", ".env")
+env_path = os.path.join("/backend/.env")
 load_dotenv(env_path)
 
 url = os.getenv("SUPABASE_URL")
