@@ -128,7 +128,7 @@ export default function RegisterPage() {
             ref={bgRef}
             alt="Conservation Research Outpost"
             className="w-full h-full object-cover"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkFY352FwEfdcWV69alEUQ8QP1nu0pX82uoyF_4WYqa8tKvPCxcKfEyj_T6Do8Mpy1Ch8ICYybaKxoEPKCRAOcYCp7YCSfe1TKeQDyauwMzCUyW-UA1xIq2I69eblAMGA5ZbfUCgctqWxQJAc4zEe6pP6jhySNWQit5WB7gmMeARsnV1wi12Tt2CJuoLLexXtIlgRg8NuSY-2Z0GggOcghZQeBLOj6z1i5wEywJuTrHNe3h3jmVxJeEtTuafpQSx6v68N9ULRrxRY"
+            src="auth-form.png"
           />
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
