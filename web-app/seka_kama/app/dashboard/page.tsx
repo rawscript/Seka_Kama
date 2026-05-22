@@ -106,7 +106,7 @@ function DashboardContent() {
         <div className="absolute top-8 right-8 flex flex-col gap-6 w-[380px] max-h-[calc(100vh-180px)] overflow-y-auto pr-2 pb-8 z-20 custom-scrollbar">
 
           {/* Zone Selection Panel - FUNCTIONAL */}
-          <div className="map-overlay-card p-6 shadow-sm rounded-sm">
+          <div className={`map-overlay-card p-6 shadow-sm rounded-sm relative ${isZoneMenuOpen ? 'z-50' : 'z-20'}`}>
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-2 text-primary font-bold">
                 <span className="material-symbols-outlined text-[20px]">location_on</span>
@@ -176,7 +176,7 @@ function DashboardContent() {
           </div>
  */}
           {/* Ecosystem Indicators Panel */}
-          <div className="map-overlay-card p-6 shadow-sm rounded-sm">
+          <div className="map-overlay-card p-6 shadow-sm rounded-sm relative z-10">
             <div className="flex items-center gap-2 mb-8 text-primary font-bold">
               <span className="material-symbols-outlined text-[20px]">eco</span>
               <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">ECOSYSTEM INDICATORS</h4>
