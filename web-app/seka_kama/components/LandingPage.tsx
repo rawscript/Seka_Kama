@@ -59,10 +59,40 @@ const capabilities = [
 
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
+
+    const checkSession = async () => {
+      const token = localStorage.getItem('access_token');
+      if (!token) return; // Do nothing if there's no token, leave them on landing page
+
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+          setIsAuthenticated(true); // User is verified! Update buttons.
+        } else {
+          // If token is expired or invalid, silently remove it so we don't keep hitting the API
+          localStorage.removeItem('access_token');
+        }
+      } catch (error) {
+        console.error("Session verification failed:", error);
+      }
+    };
+
+    checkSession();
   }, []);
+
+  // 3. Set the dynamic routing path depending on state
+  const consolePath = isAuthenticated ? '/console' : '/login';
+  const consoleLabel = isAuthenticated ? 'Dashboard' : 'Launch Console';
 
   return (
     <div className="bg-[#f9f9f9] text-[#1a1c1c] overflow-x-hidden antialiased selection:bg-[#775a19]/10 selection:text-[#4e3700]">
@@ -87,15 +117,15 @@ export default function LandingPage() {
               Documentation
             </Link>
           </div>
-          <Link href="/login" className="text-[11px] font-bold uppercase tracking-[0.15em] px-6 py-2.5 border border-[#777667] bg-transparent text-[#1a1c1c] hover:bg-[#775a19] hover:text-white hover:border-[#775a19] transition-all duration-300">
-            Launch Console
+          {/* Dynamic Link route & text based on authentication */}
+          <Link href={consolePath} className="text-[11px] font-bold uppercase tracking-[0.15em] px-6 py-2.5 border border-[#777667] bg-transparent text-[#1a1c1c] hover:bg-[#775a19] hover:text-white hover:border-[#775a19] transition-all duration-300">
+            {consoleLabel}
           </Link>
         </div>
       </nav>
 
       {/* Hero Section */}
       <header className="relative w-full min-h-screen flex items-center overflow-hidden bg-[#f9f9f9]">
-        {/* Fixed Background Layer Group — Fully isolated block configuration to completely eliminate anti-aliasing artifacts */}
         <div className="absolute inset-0 z-0 select-none pointer-events-none bg-[#f9f9f9]">
           <div 
             className="absolute inset-0 opacity-90 transition-transform duration-[20s] ease-out animate-[slow-zoom_20s_linear_infinite_alternate]"
@@ -107,7 +137,6 @@ export default function LandingPage() {
               mixBlendMode: 'multiply'
             }}
           />
-          {/* Smooth overlay masks containing zero conflicting translucent via-points */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#f9f9f9] from-15% via-[#f9f9f9]/20 to-transparent md:w-3/4 lg:w-1/2" />
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#f9f9f9] to-transparent h-48" />
         </div>
@@ -122,14 +151,15 @@ export default function LandingPage() {
               <span className="italic font-light text-[#4e3700]">The Digital Twin</span>
             </h1>
             <p className="text-base md:text-lg leading-relaxed text-[#4e4639] mb-10 max-w-lg font-light">
-              Orchestrating the future of biodiversity through real-time geospatial intelligence and predictive ecology for the Greater Mara ecosystem.
+              Coordinating the future of biodiversity through real-time geospatial intelligence and predictive ecology for the Greater Mara ecosystem.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/login" className="bg-[#775a19] text-white px-8 py-4 text-[11px] font-bold tracking-widest uppercase hover:bg-[#4e3700] transition-colors shadow-sm">
+              {/* Dynamic Link route based on authentication */}
+              <Link href={consolePath} className="bg-[#775a19] text-white px-8 py-4 text-[11px] font-bold tracking-widest uppercase hover:bg-[#4e3700] transition-colors shadow-sm">
                 Explore Ecosystem
               </Link>
-              <Link href="/whitepaper" className="border border-[#777667] text-[#1a1c1c] px-8 py-4 text-[11px] font-bold tracking-widest uppercase hover:bg-black/5 transition-colors">
-                Read Whitepaper
+              <Link href="/demo" className="border border-[#777667] text-[#1a1c1c] px-8 py-4 text-[11px] font-bold tracking-widest uppercase hover:bg-black/5 transition-colors">
+                View Demo
               </Link>
             </div>
           </div>
