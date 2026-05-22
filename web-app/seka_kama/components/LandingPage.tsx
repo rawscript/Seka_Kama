@@ -94,17 +94,19 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <header className="relative w-full min-h-screen flex items-center overflow-hidden">
-        {/* Background Layer Group - Explicitly anchors composition to prevent truncation */}
-        <div className="absolute inset-0 z-0 select-none pointer-events-none">
-          <img
-            alt="Majestic Lion Profile View in Savannah"
-            className="w-full h-full object-cover object-[center_35%] mix-blend-multiply opacity-90 transition-transform duration-[20s] ease-out animate-[slow-zoom_20s_linear_infinite_alternate]"
-            src="https://lh3.googleusercontent.com/aida/ADBb0ugLJHpQP28XrUtF2yN3Rx6qiVEqWBhrJHQD8Tpojaky6reqpddr7ZjSc5uNDHMmhNBE46PNMn1-hgkJjfvW_Z-zNgyfqtTD4Q44whA9399itcGYEEnoAaQLa4cXy5RIzct1wUTkt8Ob2qHg5rsI8ZZrKfPSwWnm2V3_hH7k8Ih-VE3kQ2EnQLR9nc-_6HUOCdfY1MOxuPH-HVx7P_-cAD2nAm6NFtxT6YisVGzz8DI5EolS1wmaTV8srw"
-          />
-          {/* Subtle horizontal fade to preserve typographic contrast */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#f9f9f9] via-[#f9f9f9]/80 to-transparent md:w-2/3 lg:w-1/2" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#f9f9f9] via-transparent to-transparent h-32 bottom-0" />
+      <header className="relative w-full min-h-screen flex items-center overflow-hidden bg-[#f9f9f9]">
+        {/* Fixed Background Layer Group — Reconfigured to eliminate anti-aliasing lines */}
+        <div className="absolute inset-0 z-0 select-none pointer-events-none bg-[#f9f9f9]">
+          <div className="w-full h-full relative mix-blend-multiply opacity-90">
+            <img
+              alt="Majestic Lion Profile View in Savannah"
+              className="w-full h-full object-cover object-[center_35%] transition-transform duration-[20s] ease-out animate-[slow-zoom_20s_linear_infinite_alternate]"
+              src="https://lh3.googleusercontent.com/aida/ADBb0ugLJHpQP28XrUtF2yN3Rx6qiVEqWBhrJHQD8Tpojaky6reqpddr7ZjSc5uNDHMmhNBE46PNMn1-hgkJjfvW_Z-zNgyfqtTD4Q44whA9399itcGYEEnoAaQLa4cXy5RIzct1wUTkt8Ob2qHg5rsI8ZZrKfPSwWnm2V3_hH7k8Ih-VE3kQ2EnQLR9nc-_6HUOCdfY1MOxuPH-HVx7P_-cAD2nAm6NFtxT6YisVGzz8DI5EolS1wmaTV8srw"
+            />
+          </div>
+          {/* Typographic contrast gradients shifted directly to a neutral space wrapper */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f9f9f9] via-[#f9f9f9]/40 to-transparent md:w-2/3 lg:w-1/2" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#f9f9f9] via-transparent to-transparent h-40 bottom-0" />
         </div>
 
         <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 md:px-20 py-20">
