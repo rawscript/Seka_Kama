@@ -95,18 +95,21 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <header className="relative w-full min-h-screen flex items-center overflow-hidden bg-[#f9f9f9]">
-        {/* Fixed Background Layer Group — Reconfigured to eliminate anti-aliasing lines */}
+        {/* Fixed Background Layer Group — Fully isolated block configuration to completely eliminate anti-aliasing artifacts */}
         <div className="absolute inset-0 z-0 select-none pointer-events-none bg-[#f9f9f9]">
-          <div className="w-full h-full relative mix-blend-multiply opacity-90">
-            <img
-              alt="Majestic Lion Profile View in Savannah"
-              className="w-full h-full object-cover object-[center_35%] transition-transform duration-[20s] ease-out animate-[slow-zoom_20s_linear_infinite_alternate]"
-              src="seka_kama_hero_lion_1778841687196.png"
-            />
-          </div>
-          {/* Typographic contrast gradients shifted directly to a neutral space wrapper */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#f9f9f9] via-[#f9f9f9]/40 to-transparent md:w-2/3 lg:w-1/2" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#f9f9f9] via-transparent to-transparent h-40 bottom-0" />
+          <div 
+            className="absolute inset-0 opacity-90 transition-transform duration-[20s] ease-out animate-[slow-zoom_20s_linear_infinite_alternate]"
+            style={{
+              backgroundImage: "url('seka_kama_hero_lion_1778841687196.png')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center 35%',
+              backgroundRepeat: 'no-repeat',
+              mixBlendMode: 'multiply'
+            }}
+          />
+          {/* Smooth overlay masks containing zero conflicting translucent via-points */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f9f9f9] from-15% via-[#f9f9f9]/20 to-transparent md:w-3/4 lg:w-1/2" />
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#f9f9f9] to-transparent h-48" />
         </div>
 
         <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 md:px-20 py-20">
