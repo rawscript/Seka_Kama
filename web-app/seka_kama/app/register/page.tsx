@@ -27,19 +27,19 @@ export default function RegisterPage() {
     updateClock();
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (bgRef.current) {
-        const moveX = (e.clientX - window.innerWidth / 2) * 0.008;
-        const moveY = (e.clientY - window.innerHeight / 2) * 0.008;
-        bgRef.current.style.transform = `scale(1.05) translate(${moveX}px, ${moveY}px)`;
-      }
-    };
-    document.addEventListener('mousemove', handleMouseMove);
-    return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
+  /*
+    useEffect(() => {
+      const handleMouseMove = (e: MouseEvent) => {
+        if (bgRef.current) {
+          const moveX = (e.clientX - window.innerWidth / 2) * 0.008;
+          const moveY = (e.clientY - window.innerHeight / 2) * 0.008;
+          bgRef.current.style.transform = `scale(1.05) translate(${moveX}px, ${moveY}px)`;
+        }
+      };
+      document.addEventListener('mousemove', handleMouseMove);
+      return () => document.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+  */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
@@ -175,7 +175,7 @@ export default function RegisterPage() {
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                   />
                 </div>
-                
+
                 <div className="relative group/input">
                   <label className="text-[10px] font-semibold text-[#c5a059]/60 mb-1 block transition-colors group-focus-within/input:text-[#c5a059] tracking-widest uppercase">
                     Affiliation
