@@ -128,7 +128,7 @@ export default function RegisterPage() {
             ref={bgRef}
             alt="Conservation Research Outpost"
             className="w-full h-full object-cover"
-            src="auth-form.png"
+            src="https://res.cloudinary.com/dp7vwr0av/image/upload/v1779445100/auth-form_kh1bio.png"
           />
           <div className="absolute inset-0 bg-black/40"></div>
         </div>

@@ -124,7 +124,7 @@ export default function LoginPage() {
             ref={bgRef}
             alt="Conservation Research Outpost"
             className="w-full h-full object-cover"
-            src="auth-form-2.png"
+            src="https://res.cloudinary.com/dp7vwr0av/image/upload/v1779445101/auth-form-2_exleco.png"
           />
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
