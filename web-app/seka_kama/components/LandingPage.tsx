@@ -87,7 +87,7 @@ export default function LandingPage() {
               Documentation
             </Link>
           </div>
-          <Link href="/console" className="text-[11px] font-bold uppercase tracking-[0.15em] px-6 py-2.5 border border-[#777667] bg-transparent text-[#1a1c1c] hover:bg-[#775a19] hover:text-white hover:border-[#775a19] transition-all duration-300">
+          <Link href="/dashboard" className="text-[11px] font-bold uppercase tracking-[0.15em] px-6 py-2.5 border border-[#777667] bg-transparent text-[#1a1c1c] hover:bg-[#775a19] hover:text-white hover:border-[#775a19] transition-all duration-300">
             Launch Console
           </Link>
         </div>
@@ -101,7 +101,7 @@ export default function LandingPage() {
             <img
               alt="Majestic Lion Profile View in Savannah"
               className="w-full h-full object-cover object-[center_35%] transition-transform duration-[20s] ease-out animate-[slow-zoom_20s_linear_infinite_alternate]"
-              src="https://lh3.googleusercontent.com/aida/ADBb0ugLJHpQP28XrUtF2yN3Rx6qiVEqWBhrJHQD8Tpojaky6reqpddr7ZjSc5uNDHMmhNBE46PNMn1-hgkJjfvW_Z-zNgyfqtTD4Q44whA9399itcGYEEnoAaQLa4cXy5RIzct1wUTkt8Ob2qHg5rsI8ZZrKfPSwWnm2V3_hH7k8Ih-VE3kQ2EnQLR9nc-_6HUOCdfY1MOxuPH-HVx7P_-cAD2nAm6NFtxT6YisVGzz8DI5EolS1wmaTV8srw"
+              src="seka_kama_hero_lion_1778841687196.png"
             />
           </div>
           {/* Typographic contrast gradients shifted directly to a neutral space wrapper */}
