@@ -91,7 +91,7 @@ export default function LandingPage() {
   }, []);
 
   // 3. Set the dynamic routing path depending on state
-  const consolePath = isAuthenticated ? '/Dashboard' : '/login';
+  const consolePath = isAuthenticated ? '/dashboard' : '/login';
   const consoleLabel = isAuthenticated ? 'Dashboard' : 'Launch Console';
 
   return (
