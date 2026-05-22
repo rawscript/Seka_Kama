@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import dynamic from 'next/dynamic';
+import { MapProvider, useMap } from 'react-map-gl/maplibre';
 
 const SekaMap = dynamic(() => import('@/components/SekaMap'), { 
   ssr: false,
@@ -19,11 +20,38 @@ const SekaMap = dynamic(() => import('@/components/SekaMap'), {
 const ScenarioResultPanel = dynamic(() => import('@/components/ScenarioResultPanel'), { ssr: false });
 
 export default function DashboardPage() {
+  return (
+    <MapProvider>
+      <DashboardContent />
+    </MapProvider>
+  );
+}
+
+function DashboardContent() {
+  const { 'main-map': mapMain } = useMap();
   const [scenarioResult, setScenarioResult] = useState<any>(null);
   const [selectedUnit, setSelectedUnit] = useState<string>('');
   const [isZoneMenuOpen, setIsZoneMenuOpen] = useState(false);
+  const [currentCoords, setCurrentCoords] = useState({ lat: -1.25, lng: 35.1 });
+  const [activeLayer, setActiveLayer] = useState('SATELLITE (TRUE COLOR)');
+  const [timeValue, setTimeValue] = useState(66); // Default slider %
 
   const units = ['Mara North', 'Olare-Motorogi', 'Naboisho', 'Ol Kinyei'];
+
+  const handleZoomIn = () => {
+    mapMain?.zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    mapMain?.zoomOut();
+  };
+
+  const handleViewStateChange = (viewState: any) => {
+    setCurrentCoords({
+      lat: viewState.latitude,
+      lng: viewState.longitude
+    });
+  };
 
   return (
     <ProtectedRoute>
@@ -52,7 +80,9 @@ export default function DashboardPage() {
         <SekaMap 
           selectedUnit={selectedUnit}
           onUnitChange={setSelectedUnit}
+          onViewStateChange={handleViewStateChange}
           onScenarioRun={(result) => setScenarioResult(result)} 
+          activeLayer={activeLayer}
         />
         
         {/* Top Left Status */}
@@ -112,21 +142,6 @@ export default function DashboardPage() {
                   ))}
                 </div>
               )}
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span 
-                  onClick={() => setSelectedUnit('Mara North')}
-                  className="px-2 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-sm border border-outline-variant uppercase cursor-pointer hover:border-primary transition-colors"
-                >
-                  NORTH SECTOR
-                </span>
-                <span 
-                  onClick={() => setSelectedUnit('Mara North')}
-                  className="px-2 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-sm border border-outline-variant uppercase cursor-pointer hover:border-primary transition-colors"
-                >
-                  MARA RIVER DELTA
-                </span>
-              </div>
             </div>
           </div>
 
@@ -216,7 +231,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Temporal Controls (Time Slider) - MOVED TO BOTTOM RIGHT TO AVOID BLOCKING MAP BUTTON */}
+        {/* Temporal Controls (Time Slider) */}
         <div className="absolute bottom-8 right-[420px] w-[500px] z-30">
           <div className="map-overlay-card p-4 shadow-lg rounded-sm">
             <div className="flex justify-between items-center mb-3">
@@ -232,9 +247,19 @@ export default function DashboardPage() {
             </div>
             <div className="relative pt-1">
               <div className="h-1 w-full bg-surface-container rounded-full overflow-hidden relative">
-                <div className="absolute left-0 top-0 h-full w-2/3 time-slider-track"></div>
+                <div className="absolute left-0 top-0 h-full time-slider-track" style={{ width: `${timeValue}%` }}></div>
               </div>
-              <div className="absolute top-[-5px] left-[66%] w-3.5 h-3.5 bg-primary border-2 border-white rounded-full shadow-md cursor-pointer hover:scale-110 transition-transform"></div>
+              <input 
+                type="range" 
+                min="0" max="100" 
+                value={timeValue}
+                onChange={(e) => setTimeValue(parseInt(e.target.value))}
+                className="absolute top-[-5px] left-0 w-full opacity-0 cursor-pointer h-4 z-40"
+              />
+              <div 
+                className="absolute top-[-5px] w-3.5 h-3.5 bg-primary border-2 border-white rounded-full shadow-md pointer-events-none transition-all"
+                style={{ left: `calc(${timeValue}% - 7px)` }}
+              ></div>
               <div className="flex justify-between mt-2 px-1">
                 <div className="text-center">
                   <p className="text-[8px] font-bold text-outline uppercase tracking-widest leading-none">JAN 20</p>
@@ -253,31 +278,44 @@ export default function DashboardPage() {
         {/* Map Legend / Controls Bottom Left */}
         <div className="absolute bottom-8 left-8 flex flex-col gap-4 z-20">
           <div className="map-overlay-card p-2 flex flex-col gap-2 rounded-lg">
-            <button className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+            <button 
+              onClick={handleZoomIn}
+              className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors"
+            >
               <span className="material-symbols-outlined text-[20px]">add</span>
             </button>
             <div className="w-full h-[1px] bg-outline-variant"></div>
-            <button className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+            <button 
+              onClick={handleZoomOut}
+              className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors"
+            >
               <span className="material-symbols-outlined text-[20px]">remove</span>
             </button>
           </div>
-          <div className="map-overlay-card px-4 py-2 flex items-center gap-4 rounded-lg">
+          <div 
+            onClick={() => setActiveLayer(activeLayer === 'SATELLITE (TRUE COLOR)' ? 'VECTOR (TOPOGRAPHIC)' : 'SATELLITE (TRUE COLOR)')}
+            className="map-overlay-card px-4 py-2 flex items-center gap-4 rounded-lg cursor-pointer hover:border-primary transition-colors"
+          >
             <span className="material-symbols-outlined text-secondary text-[20px]">layers</span>
             <div className="h-4 w-[1px] bg-outline-variant"></div>
-            <span className="text-[11px] font-bold text-on-surface uppercase tracking-widest">SATELLITE (TRUE COLOR)</span>
+            <span className="text-[11px] font-bold text-on-surface uppercase tracking-widest">{activeLayer}</span>
           </div>
         </div>
 
         {/* Coordinate Display Bottom Right */}
         <div className="absolute bottom-8 right-8 z-20">
           <div className="map-overlay-card px-4 py-2 flex gap-8 rounded-lg shadow-sm">
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-[80px]">
               <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">Latitude</span>
-              <span className="text-[12px] font-bold text-on-surface tracking-tight">1.3521° S</span>
+              <span className="text-[12px] font-bold text-on-surface tracking-tight">
+                {Math.abs(currentCoords.lat).toFixed(4)}° {currentCoords.lat >= 0 ? 'N' : 'S'}
+              </span>
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-[80px]">
               <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">Longitude</span>
-              <span className="text-[12px] font-bold text-on-surface tracking-tight">34.9382° E</span>
+              <span className="text-[12px] font-bold text-on-surface tracking-tight">
+                {Math.abs(currentCoords.lng).toFixed(4)}° {currentCoords.lng >= 0 ? 'E' : 'W'}
+              </span>
             </div>
           </div>
         </div>

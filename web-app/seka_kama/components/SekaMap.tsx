@@ -31,6 +31,8 @@ interface SekaMapProps {
   onScenarioRun?: (result: any) => void;
   selectedUnit?: string;
   onUnitChange?: (unit: string) => void;
+  onViewStateChange?: (viewState: any) => void;
+  activeLayer?: string;
 }
 
 const CONSERVANCY_COORDS: Record<string, { lng: number, lat: number, zoom: number }> = {
@@ -40,21 +42,42 @@ const CONSERVANCY_COORDS: Record<string, { lng: number, lat: number, zoom: numbe
   'Ol Kinyei': { lng: 35.454, lat: -1.332, zoom: 11 },
 };
 
-export default function SekaMap({ onScenarioRun, selectedUnit = '', onUnitChange }: SekaMapProps) {
+export default function SekaMap(props: SekaMapProps) {
   return (
-    <MapProvider>
-      <div className="relative w-full h-full bg-[#020617]">
-        <SekaMapContent onScenarioRun={onScenarioRun} selectedUnit={selectedUnit} onUnitChange={onUnitChange} />
-      </div>
-    </MapProvider>
+    <div className="relative w-full h-full bg-[#020617]">
+      <SekaMapContent {...props} />
+    </div>
   );
 }
 
-function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange }: SekaMapProps) {
+function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange, onViewStateChange, activeLayer }: SekaMapProps) {
   const { 'main-map': mapMain } = useMap();
   const envLandXUrl = process.env.NEXT_PUBLIC_LANDX_TILE_URL || '';
   const landXSourceUrl = getDirectDriveLink(envLandXUrl);
   
+  // Choose style based on activeLayer
+  const currentMapStyle: any = activeLayer === 'VECTOR (TOPOGRAPHIC)' 
+    ? 'https://demotiles.maplibre.org/style.json'
+    : {
+        version: 8,
+        sources: {
+          'satellite': {
+            type: 'raster',
+            tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256,
+            attribution: 'Esri, Maxar'
+          }
+        },
+        layers: [
+          {
+            id: 'satellite-layer',
+            type: 'raster',
+            source: 'satellite',
+            paint: { 'raster-opacity': 0.85, 'raster-saturation': -0.2, 'raster-contrast': 0.1 }
+          }
+        ]
+      };
+
   const [loading, setLoading] = useState(true);
   const [baselineData, setBaselineData] = useState<any>(null);
   const [protectedData, setProtectedData] = useState<any>(null);
@@ -66,6 +89,20 @@ function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange }: SekaMapPr
     pitch: 45,
     bearing: -10
   });
+
+  // Notify parent on mount/init
+  useEffect(() => {
+    if (onViewStateChange) {
+      onViewStateChange(viewState);
+    }
+  }, []);
+
+  const handleMove = useCallback((evt: any) => {
+    setViewState(evt.viewState);
+    if (onViewStateChange) {
+      onViewStateChange(evt.viewState);
+    }
+  }, [onViewStateChange]);
 
   const loadData = useCallback(async () => {
     try {
@@ -104,28 +141,10 @@ function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange }: SekaMapPr
     <div className="w-full h-full relative group">
       <Map
         {...viewState}
-        onMove={evt => setViewState(evt.viewState)}
+        onMove={handleMove}
         onLoad={() => setIsStyleLoaded(true)}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={{
-          version: 8,
-          sources: {
-            'satellite': {
-              type: 'raster',
-              tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-              tileSize: 256,
-              attribution: 'Esri, Maxar'
-            }
-          },
-          layers: [
-            {
-              id: 'satellite-layer',
-              type: 'raster',
-              source: 'satellite',
-              paint: { 'raster-opacity': 0.85, 'raster-saturation': -0.2, 'raster-contrast': 0.1 }
-            }
-          ]
-        }}
+        mapStyle={currentMapStyle}
         id="main-map"
       >
         {isStyleLoaded && (
@@ -198,7 +217,7 @@ function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange }: SekaMapPr
           </>
         )}
 
-        <ScenarioDrawer onScenarioRun={onScenarioRun} />
+        <ScenarioDrawer onScenarioRun={onScenarioRun || (() => {})} />
       </Map>
 
       {/* Modern Loader Overlay */}

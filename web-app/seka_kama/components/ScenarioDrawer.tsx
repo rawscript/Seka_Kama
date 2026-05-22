@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 interface ScenarioDrawerProps {
-  onScenarioRun: (result: any) => void;
+  onScenarioRun?: (result: any) => void;
 }
 
 const DEFAULT_MODIFICATIONS = {
@@ -107,7 +107,7 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
         feature_modifications: modifications,
         user_query: userQuery,
       });
-      onScenarioRun(result);
+      onScenarioRun?.(result);
       cancelDrawing();
     } catch (error) {
       console.error('Scenario run failed:', error);
