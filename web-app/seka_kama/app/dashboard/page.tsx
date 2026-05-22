@@ -5,7 +5,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import dynamic from 'next/dynamic';
 import { MapProvider, useMap } from 'react-map-gl/maplibre';
 
-const SekaMap = dynamic(() => import('@/components/SekaMap'), { 
+const SekaMap = dynamic(() => import('@/components/SekaMap'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full flex items-center justify-center bg-slate-900/10 animate-pulse">
@@ -77,14 +77,14 @@ function DashboardContent() {
       `}} />
 
       <div className="relative w-full h-full bg-[#dadada]">
-        <SekaMap 
+        <SekaMap
           selectedUnit={selectedUnit}
           onUnitChange={setSelectedUnit}
           onViewStateChange={handleViewStateChange}
-          onScenarioRun={(result) => setScenarioResult(result)} 
+          onScenarioRun={(result) => setScenarioResult(result)}
           activeLayer={activeLayer}
         />
-        
+
         {/* Top Left Status */}
         <div className="absolute top-8 left-8 flex items-center gap-3 px-4 py-2 bg-[#1a1c1c]/80 backdrop-blur-md rounded-full z-10">
           <div className="w-2 h-2 rounded-full bg-[#1db954]"></div>
@@ -95,16 +95,16 @@ function DashboardContent() {
         {/* Existing Scenario Result Panel (if active) */}
         {scenarioResult && (
           <div className="absolute top-24 left-8 z-[100]">
-            <ScenarioResultPanel 
-              result={scenarioResult} 
-              onClose={() => setScenarioResult(null)} 
+            <ScenarioResultPanel
+              result={scenarioResult}
+              onClose={() => setScenarioResult(null)}
             />
           </div>
         )}
 
         {/* Right Side Panels (Scrollable Container) */}
         <div className="absolute top-8 right-8 flex flex-col gap-6 w-[380px] max-h-[calc(100vh-180px)] overflow-y-auto pr-2 pb-8 z-20 custom-scrollbar">
-          
+
           {/* Zone Selection Panel - FUNCTIONAL */}
           <div className="map-overlay-card p-6 shadow-sm rounded-sm">
             <div className="flex justify-between items-center mb-6">
@@ -115,24 +115,24 @@ function DashboardContent() {
               <span className="material-symbols-outlined text-secondary text-[18px] cursor-pointer hover:text-primary transition-colors">open_in_full</span>
             </div>
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setIsZoneMenuOpen(!isZoneMenuOpen)}
                 className="w-full text-left flex justify-between items-center border-b border-outline-variant pb-2 text-[24px] headline-font font-medium text-on-surface hover:text-primary transition-colors"
               >
                 {selectedUnit || 'Regional Overview'}
                 <span className={`material-symbols-outlined text-outline transition-transform ${isZoneMenuOpen ? 'rotate-180' : ''}`}>keyboard_arrow_down</span>
               </button>
-              
+
               {isZoneMenuOpen && (
                 <div className="absolute top-full left-0 w-full mt-2 bg-white/95 backdrop-blur-md border border-outline-variant shadow-xl z-50 py-2 rounded-sm animate-in fade-in slide-in-from-top-2">
-                  <button 
+                  <button
                     onClick={() => { setSelectedUnit(''); setIsZoneMenuOpen(false); }}
                     className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium border-b border-outline-variant/30"
                   >
                     Regional Overview
                   </button>
                   {units.map(u => (
-                    <button 
+                    <button
                       key={u}
                       onClick={() => { setSelectedUnit(u); setIsZoneMenuOpen(false); }}
                       className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium last:border-0"
@@ -145,23 +145,8 @@ function DashboardContent() {
             </div>
           </div>
 
-          {/* AI Insights Panel - ONLY SHOW WHEN RUNNING OR RESULT EXISTS */}
-          {scenarioResult && (
-            <div className="map-overlay-card p-6 shadow-sm border-l-4 border-l-primary rounded-sm animate-in fade-in slide-in-from-right-4">
-              <div className="flex items-center gap-2 mb-4 text-primary font-bold">
-                <span className="material-symbols-outlined text-[20px]">psychology</span>
-                <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">AI INSIGHTS</h4>
-              </div>
-              <div className="bg-[#775a19]/5 p-4 rounded-sm italic text-[14px] text-on-surface-variant leading-relaxed">
-                {scenarioResult.analysis || "Synthesizing regional biological telemetry..."}
-              </div>
-              <button className="mt-4 text-primary text-[10px] font-bold flex items-center gap-1 hover:underline tracking-widest uppercase">
-                EXPAND FULL NARRATIVE <span className="material-symbols-outlined text-xs">arrow_forward</span>
-              </button>
-            </div>
-          )}
-
           {/* Scenario Simulation Panel */}
+          {/*
           <div className="map-overlay-card p-6 shadow-sm rounded-sm">
             <div className="flex items-center gap-2 mb-6 text-primary font-bold">
               <span className="material-symbols-outlined text-[20px]">model_training</span>
@@ -189,7 +174,7 @@ function DashboardContent() {
               <p className="text-[10px] text-center text-outline uppercase font-bold tracking-tighter">Use the central Propose Scenario button on map</p>
             </div>
           </div>
-
+ */}
           {/* Ecosystem Indicators Panel */}
           <div className="map-overlay-card p-6 shadow-sm rounded-sm">
             <div className="flex items-center gap-2 mb-8 text-primary font-bold">
@@ -249,14 +234,14 @@ function DashboardContent() {
               <div className="h-1 w-full bg-surface-container rounded-full overflow-hidden relative">
                 <div className="absolute left-0 top-0 h-full time-slider-track" style={{ width: `${timeValue}%` }}></div>
               </div>
-              <input 
-                type="range" 
-                min="0" max="100" 
+              <input
+                type="range"
+                min="0" max="100"
                 value={timeValue}
                 onChange={(e) => setTimeValue(parseInt(e.target.value))}
                 className="absolute top-[-5px] left-0 w-full opacity-0 cursor-pointer h-4 z-40"
               />
-              <div 
+              <div
                 className="absolute top-[-5px] w-3.5 h-3.5 bg-primary border-2 border-white rounded-full shadow-md pointer-events-none transition-all"
                 style={{ left: `calc(${timeValue}% - 7px)` }}
               ></div>
@@ -278,21 +263,21 @@ function DashboardContent() {
         {/* Map Legend / Controls Bottom Left */}
         <div className="absolute bottom-8 left-8 flex flex-col gap-4 z-20">
           <div className="map-overlay-card p-2 flex flex-col gap-2 rounded-lg">
-            <button 
+            <button
               onClick={handleZoomIn}
               className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors"
             >
               <span className="material-symbols-outlined text-[20px]">add</span>
             </button>
             <div className="w-full h-[1px] bg-outline-variant"></div>
-            <button 
+            <button
               onClick={handleZoomOut}
               className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors"
             >
               <span className="material-symbols-outlined text-[20px]">remove</span>
             </button>
           </div>
-          <div 
+          <div
             onClick={() => setActiveLayer(activeLayer === 'SATELLITE (TRUE COLOR)' ? 'VECTOR (TOPOGRAPHIC)' : 'SATELLITE (TRUE COLOR)')}
             className="map-overlay-card px-4 py-2 flex items-center gap-4 rounded-lg cursor-pointer hover:border-primary transition-colors"
           >
