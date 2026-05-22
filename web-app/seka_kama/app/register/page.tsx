@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Mail, Lock, Building, Loader2, ArrowRight, ShieldCheck, Globe } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -16,6 +15,30 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [timeStr, setTimeStr] = useState('');
+  const bgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      setTimeStr(now.toLocaleTimeString('en-GB', { hour12: false }));
+    };
+    const interval = setInterval(updateClock, 1000);
+    updateClock();
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (bgRef.current) {
+        const moveX = (e.clientX - window.innerWidth / 2) * 0.008;
+        const moveY = (e.clientY - window.innerHeight / 2) * 0.008;
+        bgRef.current.style.transform = `scale(1.05) translate(${moveX}px, ${moveY}px)`;
+      }
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,163 +77,219 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#020617] relative overflow-hidden p-4">
-      {/* Background Decor */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-1/3 -right-20 w-[30rem] h-[30rem] bg-emerald-500/10 rounded-full blur-[140px] animate-pulse" />
-        <div className="absolute bottom-1/3 -left-20 w-[30rem] h-[30rem] bg-cyan-500/10 rounded-full blur-[140px] animate-pulse delay-1000" />
-      </div>
+    <>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
-      <div className="relative z-10 w-full max-w-2xl px-4 py-12">
-        {/* Logo/Header */}
-        <div className="text-center mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
-          <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
-            <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-all">
-                <Globe className="w-8 h-8 text-emerald-400" />
-            </div>
-          </Link>
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">Enlistment</h1>
-          <p className="text-gray-400 font-medium max-w-sm mx-auto text-sm md:text-base">Join the frontlines of digital conservation monitoring and spatial intelligence.</p>
+        .login-container {
+            font-family: 'Hanken Grotesk', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #000;
+        }
+
+        .login-headline {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .cinematic-bg {
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+            z-index: 0;
+            top: 0;
+            left: 0;
+        }
+
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.4);
+            backdrop-filter: blur(40px) saturate(110%);
+            -webkit-backdrop-filter: blur(40px) saturate(110%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .text-glow {
+            text-shadow: 0 0 40px rgba(197, 160, 89, 0.3);
+        }
+
+        .cta-glow:hover {
+            box-shadow: 0 0 30px rgba(197, 160, 89, 0.4);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+        }
+      `}} />
+      <div className="login-container text-white selection:bg-[#c5a059] selection:text-[#4e3700] relative overflow-y-auto overflow-x-hidden">
+        <div className="cinematic-bg">
+          <img
+            ref={bgRef}
+            alt="Conservation Research Outpost"
+            className="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkFY352FwEfdcWV69alEUQ8QP1nu0pX82uoyF_4WYqa8tKvPCxcKfEyj_T6Do8Mpy1Ch8ICYybaKxoEPKCRAOcYCp7YCSfe1TKeQDyauwMzCUyW-UA1xIq2I69eblAMGA5ZbfUCgctqWxQJAc4zEe6pP6jhySNWQit5WB7gmMeARsnV1wi12Tt2CJuoLLexXtIlgRg8NuSY-2Z0GggOcghZQeBLOj6z1i5wEywJuTrHNe3h3jmVxJeEtTuafpQSx6v68N9ULRrxRY"
+          />
+          <div className="absolute inset-0 bg-black/40"></div>
         </div>
 
-        {/* Register Card */}
-        <div className="glass-panel p-8 md:p-12 rounded-[3rem] border border-white/10 shadow-2xl backdrop-blur-3xl bg-white/5 animate-in fade-in zoom-in-95 duration-500">
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Full Identity</label>
-                <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+        <main className="relative min-h-screen flex items-center justify-center px-6 md:px-10 lg:px-20 lg:justify-end z-10 w-full py-12">
+          {/* Terminal Identifier (Top Right) */}
+          <div className="absolute top-10 right-10 flex flex-col items-end z-20 pointer-events-none hidden md:flex">
+            <span className="text-[10px] text-[#c5a059] tracking-[0.2em] mb-1 font-semibold uppercase">TERMINAL STATUS</span>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#c5a059] animate-pulse"></div>
+              <span className="text-[11px] font-medium text-white/60 uppercase tracking-widest">Node: SER-04-S // ENLISTMENT</span>
+            </div>
+          </div>
+
+          {/* Right Side: Register Interface (Glass Panel) */}
+          <div className="glass-panel w-full max-w-[700px] rounded-2xl shadow-2xl relative z-20 p-8 lg:p-12 lg:mr-24 my-10 relative">
+            {/* Interface Header */}
+            <div className="mb-12 relative z-10">
+              <div className="flex items-center gap-4 mb-6">
+                <span className="w-10 h-[1px] bg-[#c5a059]/40"></span>
+                <span className="text-[11px] font-semibold text-[#c5a059]/80 tracking-[0.3em] uppercase">ACCESS REQUEST</span>
+              </div>
+              <h2 className="login-headline text-[48px] md:text-[56px] font-semibold text-white mb-4 text-glow leading-none">
+                Enlistment.
+              </h2>
+              <p className="text-[16px] text-[#e2e2e2]/50 max-w-[320px] leading-relaxed">
+                Join the frontlines of digital conservation monitoring and spatial intelligence.
+              </p>
+            </div>
+
+            {/* Application Form */}
+            <form className="relative z-10" onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                <div className="relative group/input">
+                  <label className="text-[10px] font-semibold text-[#c5a059]/60 mb-1 block transition-colors group-focus-within/input:text-[#c5a059] tracking-widest uppercase">
+                    Full Identity
+                  </label>
                   <input
+                    className="w-full bg-transparent border-0 border-b border-white/10 py-3 text-[18px] text-white focus:ring-0 focus:border-[#c5a059] transition-all placeholder:text-white/10 outline-none"
+                    placeholder="Dr. Sarah Kanga"
+                    required
                     type="text"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    placeholder="Dr. Sarah Kanga"
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium"
-                    required
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Affiliation</label>
-                <div className="relative group">
-                  <Building className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+                
+                <div className="relative group/input">
+                  <label className="text-[10px] font-semibold text-[#c5a059]/60 mb-1 block transition-colors group-focus-within/input:text-[#c5a059] tracking-widest uppercase">
+                    Affiliation
+                  </label>
                   <input
+                    className="w-full bg-transparent border-0 border-b border-white/10 py-3 text-[18px] text-white focus:ring-0 focus:border-[#c5a059] transition-all placeholder:text-white/10 outline-none"
+                    placeholder="UNEP / Mara Conservancy"
                     type="text"
                     value={formData.organization}
                     onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                    placeholder="UNEP / Mara Conservancy"
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Signal Channel</label>
-                <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+                <div className="relative group/input md:col-span-2">
+                  <label className="text-[10px] font-semibold text-[#c5a059]/60 mb-1 block transition-colors group-focus-within/input:text-[#c5a059] tracking-widest uppercase">
+                    Signal Channel (Email)
+                  </label>
                   <input
+                    className="w-full bg-transparent border-0 border-b border-white/10 py-3 text-[18px] text-white focus:ring-0 focus:border-[#c5a059] transition-all placeholder:text-white/10 outline-none"
+                    placeholder="sarah@mara-research.org"
+                    required
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="sarah@mara-research.org"
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium"
-                    required
                   />
                 </div>
-              </div>
-            </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Access Protocol</label>
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+                <div className="relative group/input">
+                  <label className="text-[10px] font-semibold text-[#c5a059]/60 mb-1 block transition-colors group-focus-within/input:text-[#c5a059] tracking-widest uppercase">
+                    Access Protocol
+                  </label>
                   <input
+                    className="w-full bg-transparent border-0 border-b border-white/10 py-3 text-[18px] text-white focus:ring-0 focus:border-[#c5a059] transition-all placeholder:text-white/10 outline-none"
+                    placeholder="Create Password"
+                    required
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Create Password"
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium"
-                    required
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">Verify Protocol</label>
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/20 group-focus-within:text-emerald-400 transition-colors" />
+                <div className="relative group/input">
+                  <label className="text-[10px] font-semibold text-[#c5a059]/60 mb-1 block transition-colors group-focus-within/input:text-[#c5a059] tracking-widest uppercase">
+                    Verify Protocol
+                  </label>
                   <input
+                    className="w-full bg-transparent border-0 border-b border-white/10 py-3 text-[18px] text-white focus:ring-0 focus:border-[#c5a059] transition-all placeholder:text-white/10 outline-none"
+                    placeholder="Confirm Password"
+                    required
                     type="password"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    placeholder="Confirm Password"
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-medium"
-                    required
                   />
                 </div>
               </div>
 
               {error && (
-                <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-xs font-bold uppercase tracking-widest text-center animate-in shake duration-300">
+                <div className="text-[#ba1a1a] text-sm bg-[#ba1a1a]/10 p-3 rounded border border-[#ba1a1a]/30 mb-8">
                   {error}
                 </div>
               )}
 
+              <div className="flex items-center justify-between text-[11px] font-medium tracking-widest text-white/40 mb-10">
+                <label className="flex items-center gap-3 hover:text-white transition-colors">
+                  <span className="material-symbols-outlined text-[14px]">shield_check</span>
+                  DATA SOVEREIGNTY SECURED
+                </label>
+                <Link className="hover:text-[#c5a059] transition-colors" href="/login">SIGN IN INSTEAD</Link>
+              </div>
+
               <button
+                className="w-full bg-[#c5a059] py-6 text-[#4e3700] text-[12px] font-semibold tracking-[0.3em] flex items-center justify-center gap-4 group/btn hover:bg-[#e9c176] transition-all duration-500 cta-glow disabled:opacity-50 uppercase"
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-2xl font-black text-lg transition-all shadow-[0_10px_30px_rgba(16,185,129,0.2)] hover:shadow-[0_10px_40px_rgba(16,185,129,0.4)] disabled:opacity-50 flex items-center justify-center gap-3 active:scale-[0.98] mt-2"
               >
                 {isLoading ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-white/50" />
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                    INITIALIZING...
+                  </>
                 ) : (
                   <>
-                    Initialize Account
-                    <ArrowRight className="w-5 h-5" />
+                    <span className="material-symbols-outlined text-[20px]">fingerprint</span>
+                    SUBMIT CLEARANCE
+                    <span className="material-symbols-outlined text-[18px] group-hover/btn:translate-x-2 transition-transform duration-500">east</span>
                   </>
                 )}
               </button>
-            </div>
-          </form>
+            </form>
 
-          <div className="mt-10 pt-8 border-t border-white/10 flex flex-col items-center gap-4">
-             <Link href="/login" className="text-sm font-bold text-gray-400 hover:text-white transition-colors">
-                Already registered? <span className="text-emerald-400">Sign in Here</span>
-             </Link>
-             <Link href="/privacy" className="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-[0.2em] transition-colors">
-                Privacy & Data Sovereignty Policy
-             </Link>
+            {/* Decorative Bits */}
+            <div className="mt-12 flex justify-between items-end opacity-20">
+              <div className="flex gap-1.5">
+                <div className="h-1 w-4 bg-white/40"></div>
+                <div className="h-1 w-1 bg-white/40"></div>
+                <div className="h-1 w-1 bg-white/40"></div>
+              </div>
+              <span className="text-[8px] tracking-[0.5em] font-semibold uppercase relative right-0">Encrypted Provisioning</span>
+            </div>
           </div>
-        </div>
 
-        {/* Security Footer */}
-        <div className="mt-10 flex flex-col items-center gap-3 text-white/20">
-            <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Seka Kama Encrypted Provisioning</span>
+          {/* Footer Data */}
+          <div className="absolute bottom-10 left-20 hidden lg:flex gap-16 items-center text-white/30 z-20">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">Location</span>
+              <span className="text-[11px] font-medium text-white/60 tracking-widest">SERENGETI SECTOR VII</span>
             </div>
-            <p className="max-w-xs text-center text-[9px] font-bold uppercase tracking-[0.1em] leading-relaxed">
-                By enlisting, you agree to the data sovereignty and conservation ethics protocol of the Seka Kama Digital Twin initiative.
-            </p>
-        </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">System Time</span>
+              <span className="text-[11px] font-medium text-white/60 tracking-widest">{timeStr}</span>
+            </div>
+          </div>
+        </main>
       </div>
-
-      <style jsx global>{`
-        .glass-panel {
-          box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-4px); }
-          75% { transform: translateX(4px); }
-        }
-        .animate-shake {
-            animation: shake 0.2s ease-in-out 0s 2;
-        }
-      `}</style>
-    </div>
+    </>
   );
 }

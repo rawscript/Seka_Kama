@@ -22,19 +22,20 @@ export default function LoginPage() {
     updateClock();
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (bgRef.current) {
-        const moveX = (e.clientX - window.innerWidth / 2) * 0.008;
-        const moveY = (e.clientY - window.innerHeight / 2) * 0.008;
-        bgRef.current.style.transform = `scale(1.05) translate(${moveX}px, ${moveY}px)`;
-      }
-    };
-    document.addEventListener('mousemove', handleMouseMove);
-    return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
+  /*
+    useEffect(() => {
+      const handleMouseMove = (e: MouseEvent) => {
+  
+        if (bgRef.current) {
+          const moveX = (e.clientX - window.innerWidth / 2) * 0.008;
+          const moveY = (e.clientY - window.innerHeight / 2) * 0.008;
+          bgRef.current.style.transform = `scale(1.05) translate(${moveX}px, ${moveY}px)`;
+        }
+      };
+      document.addEventListener('mousemove', handleMouseMove);
+      return () => document.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+  */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -196,7 +197,7 @@ export default function LoginPage() {
                   <input className="w-4 h-4 rounded-none bg-transparent border-white/20 text-[#c5a059] focus:ring-offset-0 focus:ring-[#c5a059]" type="checkbox" />
                   REMEMBER TERMINAL
                 </label>
-                <Link className="hover:text-[#c5a059] transition-colors" href="/register">RECOVERY</Link>
+                <Link className="hover:text-[#c5a059] transition-colors" href="/register">REGISTER</Link>
               </div>
 
               <button
@@ -234,7 +235,7 @@ export default function LoginPage() {
           <div className="absolute bottom-10 left-20 hidden lg:flex gap-16 items-center text-white/30 z-20">
             <div className="flex flex-col">
               <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">Location</span>
-              <span className="text-[11px] font-medium text-white/60 tracking-widest">SERENGETI SECTOR VII</span>
+              <span className="text-[11px] font-medium text-white/60 tracking-widest">SERENGETI SECTOR x</span>
             </div>
             <div className="flex flex-col">
               <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">System Time</span>
