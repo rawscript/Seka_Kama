@@ -43,10 +43,10 @@ export default function LoginPage() {
     try {
       let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
       if (!apiUrl.startsWith('http') && !apiUrl.startsWith('/')) {
-        apiUrl = \`https://\${apiUrl}\`;
+        apiUrl = `https://${apiUrl}`;
       }
 
-      const response = await fetch(\`\${apiUrl}/auth/token\`, {
+      const response = await fetch(`${apiUrl}/auth/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
@@ -72,7 +72,7 @@ export default function LoginPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: \`
+      <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
@@ -132,7 +132,7 @@ export default function LoginPage() {
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
         }
-      \`}} />
+      `}} />
       <div className="login-container text-white selection:bg-[#c5a059] selection:text-[#4e3700] relative">
         <div className="cinematic-bg">
           <img 
