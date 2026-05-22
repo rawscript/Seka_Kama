@@ -3,20 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  LayoutDashboard, 
-  Map as MapIcon, 
-  History, 
-  BarChart3, 
-  Key, 
-  User as UserIcon, 
-  LogOut, 
-  Settings,
-  ChevronRight,
-  Menu,
-  X,
-  ShieldCheck
-} from 'lucide-react';
 
 interface User {
   id: number;
@@ -34,7 +20,6 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -77,172 +62,217 @@ export default function DashboardLayout({
   };
 
   const navLinks = [
-    { href: '/dashboard', label: 'Spatial Analysis', icon: MapIcon },
-    { href: '/dashboard/kepler', label: 'Kepler Explorer', icon: BarChart3 },
-    { href: '/dashboard/scenarios', label: 'Scenario History', icon: History },
-    { href: '/dashboard/reports', label: 'Reports', icon: ShieldCheck },
+    { href: '/dashboard', label: 'Spatial Analysis', icon: 'map' },
+    { href: '/dashboard/kepler', label: 'Kepler Explorer', icon: 'analytics' },
+    { href: '/dashboard/scenarios', label: 'Scenario History', icon: 'history' },
+    { href: '/dashboard/reports', label: 'Reports', icon: 'description' },
   ];
 
   const adminLinks = [
-    { href: '/dashboard/api-keys', label: 'API Management', icon: Key },
-    { href: '/dashboard/profile', label: 'Account Settings', icon: UserIcon },
+    { href: '/dashboard/api-keys', label: 'API Management', icon: 'api' },
+    { href: '/dashboard/profile', label: 'Account Settings', icon: 'settings' },
   ];
 
   const initials = user?.full_name
     ? user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-    : '...';
+    : 'JD';
 
   return (
-    <div className="flex h-screen bg-[#020617] text-slate-200 overflow-hidden font-sans">
-      {/* Sidebar Navigation */}
-      <aside 
-        className={`${
-          isSidebarOpen ? 'w-64' : 'w-16'
-        } flex flex-col glass-effect border-r border-white/5 transition-all duration-300 z-50`}
-      >
-        <div className="h-16 flex items-center px-4 border-b border-white/5">
-          <Link href="/dashboard" className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 flex-shrink-0 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-              <ShieldCheck className="w-5 h-5 text-white" />
+    <>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+        :root {
+          --primary: #775a19;
+          --on-primary: #ffffff;
+          --surface-container-lowest: #ffffff;
+          --surface-container: #eeeeee;
+          --surface-container-low: #f3f3f3;
+          --outline-variant: #d1c5b4;
+          --on-surface: #1a1c1c;
+          --on-surface-variant: #4e4639;
+          --secondary: #5f5e5e;
+          --outline: #7f7667;
+          --surface-bright: #f9f9f9;
+          --primary-container: #c5a059;
+          --on-primary-container: #4e3700;
+          --error: #ba1a1a;
+        }
+
+        .dashboard-container {
+          font-family: 'Hanken Grotesk', sans-serif;
+          background-color: var(--surface-bright);
+          color: var(--on-surface);
+        }
+
+        .headline-font {
+          font-family: 'Playfair Display', serif;
+        }
+
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+          vertical-align: middle;
+        }
+
+        .glass-header {
+          background: rgba(249, 249, 249, 0.8);
+          backdrop-filter: blur(16px);
+          border-bottom: 1px solid var(--outline-variant);
+        }
+
+        .sidebar-link {
+          transition: all 0.3s ease;
+        }
+
+        .sidebar-link.active {
+          color: var(--primary);
+          background-color: var(--surface-container);
+          border-right: 2px solid var(--primary);
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1c5b4; border-radius: 10px; }
+      `}} />
+
+      <div className="dashboard-container flex h-screen overflow-hidden">
+        {/* Sidebar Navigation */}
+        <aside className="fixed left-0 top-0 h-full w-72 border-r border-outline-variant bg-surface-container-lowest flex flex-col pt-8 pb-6 px-6 z-50">
+          <div className="mb-10 flex flex-col">
+            <span className="headline-font text-2xl font-semibold text-primary uppercase tracking-widest leading-none">Seka Kama</span>
+            <span className="text-[12px] font-semibold text-secondary tracking-[0.3em] mt-1">ENTERPRISE</span>
+          </div>
+
+          <div className="flex flex-col gap-y-8 flex-grow overflow-y-auto custom-scrollbar">
+            <div>
+              <h3 className="text-[12px] font-semibold text-outline mb-4 px-2 tracking-[0.15em] uppercase">MAIN INTELLIGENCE</h3>
+              <nav className="space-y-1">
+                {navLinks.map((link) => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-sm ${
+                        isActive 
+                          ? 'active font-semibold' 
+                          : 'text-secondary hover:text-primary hover:bg-surface-container-low'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined">{link.icon}</span>
+                      <span className="text-[16px] tracking-tight">{link.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
             </div>
-            {isSidebarOpen && (
-              <div className="flex flex-col whitespace-nowrap animate-in fade-in">
-                <span className="text-sm font-bold tracking-tight">Seka Kama</span>
-                <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest leading-none">Enterprise</span>
+
+            <div>
+              <h3 className="text-[12px] font-semibold text-outline mb-4 px-2 tracking-[0.15em] uppercase">SYSTEM CONTROL</h3>
+              <nav className="space-y-1">
+                {adminLinks.map((link) => {
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-sm ${
+                        isActive 
+                          ? 'active font-semibold' 
+                          : 'text-secondary hover:text-primary hover:bg-surface-container-low'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined">{link.icon}</span>
+                      <span className="text-[16px] tracking-tight">{link.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+
+          <div className="mt-auto pt-6">
+            <button className="w-full bg-[#775a19] text-white py-3 px-4 text-[12px] font-semibold uppercase tracking-widest hover:bg-opacity-90 active:scale-[0.98] transition-all">
+              New Analysis
+            </button>
+          </div>
+        </aside>
+
+        {/* Main Container */}
+        <div className="flex-1 flex flex-col ml-72 relative">
+          {/* Superior Header */}
+          <header className="fixed top-0 right-0 left-72 h-20 z-40 glass-header flex justify-between items-center px-10">
+            <div className="flex items-center gap-6">
+              <h1 className="headline-font text-2xl text-on-surface">
+                {navLinks.find(l => pathname === l.href)?.label || 'Spatial Analysis'}
+              </h1>
+              <div className="h-4 w-[1px] bg-outline-variant"></div>
+              <nav className="flex gap-6">
+                <span className="text-[12px] font-semibold text-primary border-b-2 border-primary pb-1 uppercase tracking-widest">Live Environment</span>
+                <span className="text-[12px] font-semibold text-secondary hover:text-on-surface transition-opacity uppercase tracking-widest cursor-default">KE_MA</span>
+              </nav>
+            </div>
+
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#1db954] animate-pulse"></div>
+                <span className="text-[12px] font-semibold text-secondary uppercase tracking-widest">System Operational</span>
               </div>
-            )}
-          </Link>
-        </div>
-
-        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto custom-scrollbar">
-          <div className={`px-3 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest ${!isSidebarOpen && 'sr-only'}`}>
-            Main Intelligence
-          </div>
-          {navLinks.map((link) => {
-            const isActive = pathname === link.href;
-            const Icon = link.icon;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                  isActive 
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                    : 'hover:bg-white/5 text-slate-400 border border-transparent'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-emerald-400' : 'group-hover:text-slate-200'}`} />
-                {isSidebarOpen && <span className="text-sm font-medium whitespace-nowrap">{link.label}</span>}
-                {isActive && isSidebarOpen && <div className="ml-auto w-1 h-1 rounded-full bg-emerald-400" />}
-              </Link>
-            );
-          })}
-
-          <div className={`px-3 mt-8 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest ${!isSidebarOpen && 'sr-only'}`}>
-            System Control
-          </div>
-          {adminLinks.map((link) => {
-            const isActive = pathname === link.href;
-            const Icon = link.icon;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
-                  isActive 
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                    : 'hover:bg-white/5 text-slate-400 border border-transparent'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-emerald-400' : 'group-hover:text-slate-200'}`} />
-                {isSidebarOpen && <span className="text-sm font-medium whitespace-nowrap">{link.label}</span>}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-white/5 bg-black/20">
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="flex items-center gap-3 w-full px-3 py-2 text-slate-500 hover:text-slate-200 transition-colors"
-          >
-            {isSidebarOpen ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
-            {isSidebarOpen && <span className="text-xs font-medium">Collapse Rail</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Container */}
-      <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Superior Header */}
-        <header className="h-16 flex items-center justify-between px-6 glass-effect border-b border-white/5 z-40">
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
-              {navLinks.find(l => pathname === l.href)?.label || 'Dashboard'}
-            </h1>
-            <ChevronRight className="w-4 h-4 text-slate-600" />
-            <span className="text-xs text-slate-500 font-mono tracking-tighter uppercase">
-              Live Environment / KE_MA
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex flex-col items-end">
-              <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">System Status</span>
-              <span className="text-xs text-slate-400 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Operational
-              </span>
-            </div>
-
-            <div className="w-px h-8 bg-white/5 mx-2" />
-
-            <div className="relative" ref={userMenuRef}>
-              <button 
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-3 pl-3 pr-1 py-1 rounded-full border border-white/10 hover:border-white/20 transition-all bg-white/5 group"
-              >
-                <div className="flex flex-col items-end text-[11px] leading-tight mr-1">
-                  <span className="font-bold text-slate-200 group-hover:text-emerald-400 transition-colors">{user?.full_name || 'Loading...'}</span>
-                  <span className="text-slate-500 text-[9px]">{user?.organization || 'Organization'}</span>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 border border-white/10 flex items-center justify-center text-xs font-bold ring-2 ring-emerald-500/20 shadow-lg">
-                  {initials}
-                </div>
+              
+              <button className="text-secondary hover:text-on-surface transition-colors relative">
+                <span className="material-symbols-outlined">notifications</span>
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full border border-white"></span>
               </button>
 
-              {isUserMenuOpen && (
-                <div className="absolute right-0 mt-3 w-64 glass-effect border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 p-2 z-[100]">
-                  <div className="px-4 py-3 mb-2 border-b border-white/5">
-                    <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">{user?.role || 'Access Tier'}</p>
-                    <p className="text-sm font-semibold truncate">{user?.email}</p>
-                  </div>
-                  <button className="flex items-center gap-3 w-full px-3 py-2 text-sm text-slate-400 hover:text-slate-200 hover:bg-white/5 rounded-lg transition-colors text-left">
-                    <Settings className="w-4 h-4" />
-                    System Preferences
-                  </button>
-                  <button 
-                    onClick={handleLogout}
-                    className="flex items-center gap-3 w-full px-3 py-2 mt-2 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors text-left"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Terminate Session
-                  </button>
+              <div className="flex items-center gap-3 pl-4 border-l border-outline-variant relative" ref={userMenuRef}>
+                <div className="text-right">
+                  <p className="text-[12px] font-semibold text-on-surface leading-none mb-1">{user?.full_name || 'James'}</p>
+                  <p className="text-[10px] text-secondary font-medium tracking-wide">{user?.organization || 'Seka Kama'}</p>
                 </div>
-              )}
-            </div>
-          </div>
-        </header>
+                <button 
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="w-10 h-10 bg-[#c5a059] rounded-full flex items-center justify-center text-[#4e3700] text-sm font-semibold border border-outline-variant overflow-hidden hover:opacity-90 transition-opacity"
+                >
+                  {user?.full_name ? initials : (
+                    <img 
+                      alt="User avatar" 
+                      className="w-full h-full object-cover" 
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuAS1mvBOdfYdeZ91WPxVznJY1wXvh_jO-0z86T4lzxH3SrEKCkG_djgxN5dSFRuWc-NUcNfo0CjStIIiMe_G9xdA3zhPoltdII94oYStADZs9iDEA0JwmiTx5HCAD7F_52AgdIEIleCB5lZSvyjBx9KmJV5ke0Dck6-D9HwWlTH-CZITVaYYBxKBnul65BJVPuo_d9dOLXWIAxMwRCobRjrT_PjvRsHwsQzE-DyRoAfbrNqZFLlHgREuIE7PQ9O2lBaQ_rSN_cJiAs" 
+                    />
+                  )}
+                </button>
 
-        {/* Content Area */}
-        <main className="flex-1 relative overflow-hidden bg-[#020617]/50">
-          {children}
-        </main>
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 top-full mt-4 w-64 bg-white/95 backdrop-blur-md border border-outline-variant rounded-sm shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 p-2 z-[100]">
+                    <div className="px-4 py-3 mb-2 border-b border-outline-variant">
+                      <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{user?.role || 'Access Tier'}</p>
+                      <p className="text-sm font-semibold truncate text-on-surface">{user?.email}</p>
+                    </div>
+                    <button className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-secondary hover:text-on-surface hover:bg-surface-container-low transition-colors text-left font-medium">
+                      <span className="material-symbols-outlined text-[20px]">settings</span>
+                      System Preferences
+                    </button>
+                    <button 
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 w-full px-3 py-2.5 mt-2 text-sm text-error hover:bg-red-50 transition-colors text-left font-medium"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">logout</span>
+                      Terminate Session
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </header>
+
+          {/* Content Area */}
+          <main className="flex-1 relative overflow-hidden pt-20">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
