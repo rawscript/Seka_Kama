@@ -1,164 +1,319 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 
 interface Statistic {
   label: string;
   value: string;
-  change?: string;
+  change: string;
+  changeType: 'negative' | 'positive' | 'neutral';
+  delay: string;
 }
 
 const statistics: Statistic[] = [
-  { label: 'Lion Population', value: '465', change: '-3.1%' },
-  { label: 'Protected Area Coverage', value: '1,511 km²', change: '+2.4%' },
-  { label: 'Active Conservancies', value: '17', change: '0%' },
-  { label: 'Nightlight Trend', value: '+4.2%', change: '+0.8%' },
+  { label: 'Lion Population', value: '465', change: '-3.1%', changeType: 'negative', delay: '0ms' },
+  { label: 'Protected Area', value: '1,511 km²', change: '+2.4%', changeType: 'positive', delay: '100ms' },
+  { label: 'Active Conservancies', value: '17', change: 'Stable', changeType: 'neutral', delay: '200ms' },
+  { label: 'Nightlight Trend', value: '+4.2%', change: '+0.8% YoY', changeType: 'positive', delay: '300ms' },
 ];
 
-const features = [
+const capabilities = [
   {
-    title: 'Spatial Analysis',
-    description: 'Analyze lion distribution across 271,211 grid cells with real-time density visualization.',
-    icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+    num: '01',
+    title: 'Sentinel Analytics',
+    description: 'Real-time biological monitoring using satellite telemetry and on-ground acoustic sensors to track keystone species. Analyze distribution across 271,211 grid cells.',
+    delay: '0ms',
+    // Microscope/Biotech alternative path
+    icon: (
+      <svg className="w-9 h-9 text-[#775a19]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 18c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2v2" />
+        <path d="M10 22a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+        <path d="M14 14l4-4" />
+        <path d="M18 6h2" />
+        <path d="M14 18h4" />
+      </svg>
+    )
   },
   {
-    title: 'What-If Scenarios',
-    description: 'Simulate infrastructure development and predict impacts on lion abundance.',
-    icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+    num: '02',
+    title: 'Spatial Synthesis',
+    description: 'Ultra-high resolution terrain mapping that simulates migratory paths and infrastructure impacts with 99.8% environmental fidelity.',
+    delay: '150ms',
+    // Landscape/Mountains alternative path
+    icon: (
+      <svg className="w-9 h-9 text-[#775a19]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m8 3 4 8 5-5 5 15H2L8 3z" />
+      </svg>
+    )
   },
   {
-    title: 'Kepler.gl Explorer',
-    description: 'Interactive geospatial analytics with professional visualization tools.',
-    icon: 'M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7',
-  },
-  {
-    title: 'AI Narratives',
-    description: 'Generate conservation reports and ecological interpretations from model outputs.',
-    icon: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z',
-  },
+    num: '03',
+    title: 'Neural Defense',
+    description: 'AI-driven threat detection identifying poaching activities before they enter the protected perimeter using predictive ecological narratives.',
+    delay: '300ms',
+    // Security/Shield alternative path
+    icon: (
+      <svg className="w-9 h-9 text-[#775a19]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    )
+  }
 ];
 
 export default function LandingPage() {
-  const [animatedStats, setAnimatedStats] = useState(statistics.map(() => 0));
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  // Setup intersection observer to trigger typography & block reveal fades smoothly
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setAnimatedStats([465, 1511, 17, 4.2]);
-    }, 500);
-    return () => clearTimeout(timer);
+    const observerOptions = {
+      threshold: 0.15,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+        }
+      });
+    }, observerOptions);
+
+    const elements = containerRef.current?.querySelectorAll('.reveal-item');
+    elements?.forEach((el) => observer.observe(el));
+
+    return () => {
+      elements?.forEach((el) => observer.unobserve(el));
+    };
   }, []);
 
   return (
-    <div className="landing-container bg-slate-950 min-h-screen text-white">
-      {/* Hero Section */}
-      <section className="relative min-h-[100vh] flex items-center justify-center text-center px-8 py-24 overflow-hidden">
-        {/* Background Image Layer */}
-        <div className="absolute inset-0 z-0">
-          <img 
-            src="/seka_kama_hero_lion_1778841687196.png" 
-            alt="Majestic Lion Background" 
-            className="w-full h-full object-cover object-[center_25%] scale-100 transition-transform duration-[10s] hover:scale-105"
-            style={{ opacity: 0.85, filter: 'contrast(1.1) brightness(0.9)' }}
-          />
-          {/* Refined gradient: Clearer at the top, very dark at the bottom for text contrast */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
-          <div className="absolute inset-0 bg-slate-950/20" />
-        </div>
+    <div ref={containerRef} className="bg-[#f9f9f9] text-[#1a1c1c] font-['Hanken_Grotesk'] overflow-x-hidden antialiased">
 
-        <div className="relative z-10 max-w-4xl">
-          <h1 className="text-7xl md:text-8xl font-black mb-6 bg-gradient-to-r from-white via-white to-emerald-500 bg-clip-text text-transparent tracking-tighter">
+      {/* Injecting external Google fonts directly into layout context dynamically */}
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Hanken+Grotesk:wght@400;500;600&display=swap');
+        
+        .font-serif-display { font-family: 'Playfair Display', serif; }
+        .hero-custom-gradient {
+          background: linear-gradient(to right, rgba(255,255,255,0.9) 30%, rgba(255,255,255,0) 100%);
+        }
+        .reveal-item {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .reveal-item.active {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      `}</style>
+
+      {/* Top Navigation */}
+      <nav className="top-0 bg-[#f9f9f9] border-b border-[#d1c5b4] z-50 sticky w-full">
+        <div className="flex justify-between items-center w-full px-6 md:px-20 py-6 max-w-[1440px] mx-auto">
+          <div className="font-serif-display text-2xl text-[#1a1c1c] italic tracking-tight font-medium">
             Seka Kama
-            <span className="block text-3xl text-emerald-400 mt-4 font-bold uppercase tracking-[0.3em]">Digital Twin</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-slate-300 mb-10 leading-relaxed font-light max-w-2xl mx-auto">
-            Advanced geospatial analytics for the Greater Mara. 
-            Empowering conservation with predictive intelligence.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <Link href="/login" className="px-10 py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg hover:bg-emerald-400 transition-all shadow-[0_20px_50px_rgba(16,185,129,0.3)] hover:-translate-y-1">
-              Launch Intelligence Console
+          </div>
+          <div className="hidden md:flex gap-10">
+            <Link href="#" className="font-['Hanken_Grotesk'] text-[12px] uppercase tracking-[0.15em] text-[#775a19] font-semibold border-b border-[#775a19] pb-1">
+              Capabilities
             </Link>
-            <Link href="/demo" className="px-10 py-4 border-2 border-white/10 backdrop-blur-xl rounded-2xl font-bold text-lg hover:bg-white/5 transition-all">
-              Platform Walkthrough
+            <Link href="#" className="font-['Hanken_Grotesk'] text-[12px] uppercase tracking-[0.15em] text-[#4e4639] hover:text-[#1a1c1c] transition-colors duration-300 font-semibold">
+              Geospatial
+            </Link>
+            <Link href="#" className="font-['Hanken_Grotesk'] text-[12px] uppercase tracking-[0.15em] text-[#4e4639] hover:text-[#1a1c1c] transition-colors duration-300 font-semibold">
+              Intelligence
+            </Link>
+            <Link href="#" className="font-['Hanken_Grotesk'] text-[12px] uppercase tracking-[0.15em] text-[#4e4639] hover:text-[#1a1c1c] transition-colors duration-300 font-semibold">
+              Documentation
             </Link>
           </div>
+          <button className="font-['Hanken_Grotesk'] text-[12px] font-semibold uppercase tracking-[0.15em] px-6 py-2 border border-[#777667] hover:bg-[#c5a059] hover:text-[#4e3700] transition-all duration-300">
+            Launch Console
+          </button>
         </div>
-      </section>
+      </nav>
 
-      {/* Statistics Section */}
-      <section className="py-16 bg-white/5">
-        <div className="max-w-6xl mx-auto px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
-          {statistics.map((stat, idx) => (
-            <div key={stat.label} className="text-center p-8 bg-white/5 rounded-2xl backdrop-blur-xl">
-              <div className="text-4xl font-bold text-emerald-500">{stat.value}</div>
-              <div className="text-xs text-slate-500 uppercase tracking-widest mt-2">{stat.label}</div>
-              {stat.change && (
-                <div className={`text-xs mt-2 ${stat.change.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {stat.change}
-                </div>
-              )}
+      {/* Hero Section */}
+      <header className="relative w-full h-[90vh] flex items-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img
+            alt="Majestic Lion in Savanna"
+            className="w-full h-full object-cover object-center"
+            src="https://lh3.googleusercontent.com/aida/ADBb0ugLJHpQP28XrUtF2yN3Rx6qiVEqWBhrJHQD8Tpojaky6reqpddr7ZjSc5uNDHMmhNBE46PNMn1-hgkJjfvW_Z-zNgyfqtTD4Q44whA9399itcGYEEnoAaQLa4cXy5RIzct1wUTkt8Ob2qHg5rsI8ZZrKfPSwWnm2V3_hH7k8Ih-VE3kQ2EnQLR9nc-_6HUOCdfY1MOxuPH-HVx7P_-cAD2nAm6NFtxT6YisVGzz8DI5EolS1wmaTV8srw"
+          />
+          <div className="absolute inset-0 hero-custom-gradient" />
+        </div>
+        <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 md:px-20">
+          <div className="max-w-2xl reveal-item">
+            <p className="font-['Hanken_Grotesk'] text-[12px] font-semibold text-[#775a19] mb-6 tracking-[0.3em] uppercase">
+              CONSERVATION REIMAGINED
+            </p>
+            <h1 className="font-serif-display text-5xl md:text-[72px] md:leading-[80px] text-[#1a1c1c] mb-8 font-bold tracking-tight">
+              Seka Kama: <br />
+              <span className="italic font-normal">The Digital Twin</span>
+            </h1>
+            <p className="font-['Hanken_Grotesk'] text-18px md:text-[18px] leading-[28px] text-[#4e4639] mb-10 max-w-lg font-normal">
+              Orchestrating the future of biodiversity through real-time geospatial intelligence and predictive ecology for the Greater Mara.
+            </p>
+            <div className="flex gap-6">
+              <button className="bg-[#775a19] text-white px-8 py-4 font-['Hanken_Grotesk'] text-[12px] font-semibold tracking-widest uppercase hover:bg-[#c5a059] hover:text-[#4e3700] transition-colors shadow-sm">
+                Explore Ecosystem
+              </button>
+              <button className="border border-[#777667] px-8 py-4 font-['Hanken_Grotesk'] text-[12px] font-semibold tracking-widest uppercase hover:bg-[#e8e8e8] transition-colors">
+                Read Whitepaper
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Metrics Section */}
+      <section className="bg-white py-20 border-b border-[#d1c5b4]">
+        <div className="max-w-[1440px] mx-auto px-6 md:px-20 grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {statistics.map((stat) => (
+            <div
+              key={stat.label}
+              className="reveal-item flex flex-col items-center text-center p-6 border-r border-[#d1c5b4] last:border-0"
+              style={{ transitionDelay: stat.delay }}
+            >
+              <span className="font-['Hanken_Grotesk'] text-[12px] font-semibold text-[#775a19] mb-2 uppercase tracking-wider">{stat.label}</span>
+              <span className="font-serif-display text-[48px] leading-[56px] text-[#1a1c1c] font-semibold">{stat.value}</span>
+              <span className={`font-['Hanken_Grotesk'] text-[11px] font-medium mt-1 ${stat.changeType === 'negative' ? 'text-[#ba1a1a]' :
+                  stat.changeType === 'positive' ? 'text-[#775a19]' : 'text-[#4e4639]'
+                }`}>
+                {stat.change}
+              </span>
+              <div className="w-8 h-[1px] bg-[#775a19] mt-4" />
             </div>
           ))}
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-24 px-8">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-center text-3xl font-bold mb-16">Platform Capabilities</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature) => (
-              <div key={feature.title} className="p-8 bg-white/5 rounded-2xl hover:bg-white/10 transition-all group">
-                <div className="w-12 h-12 text-emerald-500 mb-4 group-hover:scale-110 transition-transform">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={feature.icon} />
-                  </svg>
+      {/* Quote Section */}
+      <section className="bg-[#f9f9f9] py-[120px] flex flex-col items-center text-center px-6 overflow-hidden">
+        <div className="max-w-4xl reveal-item">
+          <span className="text-[#c5a059] text-5xl block mb-6 font-serif-display font-black leading-none select-none">“</span>
+          <h2 className="font-serif-display text-4xl md:text-[48px] md:leading-[56px] italic text-[#1a1c1c] font-semibold max-w-3xl mx-auto">
+            "Intelligence is the silent guardian of the wild."
+          </h2>
+          <div className="mt-8 flex items-center justify-center gap-4">
+            <div className="h-[1px] w-12 bg-[#d1c5b4]" />
+            <span className="font-['Hanken_Grotesk'] text-[12px] font-semibold tracking-widest text-[#4e4639] uppercase">THE SEKA KAMA MANIFESTO</span>
+            <div className="h-[1px] w-12 bg-[#d1c5b4]" />
+          </div>
+        </div>
+      </section>
+
+      {/* Capabilities Grid */}
+      <section className="bg-[#f3f3f3] py-[120px]">
+        <div className="max-w-[1440px] mx-auto px-6 md:px-20">
+          <div className="flex justify-between items-end mb-12 border-b border-[#d1c5b4] pb-8 reveal-item">
+            <div>
+              <span className="font-['Hanken_Grotesk'] text-[12px] font-semibold text-[#775a19] tracking-widest uppercase">ECOSYSTEM</span>
+              <h3 className="font-serif-display text-[32px] leading-[40px] font-semibold mt-2">Platform Capabilities</h3>
+            </div>
+            <div className="hidden md:block">
+              <p className="font-['Hanken_Grotesk'] text-[16px] text-[#4e4639] max-w-xs text-right">
+                Advanced biological computation meeting world-class surveillance.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {capabilities.map((item) => (
+              <div
+                key={item.num}
+                className="reveal-item bg-white border border-[#d1c5b4] p-10 hover:border-[#775a19] transition-all duration-500 group flex flex-col justify-between"
+                style={{ transitionDelay: item.delay }}
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-12">
+                    {item.icon}
+                    <span className="font-['Hanken_Grotesk'] text-[11px] font-medium text-[#7f7667]">{item.num}</span>
+                  </div>
+                  <h4 className="font-serif-display text-[24px] leading-[32px] text-[#1a1c1c] font-medium mb-6">
+                    {item.title}
+                  </h4>
+                  <p className="font-['Hanken_Grotesk'] text-[16px] leading-[24px] text-[#4e4639] mb-8">
+                    {item.description}
+                  </p>
                 </div>
-                <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{feature.description}</p>
+                <Link href="#" className="font-['Hanken_Grotesk'] text-[12px] font-semibold text-[#775a19] border-b border-transparent group-hover:border-[#775a19] transition-all inline-block pb-1 self-start tracking-wider">
+                  LEARN MORE
+                </Link>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Technology Stack */}
-      <section className="py-24 bg-white/5 px-8 text-center">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold mb-12">Engineered with Precision</h2>
-          <div className="flex flex-wrap justify-center gap-12">
-            {[
-              { name: 'XGBoost', desc: 'Predictive Modeling' },
-              { name: 'PostGIS', desc: 'Spatial Database' },
-              { name: 'Kepler.gl', desc: 'Geospatial Analytics' },
-              { name: 'FastAPI', desc: 'API Framework' },
-              { name: 'Next.js', desc: 'Frontend Platform' },
-              { name: 'StepFun AI', desc: 'LLM Integration' }
-            ].map(tech => (
-              <div key={tech.name}>
-                <span className="block font-bold text-white mb-1 tracking-tight">{tech.name}</span>
-                <span className="text-[10px] text-slate-500 uppercase tracking-widest">{tech.desc}</span>
+      {/* Infrastructure Section */}
+      <section className="bg-[#f9f9f9] py-[120px] overflow-hidden">
+        <div className="max-w-[1440px] mx-auto px-6 md:px-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div className="reveal-item">
+              <span className="font-['Hanken_Grotesk'] text-[12px] font-semibold text-[#775a19] tracking-widest mb-4 block uppercase">THE ARCHITECTURE</span>
+              <h2 className="font-serif-display text-4xl md:text-[48px] md:leading-[56px] text-[#1a1c1c] font-semibold mb-8 leading-tight">
+                Engineered with Precision
+              </h2>
+              <p className="font-['Hanken_Grotesk'] text-[18px] leading-[28px] text-[#4e4639] mb-12">
+                Our underlying framework mirrors the complexity of the natural world. Utilizing XGBoost modeling and PostGIS spatial databases to protect biodiversity.
+              </p>
+
+              <div className="space-y-8">
+                <div className="flex gap-6 pb-6 border-b border-[#d1c5b4]">
+                  <div className="font-['Hanken_Grotesk'] text-[12px] font-semibold text-[#775a19] pt-1 tracking-wider">TECH-A</div>
+                  <div>
+                    <h5 className="font-serif-display text-[24px] leading-[32px] font-medium text-[#1a1c1c] mb-2">Geospatial Analytics</h5>
+                    <p className="text-[#4e4639] font-['Hanken_Grotesk'] text-[16px]">High-performance Kepler.gl visualization for complex interactive spatial exploration.</p>
+                  </div>
+                </div>
+                <div className="flex gap-6 pb-6 border-b border-[#d1c5b4]">
+                  <div className="font-['Hanken_Grotesk'] text-[12px] font-semibold text-[#775a19] pt-1 tracking-wider">TECH-B</div>
+                  <div>
+                    <h5 className="font-serif-display text-[24px] leading-[32px] font-medium text-[#1a1c1c] mb-2">Intelligence Core</h5>
+                    <p className="text-[#4e4639] font-['Hanken_Grotesk'] text-[16px]">FastAPI framework integrated with StepFun AI for deep ecological interpretations.</p>
+                  </div>
+                </div>
               </div>
-            ))}
+            </div>
+
+            <div className="reveal-item relative group">
+              <div className="absolute -inset-4 border border-[#775a19] opacity-20 group-hover:opacity-40 transition-opacity" />
+              <img
+                alt="High-tech conservation outpost"
+                className="w-full h-[600px] object-cover grayscale hover:grayscale-0 transition-all duration-1000"
+                src="https://lh3.googleusercontent.com/aida/ADBb0ujjSjkRp9Jb551KPzT8I5-PKodLluB7t0nG_MGTL2Yra0oom8aRVQvGl7PmcoZA-V8T1Ayef5iI2ZsY-WAMefYMHDE7Ll2rEqVlKOcWE02P8VmjNBOmyzhoD5YpljSQjjECKXtaqh_HaSnn3xtZ6RWBnc0Q4MHrY_TGHg7Ma_P-MDx5xMObpIxkuhWZ74vVdVU3yC9yjIT9gZ4A3wQwTmmcdHW0kDg-ImAe_4rmek3LJ_RaxeVesIqafpg"
+              />
+              <div className="absolute bottom-8 right-8 bg-[#f9f9f9] p-6 shadow-2xl border border-[#d1c5b4]">
+                <p className="font-['Hanken_Grotesk'] text-[12px] font-semibold text-[#1a1c1c] mb-2 tracking-wider">STATUS: OPTIMAL</p>
+                <p className="font-['Hanken_Grotesk'] text-[16px] text-[#4e4639]">Seka Kama Core Interface v4.2</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-white/5 bg-[#020617]">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
-          <div className="space-y-2">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">&copy; 2026 Seka Kama Conservancy. All rights reserved.</p>
-            <p className="text-[9px] text-slate-600 font-mono italic">Data sources: VIIRS DNB, LandDX, ESA WorldCover, WDPA</p>
+      <footer className="bg-white border-t border-[#d1c5b4]">
+        <div className="w-full px-6 md:px-20 py-20 flex flex-col items-center gap-6 max-w-[1440px] mx-auto text-center">
+          <div className="font-serif-display text-[24px] text-[#1a1c1c] italic font-medium mb-4">Seka Kama</div>
+          <div className="flex flex-wrap justify-center gap-8 md:gap-16 mb-8">
+            <Link href="#" className="font-['Hanken_Grotesk'] text-[12px] font-semibold uppercase tracking-widest text-[#5f5e5e] hover:text-[#1a1c1c] transition-colors duration-200">About</Link>
+            <Link href="#" className="font-['Hanken_Grotesk'] text-[12px] font-semibold uppercase tracking-widest text-[#5f5e5e] hover:text-[#1a1c1c] transition-colors duration-200">Documentation</Link>
+            <Link href="#" className="font-['Hanken_Grotesk'] text-[12px] font-semibold uppercase tracking-widest text-[#5f5e5e] hover:text-[#1a1c1c] transition-colors duration-200">Data Standards</Link>
+            <Link href="#" className="font-['Hanken_Grotesk'] text-[12px] font-semibold uppercase tracking-widest text-[#5f5e5e] hover:text-[#1a1c1c] transition-colors duration-200">Privacy Policy</Link>
+            <Link href="#" className="font-['Hanken_Grotesk'] text-[12px] font-semibold uppercase tracking-widest text-[#5f5e5e] hover:text-[#1a1c1c] transition-colors duration-200">Contact</Link>
           </div>
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-4">
-            <Link href="/about" className="text-xs font-bold text-slate-400 hover:text-emerald-500 transition-colors uppercase tracking-widest">About</Link>
-            <Link href="/documentation" className="text-xs font-bold text-slate-400 hover:text-emerald-500 transition-colors uppercase tracking-widest">Documentation</Link>
-            <Link href="/data-standards" className="text-xs font-bold text-slate-400 hover:text-emerald-500 transition-colors uppercase tracking-widest">Data Standards</Link>
-            <Link href="/privacy" className="text-xs font-bold text-slate-400 hover:text-emerald-500 transition-colors uppercase tracking-widest">Privacy Policy</Link>
-            <Link href="/contact" className="text-xs font-bold text-slate-400 hover:text-emerald-500 transition-colors uppercase tracking-widest">Contact</Link>
-          </div>
+          <div className="w-24 h-[1px] bg-[#d1c5b4] mb-6" />
+          <p className="font-['Hanken_Grotesk'] text-[12px] font-semibold tracking-wider text-[#d1c5b4] mb-2 uppercase">
+            © 2026 Seka Kama Conservancy. All rights reserved.
+          </p>
+          <p className="font-['Hanken_Grotesk'] text-[11px] font-medium text-[#7f7667] opacity-60 tracking-wide">
+            Data sources: VIIRS DNB, LandDX, ESA WorldCover, WDPA
+          </p>
         </div>
       </footer>
     </div>
