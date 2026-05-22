@@ -72,7 +72,8 @@ export default function LoginPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
@@ -112,38 +113,20 @@ export default function LoginPage() {
             box-shadow: 0 0 30px rgba(197, 160, 89, 0.4);
         }
 
-        .scanline {
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(to right, transparent, rgba(197, 160, 89, 0.2), transparent);
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 10;
-            animation: scan 12s linear infinite;
-            pointer-events: none;
-        }
-
-        @keyframes scan {
-            0% { top: -5%; }
-            100% { top: 105%; }
-        }
-
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
         }
       `}} />
       <div className="login-container text-white selection:bg-[#c5a059] selection:text-[#4e3700] relative">
         <div className="cinematic-bg">
-          <img 
+          <img
             ref={bgRef}
-            alt="Conservation Research Outpost" 
-            className="w-full h-full object-cover scale-105 transition-transform duration-300 ease-out" 
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkFY352FwEfdcWV69alEUQ8QP1nu0pX82uoyF_4WYqa8tKvPCxcKfEyj_T6Do8Mpy1Ch8ICYybaKxoEPKCRAOcYCp7YCSfe1TKeQDyauwMzCUyW-UA1xIq2I69eblAMGA5ZbfUCgctqWxQJAc4zEe6pP6jhySNWQit5WB7gmMeARsnV1wi12Tt2CJuoLLexXtIlgRg8NuSY-2Z0GggOcghZQeBLOj6z1i5wEywJuTrHNe3h3jmVxJeEtTuafpQSx6v68N9ULRrxRY" 
+            alt="Conservation Research Outpost"
+            className="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkFY352FwEfdcWV69alEUQ8QP1nu0pX82uoyF_4WYqa8tKvPCxcKfEyj_T6Do8Mpy1Ch8ICYybaKxoEPKCRAOcYCp7YCSfe1TKeQDyauwMzCUyW-UA1xIq2I69eblAMGA5ZbfUCgctqWxQJAc4zEe6pP6jhySNWQit5WB7gmMeARsnV1wi12Tt2CJuoLLexXtIlgRg8NuSY-2Z0GggOcghZQeBLOj6z1i5wEywJuTrHNe3h3jmVxJeEtTuafpQSx6v68N9ULRrxRY"
           />
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
-        <div className="scanline"></div>
 
         <main className="relative h-screen flex items-center justify-center px-6 md:px-10 lg:px-20 overflow-hidden lg:justify-end z-10 w-full">
           {/* Terminal Identifier (Top Right) */}
@@ -164,10 +147,10 @@ export default function LoginPage() {
                 <span className="text-[11px] font-semibold text-[#c5a059]/80 tracking-[0.3em] uppercase">AUTHENTICATION REQUIRED</span>
               </div>
               <h2 className="login-headline text-[48px] md:text-[56px] font-semibold text-white mb-4 text-glow leading-none">
-                  Welcome Back.
+                Welcome Back.
               </h2>
               <p className="text-[16px] text-[#e2e2e2]/50 max-w-[320px] leading-relaxed">
-                  Access the secure field intelligence network. Credentials required for sector sync.
+                Access the secure field intelligence network. Credentials required for sector sync.
               </p>
             </div>
 
@@ -176,12 +159,12 @@ export default function LoginPage() {
               <div className="space-y-8">
                 <div className="relative group/input">
                   <label className="text-[10px] font-semibold text-[#c5a059]/60 mb-1 block transition-colors group-focus-within/input:text-[#c5a059] tracking-widest uppercase">
-                      Agent Identifier
+                    Agent Identifier
                   </label>
-                  <input 
-                    className="w-full bg-transparent border-0 border-b border-white/10 py-3 text-[18px] text-white focus:ring-0 focus:border-[#c5a059] transition-all placeholder:text-white/10 outline-none" 
-                    placeholder="ID-000000" 
-                    required 
+                  <input
+                    className="w-full bg-transparent border-0 border-b border-white/10 py-3 text-[18px] text-white focus:ring-0 focus:border-[#c5a059] transition-all placeholder:text-white/10 outline-none"
+                    placeholder="ID-000000"
+                    required
                     type="text"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -189,12 +172,12 @@ export default function LoginPage() {
                 </div>
                 <div className="relative group/input">
                   <label className="text-[10px] font-semibold text-[#c5a059]/60 mb-1 block transition-colors group-focus-within/input:text-[#c5a059] tracking-widest uppercase">
-                      Secure Keycode
+                    Secure Keycode
                   </label>
-                  <input 
-                    className="w-full bg-transparent border-0 border-b border-white/10 py-3 text-[18px] text-white focus:ring-0 focus:border-[#c5a059] transition-all placeholder:text-white/10 outline-none" 
-                    placeholder="••••••••" 
-                    required 
+                  <input
+                    className="w-full bg-transparent border-0 border-b border-white/10 py-3 text-[18px] text-white focus:ring-0 focus:border-[#c5a059] transition-all placeholder:text-white/10 outline-none"
+                    placeholder="••••••••"
+                    required
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -216,8 +199,8 @@ export default function LoginPage() {
                 <Link className="hover:text-[#c5a059] transition-colors" href="/register">RECOVERY</Link>
               </div>
 
-              <button 
-                className="w-full bg-[#c5a059] py-6 text-[#4e3700] text-[12px] font-semibold tracking-[0.3em] flex items-center justify-center gap-4 group/btn hover:bg-[#e9c176] transition-all duration-500 cta-glow disabled:opacity-50 uppercase" 
+              <button
+                className="w-full bg-[#c5a059] py-6 text-[#4e3700] text-[12px] font-semibold tracking-[0.3em] flex items-center justify-center gap-4 group/btn hover:bg-[#e9c176] transition-all duration-500 cta-glow disabled:opacity-50 uppercase"
                 type="submit"
                 disabled={isLoading}
               >
