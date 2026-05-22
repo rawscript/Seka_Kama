@@ -29,6 +29,8 @@ function getDirectDriveLink(url: string) {
 
 interface SekaMapProps {
   onScenarioRun?: (result: any) => void;
+  selectedUnit?: string;
+  onUnitChange?: (unit: string) => void;
 }
 
 const CONSERVANCY_COORDS: Record<string, { lng: number, lat: number, zoom: number }> = {
@@ -38,23 +40,22 @@ const CONSERVANCY_COORDS: Record<string, { lng: number, lat: number, zoom: numbe
   'Ol Kinyei': { lng: 35.454, lat: -1.332, zoom: 11 },
 };
 
-export default function SekaMap({ onScenarioRun }: SekaMapProps) {
+export default function SekaMap({ onScenarioRun, selectedUnit = '', onUnitChange }: SekaMapProps) {
   return (
     <MapProvider>
       <div className="relative w-full h-full bg-[#020617]">
-        <SekaMapContent onScenarioRun={onScenarioRun} />
+        <SekaMapContent onScenarioRun={onScenarioRun} selectedUnit={selectedUnit} onUnitChange={onUnitChange} />
       </div>
     </MapProvider>
   );
 }
 
-function SekaMapContent({ onScenarioRun }: SekaMapProps) {
+function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange }: SekaMapProps) {
   const { 'main-map': mapMain } = useMap();
   const envLandXUrl = process.env.NEXT_PUBLIC_LANDX_TILE_URL || '';
   const landXSourceUrl = getDirectDriveLink(envLandXUrl);
   
   const [loading, setLoading] = useState(true);
-  const [selectedUnit, setSelectedUnit] = useState<string>('');
   const [baselineData, setBaselineData] = useState<any>(null);
   const [protectedData, setProtectedData] = useState<any>(null);
   const [isStyleLoaded, setIsStyleLoaded] = useState(false);
@@ -196,65 +197,6 @@ function SekaMapContent({ onScenarioRun }: SekaMapProps) {
             )}
           </>
         )}
-
-        {/* HUD Elements */}
-        <div className="absolute top-6 left-6 z-10 flex flex-col gap-4 pointer-events-none">
-           <div className="glass-effect p-3 px-4 rounded-xl flex items-center gap-3 border-emerald-500/20 border pointer-events-auto shadow-2xl">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-white uppercase tracking-widest">Digital Twin Active</span>
-              <div className="w-px h-4 bg-white/10" />
-              <span className="text-[10px] font-mono text-emerald-400">FPS: 60.0</span>
-           </div>
-        </div>
-
-        <div className="absolute top-6 right-6 z-10 flex flex-col gap-3 w-72 pointer-events-none">
-          {/* Unit Selector HUD */}
-          <div className="glass-effect-heavy p-5 rounded-2xl pointer-events-auto animate-in duration-700">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Compass className="w-4 h-4 text-emerald-400" />
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-200">Zone Selection</span>
-              </div>
-              <div className="p-1 rounded-md bg-white/5 border border-white/10">
-                <Maximize2 className="w-3 h-3 text-slate-500" />
-              </div>
-            </div>
-            
-            <select
-              value={selectedUnit}
-              onChange={(e) => setSelectedUnit(e.target.value)}
-              className="w-full bg-slate-900/50 border border-white/10 rounded-xl p-3 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all appearance-none cursor-pointer"
-            >
-              <option value="" className="bg-[#0f172a]">Regional Overview</option>
-              {Object.keys(CONSERVANCY_COORDS).map(u => (
-                <option key={u} value={u} className="bg-[#0f172a]">{u}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Intelligent Legend */}
-          <div className="glass-effect-heavy p-5 rounded-2xl pointer-events-auto animate-in duration-1000">
-            <div className="flex items-center gap-2 mb-4">
-              <Box className="w-4 h-4 text-emerald-400" />
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-200">Ecosystem Indicators</span>
-            </div>
-            <div className="space-y-3">
-              <div className="flex flex-col gap-1.5">
-                 <div className="h-1.5 w-full rounded-full bg-gradient-to-r from-amber-50 to-amber-700 shadow-inner" />
-                 <div className="flex justify-between text-[9px] text-slate-500 uppercase font-bold tracking-tighter">
-                   <span>Baseline</span>
-                   <span>Lion Density Grid (XGB)</span>
-                   <span>High</span>
-                 </div>
-              </div>
-              
-              <div className="pt-2 border-t border-white/5 space-y-2.5">
-                <LegendItem color="#059669" label="Protected Wildlife Zones" opacity={0.4} />
-                <LegendItem color="#10b981" label="Land-X Administrative Boundary" bordered />
-              </div>
-            </div>
-          </div>
-        </div>
 
         <ScenarioDrawer onScenarioRun={onScenarioRun} />
       </Map>

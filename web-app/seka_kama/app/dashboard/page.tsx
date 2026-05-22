@@ -20,6 +20,10 @@ const ScenarioResultPanel = dynamic(() => import('@/components/ScenarioResultPan
 
 export default function DashboardPage() {
   const [scenarioResult, setScenarioResult] = useState<any>(null);
+  const [selectedUnit, setSelectedUnit] = useState<string>('');
+  const [isZoneMenuOpen, setIsZoneMenuOpen] = useState(false);
+
+  const units = ['Mara North', 'Olare-Motorogi', 'Naboisho', 'Ol Kinyei'];
 
   return (
     <ProtectedRoute>
@@ -45,7 +49,11 @@ export default function DashboardPage() {
       `}} />
 
       <div className="relative w-full h-full bg-[#dadada]">
-        <SekaMap onScenarioRun={(result) => setScenarioResult(result)} />
+        <SekaMap 
+          selectedUnit={selectedUnit}
+          onUnitChange={setSelectedUnit}
+          onScenarioRun={(result) => setScenarioResult(result)} 
+        />
         
         {/* Top Left Status */}
         <div className="absolute top-8 left-8 flex items-center gap-3 px-4 py-2 bg-[#1a1c1c]/80 backdrop-blur-md rounded-full z-10">
@@ -67,7 +75,7 @@ export default function DashboardPage() {
         {/* Right Side Panels (Scrollable Container) */}
         <div className="absolute top-8 right-8 flex flex-col gap-6 w-[380px] max-h-[calc(100vh-180px)] overflow-y-auto pr-2 pb-8 z-20 custom-scrollbar">
           
-          {/* Zone Selection Panel */}
+          {/* Zone Selection Panel - FUNCTIONAL */}
           <div className="map-overlay-card p-6 shadow-sm rounded-sm">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-2 text-primary font-bold">
@@ -76,31 +84,67 @@ export default function DashboardPage() {
               </div>
               <span className="material-symbols-outlined text-secondary text-[18px] cursor-pointer hover:text-primary transition-colors">open_in_full</span>
             </div>
-            <div>
-              <button className="w-full text-left flex justify-between items-center border-b border-outline-variant pb-2 text-[24px] headline-font font-medium text-on-surface hover:text-primary transition-colors">
-                Regional Overview
-                <span className="material-symbols-outlined text-outline">keyboard_arrow_down</span>
+            <div className="relative">
+              <button 
+                onClick={() => setIsZoneMenuOpen(!isZoneMenuOpen)}
+                className="w-full text-left flex justify-between items-center border-b border-outline-variant pb-2 text-[24px] headline-font font-medium text-on-surface hover:text-primary transition-colors"
+              >
+                {selectedUnit || 'Regional Overview'}
+                <span className={`material-symbols-outlined text-outline transition-transform ${isZoneMenuOpen ? 'rotate-180' : ''}`}>keyboard_arrow_down</span>
               </button>
+              
+              {isZoneMenuOpen && (
+                <div className="absolute top-full left-0 w-full mt-2 bg-white/95 backdrop-blur-md border border-outline-variant shadow-xl z-50 py-2 rounded-sm animate-in fade-in slide-in-from-top-2">
+                  <button 
+                    onClick={() => { setSelectedUnit(''); setIsZoneMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium border-b border-outline-variant/30"
+                  >
+                    Regional Overview
+                  </button>
+                  {units.map(u => (
+                    <button 
+                      key={u}
+                      onClick={() => { setSelectedUnit(u); setIsZoneMenuOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium last:border-0"
+                    >
+                      {u}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="mt-4 flex flex-wrap gap-2">
-                <span className="px-2 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-sm border border-outline-variant uppercase">NORTH SECTOR</span>
-                <span className="px-2 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-sm border border-outline-variant uppercase">MARA RIVER DELTA</span>
+                <span 
+                  onClick={() => setSelectedUnit('Mara North')}
+                  className="px-2 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-sm border border-outline-variant uppercase cursor-pointer hover:border-primary transition-colors"
+                >
+                  NORTH SECTOR
+                </span>
+                <span 
+                  onClick={() => setSelectedUnit('Mara North')}
+                  className="px-2 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded-sm border border-outline-variant uppercase cursor-pointer hover:border-primary transition-colors"
+                >
+                  MARA RIVER DELTA
+                </span>
               </div>
             </div>
           </div>
 
-          {/* AI Insights Panel */}
-          <div className="map-overlay-card p-6 shadow-sm border-l-4 border-l-primary rounded-sm">
-            <div className="flex items-center gap-2 mb-4 text-primary font-bold">
-              <span className="material-symbols-outlined text-[20px]">psychology</span>
-              <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">AI INSIGHTS</h4>
+          {/* AI Insights Panel - ONLY SHOW WHEN RUNNING OR RESULT EXISTS */}
+          {scenarioResult && (
+            <div className="map-overlay-card p-6 shadow-sm border-l-4 border-l-primary rounded-sm animate-in fade-in slide-in-from-right-4">
+              <div className="flex items-center gap-2 mb-4 text-primary font-bold">
+                <span className="material-symbols-outlined text-[20px]">psychology</span>
+                <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">AI INSIGHTS</h4>
+              </div>
+              <div className="bg-[#775a19]/5 p-4 rounded-sm italic text-[14px] text-on-surface-variant leading-relaxed">
+                {scenarioResult.analysis || "Synthesizing regional biological telemetry..."}
+              </div>
+              <button className="mt-4 text-primary text-[10px] font-bold flex items-center gap-1 hover:underline tracking-widest uppercase">
+                EXPAND FULL NARRATIVE <span className="material-symbols-outlined text-xs">arrow_forward</span>
+              </button>
             </div>
-            <div className="bg-[#775a19]/5 p-4 rounded-sm italic text-[16px] text-on-surface-variant leading-relaxed">
-              "Increasing moisture levels in the Mara River Delta are correlating with a 5% rise in ungulate movement. Lion pride 'Kekope' observed moving toward the Western corridor..."
-            </div>
-            <button className="mt-4 text-primary text-[10px] font-bold flex items-center gap-1 hover:underline tracking-widest uppercase">
-              EXPAND FULL NARRATIVE <span className="material-symbols-outlined text-xs">arrow_forward</span>
-            </button>
-          </div>
+          )}
 
           {/* Scenario Simulation Panel */}
           <div className="map-overlay-card p-6 shadow-sm rounded-sm">
@@ -124,9 +168,10 @@ export default function DashboardPage() {
                   </div>
                 </label>
               </div>
-              <button className="w-full bg-[#1a1c1c] text-white py-3 font-bold text-[11px] tracking-[0.2em] hover:bg-primary transition-colors flex items-center justify-center gap-2 uppercase">
-                <span className="material-symbols-outlined text-[18px]">play_arrow</span> RUN SIMULATION
+              <button className="w-full bg-[#1a1c1c] text-white py-3 font-bold text-[11px] tracking-[0.2em] hover:bg-primary transition-colors flex items-center justify-center gap-2 uppercase opacity-50 cursor-not-allowed">
+                <span className="material-symbols-outlined text-[18px]">play_arrow</span> Use Map Proposer
               </button>
+              <p className="text-[10px] text-center text-outline uppercase font-bold tracking-tighter">Use the central Propose Scenario button on map</p>
             </div>
           </div>
 
@@ -168,43 +213,37 @@ export default function DashboardPage() {
                 </label>
               </div>
             </div>
-            <div className="mt-8 pt-6 border-t border-outline-variant">
-              <div className="flex justify-between items-center text-secondary">
-                <span className="text-[10px] font-bold tracking-widest">LAST DATA REFRESH</span>
-                <span className="text-[10px] font-bold tracking-widest">12S AGO</span>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Temporal Controls (Time Slider) */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[640px] z-30">
-          <div className="map-overlay-card p-6 shadow-lg rounded-sm">
-            <div className="flex justify-between items-center mb-4">
+        {/* Temporal Controls (Time Slider) - MOVED TO BOTTOM RIGHT TO AVOID BLOCKING MAP BUTTON */}
+        <div className="absolute bottom-8 right-[420px] w-[500px] z-30">
+          <div className="map-overlay-card p-4 shadow-lg rounded-sm">
+            <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2 text-primary font-bold">
-                <span className="material-symbols-outlined">schedule</span>
-                <span className="text-[12px] uppercase tracking-[0.15em] text-on-surface">TEMPORAL ANALYSIS</span>
+                <span className="material-symbols-outlined text-[18px]">schedule</span>
+                <span className="text-[10px] uppercase tracking-[0.15em] text-on-surface">TEMPORAL ANALYSIS</span>
               </div>
-              <div className="flex items-center gap-4">
-                <button className="text-secondary hover:text-primary transition-colors"><span className="material-symbols-outlined text-[20px]">fast_rewind</span></button>
-                <button className="text-primary hover:opacity-80 transition-opacity"><span className="material-symbols-outlined text-[32px]">play_circle</span></button>
-                <button className="text-secondary hover:text-primary transition-colors"><span className="material-symbols-outlined text-[20px]">fast_forward</span></button>
+              <div className="flex items-center gap-3">
+                <button className="text-secondary hover:text-primary transition-colors"><span className="material-symbols-outlined text-[18px]">fast_rewind</span></button>
+                <button className="text-primary hover:opacity-80 transition-opacity"><span className="material-symbols-outlined text-[24px]">play_circle</span></button>
+                <button className="text-secondary hover:text-primary transition-colors"><span className="material-symbols-outlined text-[18px]">fast_forward</span></button>
               </div>
             </div>
-            <div className="relative pt-2">
-              <div className="h-1.5 w-full bg-surface-container rounded-full overflow-hidden relative">
+            <div className="relative pt-1">
+              <div className="h-1 w-full bg-surface-container rounded-full overflow-hidden relative">
                 <div className="absolute left-0 top-0 h-full w-2/3 time-slider-track"></div>
               </div>
-              <div className="absolute top-[-4px] left-[66%] w-4 h-4 bg-primary border-2 border-white rounded-full shadow-md cursor-pointer hover:scale-110 transition-transform"></div>
-              <div className="flex justify-between mt-4 px-1">
+              <div className="absolute top-[-5px] left-[66%] w-3.5 h-3.5 bg-primary border-2 border-white rounded-full shadow-md cursor-pointer hover:scale-110 transition-transform"></div>
+              <div className="flex justify-between mt-2 px-1">
                 <div className="text-center">
-                  <p className="text-[9px] font-bold text-outline uppercase tracking-widest">JAN 2020</p>
+                  <p className="text-[8px] font-bold text-outline uppercase tracking-widest leading-none">JAN 20</p>
                 </div>
-                <div className="text-center bg-[#c5a059]/20 px-2 py-0.5 rounded-sm">
-                  <p className="text-[11px] text-primary font-bold uppercase tracking-widest">MAR 2024</p>
+                <div className="text-center bg-[#c5a059]/10 px-1 py-0.5 rounded-sm">
+                  <p className="text-[9px] text-primary font-bold uppercase tracking-widest leading-none">MAR 24</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[9px] font-bold text-outline uppercase tracking-widest">DEC 2026</p>
+                  <p className="text-[8px] font-bold text-outline uppercase tracking-widest leading-none">DEC 26</p>
                 </div>
               </div>
             </div>
