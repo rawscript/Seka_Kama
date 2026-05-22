@@ -87,7 +87,7 @@ export default function LandingPage() {
               Documentation
             </Link>
           </div>
-          <Link href="/dashboard" className="text-[11px] font-bold uppercase tracking-[0.15em] px-6 py-2.5 border border-[#777667] bg-transparent text-[#1a1c1c] hover:bg-[#775a19] hover:text-white hover:border-[#775a19] transition-all duration-300">
+          <Link href="/login" className="text-[11px] font-bold uppercase tracking-[0.15em] px-6 py-2.5 border border-[#777667] bg-transparent text-[#1a1c1c] hover:bg-[#775a19] hover:text-white hover:border-[#775a19] transition-all duration-300">
             Launch Console
           </Link>
         </div>
@@ -122,7 +122,7 @@ export default function LandingPage() {
               Orchestrating the future of biodiversity through real-time geospatial intelligence and predictive ecology for the Greater Mara ecosystem.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="/explorer" className="bg-[#775a19] text-white px-8 py-4 text-[11px] font-bold tracking-widest uppercase hover:bg-[#4e3700] transition-colors shadow-sm">
+              <Link href="/login" className="bg-[#775a19] text-white px-8 py-4 text-[11px] font-bold tracking-widest uppercase hover:bg-[#4e3700] transition-colors shadow-sm">
                 Explore Ecosystem
               </Link>
               <Link href="/whitepaper" className="border border-[#777667] text-[#1a1c1c] px-8 py-4 text-[11px] font-bold tracking-widest uppercase hover:bg-black/5 transition-colors">
