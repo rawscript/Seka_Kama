@@ -49,7 +49,7 @@ export default function IntelligencePage() {
             <div 
               key={item.title} 
               className={`enterprise-card bg-[#1a1c1c] p-10 flex flex-col gap-8 transition-all hover:bg-[#242626] group ${mounted ? 'animate-in' : 'opacity-0'}`}
-              style={{ animationDelay: `${idx * 150}ms`, fillMode: 'both' }}
+              style={{ animationDelay: `${idx * 150}ms`, animationFillMode: 'both' }}
             >
               <div className="w-14 h-14 bg-[#775a19]/10 border border-[#775a19]/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
                 <item.icon className="w-7 h-7 text-[#775a19]" />
@@ -62,7 +62,7 @@ export default function IntelligencePage() {
           ))}
         </div>
 
-        <section className={`grid grid-cols-1 lg:grid-cols-2 gap-20 items-center border-t border-[#d1c5b4]/60 pt-24 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '500ms', fillMode: 'both' }}>
+        <section className={`grid grid-cols-1 lg:grid-cols-2 gap-20 items-center border-t border-[#d1c5b4]/60 pt-24 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '500ms', animationFillMode: 'both' }}>
            <div className="relative group p-4">
               <div className="absolute inset-0 bg-[#d1c5b4]/20 blur-2xl opacity-50 group-hover:opacity-100 transition-opacity" />
               <div className="relative bg-white border border-[#d1c5b4]/60 p-8 shadow-enterprise">

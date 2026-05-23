@@ -1,18 +1,4 @@
-const getApiUrl = () => {
-  let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-  
-  // Force HTTPS for production URLs when running on HTTPS to prevent Mixed Content errors
-  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-    const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1');
-    if (url.startsWith('http://') && !isLocalhost) {
-      url = url.replace('http://', 'https://');
-    }
-  }
-  
-  return url;
-};
-
-const API_URL = getApiUrl();
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 /**
  * SekaNet Core Interfaces
@@ -92,7 +78,15 @@ export const api = {
     // Ensure endpoint starts with a slash
     const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
-    const response = await fetch(`${API_URL}${normalizedEndpoint}`, {
+    // Force HTTPS for production URLs when running on HTTPS to prevent Mixed Content errors
+    let finalUrl = API_URL;
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+      if (finalUrl.startsWith('http://') && !finalUrl.includes('localhost') && !finalUrl.includes('127.0.0.1')) {
+        finalUrl = finalUrl.replace('http://', 'https://');
+      }
+    }
+
+    const response = await fetch(`${finalUrl}${normalizedEndpoint}`, {
       ...options,
       headers,
     });

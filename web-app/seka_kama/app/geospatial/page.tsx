@@ -49,7 +49,7 @@ export default function GeospatialPage() {
             <div 
               key={feature.title} 
               className={`enterprise-card bg-white p-10 flex flex-col gap-8 transition-all hover:-translate-y-2 ${mounted ? 'animate-in' : 'opacity-0'}`}
-              style={{ animationDelay: `${idx * 150}ms`, fillMode: 'both' }}
+              style={{ animationDelay: `${idx * 150}ms`, animationFillMode: 'both' }}
             >
               <div className="w-14 h-14 bg-[#775a19]/5 border border-[#775a19]/10 flex items-center justify-center">
                 <feature.icon className="w-7 h-7 text-[#775a19]" />
@@ -62,7 +62,7 @@ export default function GeospatialPage() {
           ))}
         </div>
 
-        <section className={`grid grid-cols-1 lg:grid-cols-2 gap-20 items-center border-t border-[#d1c5b4]/60 pt-24 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '500ms', fillMode: 'both' }}>
+        <section className={`grid grid-cols-1 lg:grid-cols-2 gap-20 items-center border-t border-[#d1c5b4]/60 pt-24 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '500ms', animationFillMode: 'both' }}>
            <div className="space-y-8">
               <h2 className="text-4xl font-serif font-medium text-[#1a1c1c] tracking-tight leading-snug">
                 Precision Mapping for <br />
@@ -85,7 +85,7 @@ export default function GeospatialPage() {
            <div className="relative group overflow-hidden">
               <div className="absolute -inset-3 border border-[#775a19] opacity-10 group-hover:opacity-25 transition-opacity duration-700" />
               <img 
-                src="kepler.gl (3).png" 
+                src="/kepler_gl_3.png" 
                 alt="Geospatial Visualization" 
                 className="w-full h-auto object-cover filter contrast-[1.05] grayscale-[0.2] transition-all duration-700 group-hover:scale-105"
               />
