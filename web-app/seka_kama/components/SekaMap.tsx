@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Map, { Source, Layer, MapRef, MapProvider, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { api } from '@/services/api';
+import { getApiUrl } from '@/services/config';
 import ScenarioDrawer from './ScenarioDrawer';
 import { 
   Loader2, 
@@ -21,8 +22,7 @@ function getDirectDriveLink(url: string) {
   const fileIdMatch = url.match(/[-\w]{25,}/);
   if (fileIdMatch && fileIdMatch[0]) {
     const rawUrl = `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}`;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-    return `${apiUrl}/proxy-geojson?url=${encodeURIComponent(rawUrl)}`;
+    return `${getApiUrl()}/proxy-geojson?url=${encodeURIComponent(rawUrl)}`;
   }
   return url;
 }

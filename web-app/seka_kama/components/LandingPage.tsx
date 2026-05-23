@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Navbar from './Navbar';
+import Footer from './Footer';
+import { getApiUrl } from '@/services/config';
 
 interface Statistic {
   label: string;
@@ -70,7 +73,7 @@ export default function LandingPage() {
       if (!token) return; // Do nothing if there's no token, leave them on landing page
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+        const response = await fetch(`${getApiUrl()}/auth/me`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
 
@@ -97,32 +100,7 @@ export default function LandingPage() {
   return (
     <div className="bg-[#f9f9f9] text-[#1a1c1c] overflow-x-hidden antialiased selection:bg-[#775a19]/10 selection:text-[#4e3700]">
 
-      {/* Top Navigation */}
-      <nav className="top-0 bg-[#f9f9f9]/90 backdrop-blur-md border-b border-[#d1c5b4]/60 z-50 sticky w-full">
-        <div className="flex justify-between items-center w-full px-6 md:px-20 py-5 max-w-[1440px] mx-auto">
-          <Link href="/" className="font-serif font-normal tracking-tight text-2xl text-[#1a1c1c] italic hover:opacity-80 transition-opacity">
-            Seka Kama
-          </Link>
-          <div className="hidden md:flex items-center gap-10">
-            <Link href="/capabilities" className="text-[11px] uppercase tracking-[0.2em] text-[#775a19] font-bold border-b border-[#775a19] pb-1">
-              Capabilities
-            </Link>
-            <Link href="/geospatial" className="text-[11px] uppercase tracking-[0.2em] text-[#4e4639] hover:text-[#1a1c1c] transition-colors font-bold">
-              Geospatial
-            </Link>
-            <Link href="/intelligence" className="text-[11px] uppercase tracking-[0.2em] text-[#4e4639] hover:text-[#1a1c1c] transition-colors font-bold">
-              Intelligence
-            </Link>
-            <Link href="/documentation" className="text-[11px] uppercase tracking-[0.2em] text-[#4e4639] hover:text-[#1a1c1c] transition-colors font-bold">
-              Documentation
-            </Link>
-          </div>
-          {/* Dynamic Link route & text based on authentication */}
-          <Link href={consolePath} className="text-[11px] font-bold uppercase tracking-[0.15em] px-6 py-2.5 border border-[#777667] bg-transparent text-[#1a1c1c] hover:bg-[#775a19] hover:text-white hover:border-[#775a19] transition-all duration-300">
-            {consoleLabel}
-          </Link>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero Section */}
       <header className="relative w-full min-h-screen flex items-center overflow-hidden bg-[#f9f9f9]">
@@ -239,7 +217,7 @@ export default function LandingPage() {
                     {item.description}
                   </p>
                 </div>
-                <Link href={`/capabilities/${item.slug}`} className="text-[11px] font-bold text-[#775a19] border-b border-transparent group-hover:border-[#775a19] transition-all inline-block pb-0.5 self-start tracking-wider uppercase">
+                <Link href={item.slug === 'spatial-synthesis' ? '/geospatial' : item.slug === 'neural-defense' ? '/intelligence' : '/documentation'} className="text-[11px] font-bold text-[#775a19] border-b border-transparent group-hover:border-[#775a19] transition-all inline-block pb-0.5 self-start tracking-wider uppercase">
                   LEARN MORE &rarr;
                 </Link>
               </div>
@@ -295,26 +273,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-[#d1c5b4]/80">
-        <div className="w-full px-6 md:px-20 py-16 flex flex-col items-center gap-6 max-w-[1440px] mx-auto text-center">
-          <div className="font-serif text-2xl text-[#1a1c1c] italic font-normal tracking-tight">Seka Kama</div>
-          <div className="flex flex-wrap justify-center gap-x-10 gap-y-3 mb-6">
-            <Link href="/about" className="text-[11px] font-bold uppercase tracking-widest text-[#7f7667] hover:text-[#775a19] transition-colors">About</Link>
-            <Link href="/documentation" className="text-[11px] font-bold uppercase tracking-widest text-[#7f7667] hover:text-[#775a19] transition-colors">Documentation</Link>
-            <Link href="/data-standards" className="text-[11px] font-bold uppercase tracking-widest text-[#7f7667] hover:text-[#775a19] transition-colors">Data Standards</Link>
-            <Link href="/privacy" className="text-[11px] font-bold uppercase tracking-widest text-[#7f7667] hover:text-[#775a19] transition-colors">Privacy Policy</Link>
-            <Link href="/contact" className="text-[11px] font-bold uppercase tracking-widest text-[#7f7667] hover:text-[#775a19] transition-colors">Contact</Link>
-          </div>
-          <div className="w-16 h-[1px] bg-[#d1c5b4]/60 mb-4" />
-          <p className="text-[11px] font-semibold tracking-wider text-[#d1c5b4] uppercase">
-            &copy; 2026 Seka Kama Conservancy. All pipelines operational.
-          </p>
-          <p className="text-[10px] text-[#7f7667]/70 font-mono tracking-tight max-w-md">
-            Telemetry Inputs: VIIRS DNB, LandDX, ESA WorldCover, WDPA Ecosystem Core
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
