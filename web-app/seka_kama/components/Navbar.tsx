@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/navigation'; // Wait, LandingPage used next/link. Next.js App router uses next/link.
 import { usePathname } from 'next/navigation';
 import NextLink from 'next/link';
+import { getApiUrl } from '@/services/config';
 
 export default function Navbar() {
   const [mounted, setMounted] = useState(false);
@@ -17,7 +18,7 @@ export default function Navbar() {
       if (!token) return;
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+        const response = await fetch(`${getApiUrl()}/auth/me`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
 

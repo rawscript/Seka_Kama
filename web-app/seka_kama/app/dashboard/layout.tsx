@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { getApiUrl } from '@/services/config';
 
 interface User {
   id: number;
@@ -31,7 +32,7 @@ export default function DashboardLayout({
         return;
       }
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+        const response = await fetch(`${getApiUrl()}/auth/me`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (response.ok) {

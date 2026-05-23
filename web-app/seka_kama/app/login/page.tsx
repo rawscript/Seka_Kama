@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getApiUrl } from '@/services/config';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,12 +43,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-      if (!apiUrl.startsWith('http') && !apiUrl.startsWith('/')) {
-        apiUrl = `https://${apiUrl}`;
-      }
-
-      const response = await fetch(`${apiUrl}/auth/token`, {
+      const response = await fetch(`${getApiUrl()}/auth/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({

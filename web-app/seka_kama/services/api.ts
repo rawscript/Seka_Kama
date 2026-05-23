@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+import { getApiUrl } from './config';
 
 /**
  * SekaNet Core Interfaces
@@ -78,15 +78,7 @@ export const api = {
     // Ensure endpoint starts with a slash
     const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
-    // Force HTTPS for production URLs when running on HTTPS to prevent Mixed Content errors
-    let finalUrl = API_URL;
-    if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-      if (finalUrl.startsWith('http://') && !finalUrl.includes('localhost') && !finalUrl.includes('127.0.0.1')) {
-        finalUrl = finalUrl.replace('http://', 'https://');
-      }
-    }
-
-    const response = await fetch(`${finalUrl}${normalizedEndpoint}`, {
+    const response = await fetch(`${getApiUrl()}${normalizedEndpoint}`, {
       ...options,
       headers,
     });
