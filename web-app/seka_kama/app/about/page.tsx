@@ -1,69 +1,73 @@
 'use client';
 
-import Link from 'next/link';
-import { ShieldCheck, Users, Target, Globe } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { Target, Globe, Shield } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function AboutPage() {
-  return (
-    <div className="min-h-screen bg-[#020617] text-slate-200 selection:bg-emerald-500/30">
-      {/* Simple Header */}
-      <nav className="h-16 flex items-center justify-between px-8 border-b border-white/5 glass-effect sticky top-0 z-50">
-        <Link href="/" className="flex items-center gap-2 group text-decoration-none">
-          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
-            <ShieldCheck className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-white tracking-tight group-hover:text-emerald-400 transition-colors">Seka Kama</span>
-        </Link>
-        <Link href="/login" className="text-xs font-bold uppercase tracking-widest text-emerald-500 hover:text-emerald-400">Launch Twin</Link>
-      </nav>
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-      <main className="max-w-4xl mx-auto py-24 px-8 space-y-16 animate-in fade-in slide-in-from-bottom-8">
-        <section className="space-y-6">
-          <h1 className="text-5xl font-extrabold text-white tracking-tight leading-tight">
+  return (
+    <div className="bg-[#f9f9f9] min-h-screen flex flex-col selection:bg-[#775a19]/10 selection:text-[#4e3700]">
+      <Navbar />
+
+      <main className="max-w-[1440px] mx-auto px-6 md:px-20 py-24 flex-grow w-full">
+        <section className={`max-w-3xl mb-24 ${mounted ? 'animate-in' : 'opacity-0'}`}>
+          <p className="text-[11px] font-bold text-[#775a19] mb-4 tracking-[0.3em] uppercase">
+            ESTABLISHED 2026
+          </p>
+          <h1 className="text-5xl md:text-[64px] leading-tight text-[#1a1c1c] mb-8 font-normal tracking-tight">
             Protecting the Pride through <br />
-            <span className="text-emerald-500">Digital Intelligence.</span>
+            <span className="italic font-light text-[#4e3700]">Digital Intelligence</span>
           </h1>
-          <p className="text-xl text-slate-400 leading-relaxed font-light">
+          <p className="text-lg md:text-xl leading-relaxed text-[#4e4639] font-light">
             Seka Kama is a next-generation conservation platform that harmonizes advanced geospatial data 
             with machine learning to protect lion populations in the Greater Mara ecosystem.
           </p>
         </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-12 border-t border-white/5">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 text-emerald-500">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-16 border-t border-[#d1c5b4]/60">
+          <div className={`space-y-6 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '100ms', fillMode: 'both' }}>
+            <div className="flex items-center gap-3 text-[#775a19]">
                <Target className="w-5 h-5" />
-               <h3 className="font-bold uppercase tracking-widest text-xs">Our Mission</h3>
+               <h3 className="text-[11px] font-bold uppercase tracking-[0.2em]">Our Mission</h3>
             </div>
-            <p className="text-slate-400 leading-relaxed">
+            <p className="text-[#4e4639] leading-relaxed font-light">
               To provide conservancy managers and researchers with the "What-If" capabilities needed to 
               navigate the complex balance between human development and wildlife preservation.
             </p>
           </div>
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 text-emerald-500">
+          <div className={`space-y-6 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '200ms', fillMode: 'both' }}>
+            <div className="flex items-center gap-3 text-[#775a19]">
                <Globe className="w-5 h-5" />
-               <h3 className="font-bold uppercase tracking-widest text-xs">The Digital Twin</h3>
+               <h3 className="text-[11px] font-bold uppercase tracking-[0.2em]">The Digital Twin</h3>
             </div>
-            <p className="text-slate-400 leading-relaxed">
+            <p className="text-[#4e4639] leading-relaxed font-light">
               We leverage VIIRS DNB, LandDX, and WDPA datasets to simulate 271,211 individual 1km² 
               grid cells, ensuring a granular understanding of every acre in the ecosystem.
             </p>
           </div>
         </div>
 
-        <section className="py-20 text-center space-y-8 border-t border-white/5">
-           <h2 className="text-2xl font-bold text-white">Join the New Era of Conservation</h2>
-           <div className="flex justify-center gap-4">
-              <Link href="/register" className="px-8 py-3 bg-emerald-500 text-white font-bold rounded-xl shadow-lg hover:bg-emerald-400 transition-all">Create Account</Link>
-              <Link href="/contact" className="px-8 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all">Get in Touch</Link>
+        <section className={`mt-32 p-12 bg-white enterprise-card border-[#d1c5b4]/40 flex flex-col md:flex-row items-center justify-between gap-8 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '300ms', fillMode: 'both' }}>
+           <div className="max-w-xl text-center md:text-left">
+              <h2 className="text-2xl md:text-3xl font-serif font-medium text-[#1a1c1c] mb-4">Join the New Era of Conservation</h2>
+              <p className="text-sm text-[#4e4639] font-light">Experience the power of predictive ecology and spatial synthesis.</p>
+           </div>
+           <div className="flex gap-4">
+              <a href="/register" className="bg-[#775a19] text-white px-8 py-4 text-[11px] font-bold tracking-widest uppercase hover:bg-[#4e3700] transition-colors shadow-sm">
+                Create Account
+              </a>
+              <a href="/contact" className="border border-[#777667] text-[#1a1c1c] px-8 py-4 text-[11px] font-bold tracking-widest uppercase hover:bg-black/5 transition-colors">
+                Contact Us
+              </a>
            </div>
         </section>
       </main>
 
-      <footer className="py-12 border-t border-white/5 text-center text-slate-600 text-[10px] font-bold uppercase tracking-widest">
-         &copy; 2026 Seka Kama Conservancy · Nairobi · Kenya
-      </footer>
+      <Footer />
     </div>
   );
 }

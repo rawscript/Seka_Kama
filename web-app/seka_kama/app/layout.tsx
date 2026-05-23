@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className={`${inter.className} min-h-full flex flex-col bg-slate-950 text-slate-50`}>
+      <body className={`${inter.className} min-h-full flex flex-col bg-[#f9f9f9] text-[#1a1c1c]`}>
         {/* The min-h-full and flex-col ensures your map dashboard fills the screen properly */}
         <main className="flex-grow">
           {children}

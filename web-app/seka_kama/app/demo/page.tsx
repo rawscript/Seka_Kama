@@ -1,74 +1,119 @@
 'use client';
 
-import Link from 'next/link';
-import { ShieldCheck, Play, ArrowRight, Zap, Globe, BarChart3 } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { Play, ArrowRight, Zap, Globe, BarChart3, Pause } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function DemoPage() {
+  const [mounted, setMounted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => setMounted(true), []);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200">
-      <nav className="h-16 flex items-center justify-between px-8 border-b border-white/5 glass-effect sticky top-0 z-50">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
-            <ShieldCheck className="w-5 h-5 text-white" />
+    <div className="bg-[#f9f9f9] min-h-screen flex flex-col selection:bg-[#775a19]/10 selection:text-[#4e3700]">
+      <Navbar />
+
+      <main className="max-w-[1440px] mx-auto px-6 md:px-20 py-24 flex-grow w-full text-center">
+        <div className={`space-y-8 mb-20 ${mounted ? 'animate-in' : 'opacity-0'}`}>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#775a19]/5 border border-[#775a19]/20 text-[#775a19] text-[11px] font-bold uppercase tracking-[0.2em]">
+            INTERACTIVE PREVIEW
           </div>
-          <span className="font-bold text-white tracking-tight">Seka Kama</span>
-        </Link>
-        <Link href="/login" className="px-4 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:bg-emerald-400 transition-all uppercase tracking-widest">Login</Link>
-      </nav>
-
-      <main className="max-w-6xl mx-auto py-20 px-8 text-center space-y-16">
-        <div className="space-y-6 animate-in fade-in slide-in-from-top-8 duration-700">
-           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-widest">
-             Interactive Preview
-           </div>
-           <h1 className="text-6xl font-extrabold text-white tracking-tighter max-w-4xl mx-auto">
-             Experience the <span className="text-emerald-500">Greater Mara</span> like never before.
-           </h1>
-           <p className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed font-light">
-             Our demo allows you to explore the baseline lion density and see how SekaNet interprets 
-             environmental shifts in real-time.
-           </p>
+          <h1 className="text-5xl md:text-7xl font-normal text-[#1a1c1c] tracking-tight max-w-5xl mx-auto leading-tight">
+            Experience the <span className="italic font-light text-[#4e3700]">Greater Mara</span> <br /> like never before.
+          </h1>
+          <p className="text-[#4e4639] text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-light">
+            Our demo allows you to explore the baseline lion density and see how SekaNet interprets 
+            environmental shifts in real-time.
+          </p>
         </div>
 
-        {/* Video Placeholder / Big visual */}
-        <div className="relative aspect-video w-full max-w-4xl mx-auto rounded-[2.5rem] overflow-hidden border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.9)] group">
-           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center opacity-40 grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-105" />
-           <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent" />
+        {/* Video Player Section */}
+        <div className={`relative aspect-video w-full max-w-5xl mx-auto rounded-sm overflow-hidden border border-[#d1c5b4]/60 shadow-enterprise group glass-effect ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '200ms', fillMode: 'both' }}>
+           <video 
+             ref={videoRef}
+             className="w-full h-full object-cover"
+             poster="https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&q=80&w=2000"
+             onPlay={() => setIsPlaying(true)}
+             onPause={() => setIsPlaying(false)}
+             loop
+             muted={false}
+           >
+             {/* Using a high-quality relevant placeholder video (Lion walking or savanna drone) */}
+             <source src="https://assets.mixkit.co/videos/preview/mixkit-lion-walking-in-the-grass-4040-large.mp4" type="video/mp4" />
+             Your browser does not support the video tag.
+           </video>
            
-           <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
-              <div className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center shadow-2xl shadow-emerald-500/40 relative">
-                 <div className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-20" />
-                 <Play className="w-8 h-8 text-white fill-current ml-1" />
-              </div>
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-white">Watch Platform Walkthrough</p>
+           {/* Overlays */}
+           <div className={`absolute inset-0 bg-black/20 transition-opacity duration-500 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+             <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
+                <button 
+                  onClick={togglePlay}
+                  className="w-24 h-24 rounded-full bg-[#775a19] flex items-center justify-center shadow-2xl text-white hover:scale-110 transition-transform relative group/btn"
+                >
+                   {isPlaying ? (
+                     <Pause className="w-10 h-10 fill-current" />
+                   ) : (
+                     <>
+                       <div className="absolute inset-0 rounded-full bg-[#775a19] animate-ping opacity-20" />
+                       <Play className="w-10 h-10 fill-current ml-1" />
+                     </>
+                   )}
+                </button>
+                {!isPlaying && (
+                  <p className="text-sm font-bold uppercase tracking-[0.4em] text-white drop-shadow-md">Watch Platform Walkthrough</p>
+                )}
+             </div>
+           </div>
+
+           {/* Brand Watermark */}
+           <div className="absolute top-8 left-8 flex items-center gap-2 opacity-50 select-none">
+              <div className="w-3 h-3 rounded-full bg-[#775a19]" />
+              <span className="text-[10px] font-bold text-white uppercase tracking-widest">Seka Kama Intelligence v4.2</span>
            </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-12">
-           <DemoFeature icon={Globe} title="Regional Insights" desc="Explore 271,000+ cells of ecological data at 1km² resolution." />
-           <DemoFeature icon={Zap} title="Predictive AI" desc="Simulate impacts of infrastructure on wildlife with 84% accuracy." />
-           <DemoFeature icon={BarChart3} title="Risk Matrices" desc="Identify high-priority conservation corridors automatically." />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-24">
+           <DemoFeature icon={Globe} title="Regional Insights" desc="Explore 271,000+ cells of ecological data at 1km² resolution." delay="400ms" />
+           <DemoFeature icon={Zap} title="Predictive AI" desc="Simulate impacts of infrastructure on wildlife with 84% accuracy." delay="500ms" />
+           <DemoFeature icon={BarChart3} title="Risk Matrices" desc="Identify high-priority conservation corridors automatically." delay="600ms" />
         </div>
 
-        <section className="py-20 border-t border-white/5 space-y-8">
-           <h2 className="text-3xl font-bold text-white tracking-tight">Ready to start simulating?</h2>
-           <Link href="/register" className="inline-flex items-center gap-3 px-10 py-5 bg-white text-[#020617] font-black rounded-2xl hover:bg-emerald-500 hover:text-white transition-all group scale-105">
-              GET FULL ACCESS <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-           </Link>
+        <section className={`mt-32 py-24 border-t border-[#d1c5b4]/60 space-y-10 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '700ms', fillMode: 'both' }}>
+           <h2 className="text-4xl font-serif font-medium text-[#1a1c1c] tracking-tight">Ready to start simulating?</h2>
+           <a href="/register" className="inline-flex items-center gap-4 px-12 py-6 bg-[#1a1c1c] text-white font-bold hover:bg-[#775a19] transition-all group shadow-xl">
+              <span className="text-[12px] tracking-[0.3em] uppercase">GET FULL ACCESS</span> 
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+           </a>
         </section>
       </main>
+
+      <Footer />
     </div>
   );
 }
 
-function DemoFeature({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) {
+function DemoFeature({ icon: Icon, title, desc, delay }: { icon: any, title: string, desc: string, delay: string }) {
   return (
-    <div className="p-8 enterprise-card transition-all hover:-translate-y-2 hover:border-emerald-500/30">
-       <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-6 mx-auto">
-          <Icon className="w-6 h-6 text-emerald-500" />
+    <div className={`p-10 bg-white enterprise-card flex flex-col items-center text-center group animate-in`} style={{ animationDelay: delay, fillMode: 'both' }}>
+       <div className="w-16 h-16 rounded-sm bg-[#775a19]/5 border border-[#775a19]/10 flex items-center justify-center mb-8 group-hover:bg-[#775a19] transition-colors duration-500">
+          <Icon className="w-8 h-8 text-[#775a19] group-hover:text-white transition-colors duration-500" />
        </div>
-       <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
-       <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+       <h3 className="text-xl font-serif font-medium text-[#1a1c1c] mb-4">{title}</h3>
+       <p className="text-sm text-[#4e4639] leading-relaxed font-light">{desc}</p>
     </div>
   );
 }
