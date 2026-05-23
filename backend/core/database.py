@@ -321,16 +321,20 @@ class SupabaseService:
                 "key_hash": key_hash,
                 "prefix": prefix,
                 "is_active": True
-                # created_at handled by database default
             }
-            result = self.client.table("api_keys").insert(key_data).execute()
+            # Add .select() to ensure the inserted data is returned in result.data
+            result = self.client.table("api_keys").insert(key_data).select().execute()
+            
             if not result.data:
                 logger.error(f"API key insertion returned no data for user {user_id}")
                 return {}
+            
             return result.data[0]
         except Exception as e:
             logger.error(f"Supabase error creating API key for user {user_id}: {str(e)}")
-            # If the table doesn't exist, this will catch it
+            # Log the full error for better debugging
+            import traceback
+            logger.error(traceback.format_exc())
             return {}
         
     def revoke_api_key(self, user_id: int, key_id: int) -> bool:

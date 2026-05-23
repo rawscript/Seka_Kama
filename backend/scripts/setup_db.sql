@@ -17,13 +17,22 @@ CREATE TABLE IF NOT EXISTS public.api_keys (
 ALTER TABLE public.api_keys ENABLE ROW LEVEL SECURITY;
 
 -- Create policies (only allow users to see/revoke their own keys)
+-- Create policies (only allow users to see/revoke their own keys)
+-- Note: These policies assume Supabase Auth is linked to public.users via email
+-- Adjust if you use a different link (like auth_user_id UUID)
 CREATE POLICY "Users can view their own API keys"
 ON public.api_keys FOR SELECT
-USING (auth.uid()::text = (SELECT email FROM public.users WHERE id = user_id));
+USING (EXISTS (
+    SELECT 1 FROM public.users 
+    WHERE id = user_id AND email = auth.jwt() ->> 'email'
+));
 
 CREATE POLICY "Users can revoke their own API keys"
 ON public.api_keys FOR UPDATE
-USING (auth.uid()::text = (SELECT email FROM public.users WHERE id = user_id));
+USING (EXISTS (
+    SELECT 1 FROM public.users 
+    WHERE id = user_id AND email = auth.jwt() ->> 'email'
+));
 
 -- Index for fast lookup by hash (used during authentication per request)
 CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON public.api_keys(key_hash);
