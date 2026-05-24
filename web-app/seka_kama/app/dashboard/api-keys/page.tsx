@@ -31,7 +31,7 @@ export default function ApiKeysPage() {
   const fetchKeys = async () => {
     try {
       setLoading(true);
-      const data = await api.get('/keys');
+      const data = await api.get('/keys/');
       setKeys(data);
     } catch (err) {
       setError('Failed to load API keys');
@@ -48,7 +48,7 @@ export default function ApiKeysPage() {
     try {
       setCreating(true);
       setError(null);
-      const result = await api.post('/keys', { name: newKeyName.trim() });
+      const result = await api.post('/keys/', { name: newKeyName.trim() });
       
       setNewKeyValue(result.key);
       setKeys(prev => [result, ...prev]);
@@ -65,7 +65,7 @@ export default function ApiKeysPage() {
     
     try {
       setRevoking(id);
-      await api.delete(`/keys/${id}`);
+      await api.delete(`/keys/${id}/`);
       setKeys(prev => prev.filter(k => k.id !== id));
     } catch (err) {
       setError('Failed to revoke API key');
