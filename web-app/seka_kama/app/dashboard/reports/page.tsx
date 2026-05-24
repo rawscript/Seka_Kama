@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { api } from '@/services/api';
+import { getApiUrl } from '@/services/config';
 import { Activity, Shield, Thermometer, Map, Target, AlertTriangle } from 'lucide-react';
 
 // ── types ─────────────────────────────────────────────────────────────────────
@@ -24,10 +25,9 @@ interface FeatureImportance {
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-
 async function fetchStats(unit?: string): Promise<Stats> {
-  const url = unit ? `${API_URL}/statistics?management_unit=${unit}` : `${API_URL}/statistics`;
+  const apiUrl = getApiUrl();
+  const url = unit ? `${apiUrl}/statistics?management_unit=${unit}` : `${apiUrl}/statistics`;
   const r = await fetch(url);
   if (!r.ok) throw new Error('Failed to fetch statistics');
   return r.json();
@@ -127,7 +127,7 @@ export default function ReportsPage() {
             {(['geojson', 'json', 'csv'] as const).map(fmt => (
               <a
                 key={fmt}
-                href={`${API_URL}/grid-cells/export?format=${fmt}${selectedUnit ? `&management_unit=${selectedUnit}` : ''}`}
+                href={`${getApiUrl()}/grid-cells/export?format=${fmt}${selectedUnit ? `&management_unit=${selectedUnit}` : ''}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={s.exportBtn}

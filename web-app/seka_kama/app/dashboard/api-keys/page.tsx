@@ -210,7 +210,7 @@ export default function ApiKeysPage() {
               </form>
 
               <div className="pt-6 border-t border-white/10">
-                <a href="#" className="flex items-center gap-3 text-sm font-bold text-emerald-400/60 hover:text-emerald-400 transition-colors group">
+                <a href="/documentation" className="flex items-center gap-3 text-sm font-bold text-emerald-400/60 hover:text-emerald-400 transition-colors group">
                   <div className="p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10 group-hover:bg-emerald-500/20 transition-all">
                     <BookOpen className="w-4 h-4" />
                   </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { getApiUrl } from '@/services/config';
 
 interface User {
   id: number;
@@ -11,8 +12,6 @@ interface User {
   organization: string;
   role: string;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -34,7 +33,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!token) { router.push('/login'); return; }
-    fetch(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${getApiUrl()}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then((u: User) => { setUser(u); setFullName(u.full_name); setOrganization(u.organization); })
       .catch(() => router.push('/login'))

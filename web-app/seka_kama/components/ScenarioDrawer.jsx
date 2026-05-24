@@ -1,6 +1,7 @@
 // components/ScenarioDrawer.jsx
 import { useMap } from 'react-leaflet';
 import { DrawControl } from '@mapbox/mapbox-gl-draw';
+import { getApiUrl } from '@/services/config';
 
 function ScenarioDrawer({ onScenarioSubmit }) {
   const map = useMap();
@@ -16,7 +17,7 @@ function ScenarioDrawer({ onScenarioSubmit }) {
       user_query: "What if a new lodge is built here?"
     };
     
-    const response = await fetch('/api/scenario', {
+    const response = await fetch(`${getApiUrl()}/scenario`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(scenario)
@@ -27,11 +28,9 @@ function ScenarioDrawer({ onScenarioSubmit }) {
     alert(`Lion abundance change: ${result.delta_lions} lions (${result.delta_percent}%)`);
     onScenarioSubmit(result);
   };
-  // Add API calls
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
     const handleScenarioSubmit = async (geometry, modifications) => {
-      const response = await fetch(`${API_URL}/scenario`, {
+      const response = await fetch(`${getApiUrl()}/scenario`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { getApiUrl } from '@/services/config';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -25,7 +26,7 @@ export default function ProtectedRoute({ children, requiredRole = 'viewer' }: Pr
 
     const verifyToken = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+        const response = await fetch(`${getApiUrl()}/auth/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
