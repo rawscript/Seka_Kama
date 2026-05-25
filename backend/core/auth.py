@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional
-from jose import JWTError, jwt
+from jose import JWTError, ExpiredSignatureError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -15,7 +15,29 @@ pwd_context = CryptContext(
 )
 
 # JWT configuration
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+# JWT_SECRET_KEY is required in production. We validate it eagerly at import
+# time so a misconfigured deployment fails loudly on startup rather than
+# silently issuing tokens that can never be verified after a redeploy.
+_raw_secret = os.getenv("JWT_SECRET_KEY", "")
+_ENV = os.getenv("ENVIRONMENT", os.getenv("RAILWAY_ENVIRONMENT", "development")).lower()
+_IS_PRODUCTION = _ENV in ("production", "prod")
+
+if not _raw_secret:
+    if _IS_PRODUCTION:
+        raise RuntimeError(
+            "JWT_SECRET_KEY environment variable is not set. "
+            "Set a strong random secret (≥32 characters) before deploying."
+        )
+    # Development fallback — intentionally obvious so it is never used in prod
+    _raw_secret = "dev-only-secret-do-not-use-in-production-replace-me"
+
+if len(_raw_secret) < 32:
+    raise RuntimeError(
+        f"JWT_SECRET_KEY is too short ({len(_raw_secret)} chars). "
+        "Use a secret of at least 32 characters to ensure token security."
+    )
+
+SECRET_KEY: str = _raw_secret
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
@@ -112,27 +134,53 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> TokenData:
+    """
+    Decode and validate the Bearer JWT.
+
+    Raises:
+      401 with detail "Token has expired"  — when the token's exp claim is in the past.
+      401 with detail "Could not validate credentials" — for any other JWT error
+          (bad signature, malformed token, missing required claims, etc.).
+    """
     token = credentials.credentials
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        user_id: int = payload.get("user_id")
-        role: str = payload.get("role")
-        if email is None or user_id is None:
-            raise credentials_exception
-        return TokenData(email=email, user_id=user_id, role=role)
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except JWTError:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    email: str = payload.get("sub")
+    user_id: int = payload.get("user_id")
+    role: str = payload.get("role", "analyst")
+
+    if not email or user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return TokenData(email=email, user_id=user_id, role=role)
+
 
 async def require_admin(current_user: TokenData = Depends(get_current_user)) -> TokenData:
+    """
+    Dependency that enforces admin-only access.
+    Raises 403 if the authenticated user does not hold the 'admin' role.
+    """
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required"
+            detail="Admin privileges required",
         )
     return current_user
