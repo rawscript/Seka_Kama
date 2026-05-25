@@ -23,20 +23,6 @@ export default function LoginPage() {
     updateClock();
     return () => clearInterval(interval);
   }, []);
-  /*
-    useEffect(() => {
-      const handleMouseMove = (e: MouseEvent) => {
-  
-        if (bgRef.current) {
-          const moveX = (e.clientX - window.innerWidth / 2) * 0.008;
-          const moveY = (e.clientY - window.innerHeight / 2) * 0.008;
-          bgRef.current.style.transform = `scale(1.05) translate(${moveX}px, ${moveY}px)`;
-        }
-      };
-      document.addEventListener('mousemove', handleMouseMove);
-      return () => document.removeEventListener('mousemove', handleMouseMove);
-    }, []);
-  */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
