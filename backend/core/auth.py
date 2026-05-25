@@ -5,7 +5,10 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, field_validator
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 # Password hashing with explicit bcrypt configuration
 pwd_context = CryptContext(
@@ -32,10 +35,22 @@ if not _raw_secret:
     _raw_secret = "dev-only-secret-do-not-use-in-production-replace-me"
 
 if len(_raw_secret) < 32:
-    raise RuntimeError(
-        f"JWT_SECRET_KEY is too short ({len(_raw_secret)} chars). "
-        "Use a secret of at least 32 characters to ensure token security."
+    if _IS_PRODUCTION:
+        raise RuntimeError(
+            f"JWT_SECRET_KEY is too short ({len(_raw_secret)} chars). "
+            "Set a strong random secret of at least 32 characters in your "
+            "Railway environment variables before deploying."
+        )
+    # Non-production: warn loudly but allow startup so local dev and
+    # transitional deployments are not hard-blocked while the env var is
+    # being updated to a proper value.
+    logger.warning(
+        "JWT_SECRET_KEY is too short (%d chars) — minimum 32 required. "
+        "Tokens signed with this key are insecure. "
+        "Update JWT_SECRET_KEY to a 32+ character secret immediately.",
+        len(_raw_secret),
     )
+
 
 SECRET_KEY: str = _raw_secret
 ALGORITHM = "HS256"
