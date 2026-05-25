@@ -43,7 +43,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch(`${getApiUrl()}/auth/token/`, {
+      const response = await fetch(`${getApiUrl()}/auth/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
@@ -163,6 +163,7 @@ export default function LoginPage() {
                     placeholder="ID-000000"
                     required
                     type="text"
+                    autoComplete="username"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -176,6 +177,7 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     required
                     type="password"
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
