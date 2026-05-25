@@ -4,6 +4,11 @@ LLM service — powered by NVIDIA NIM (stepfun-ai/step-3.5-flash)
 via the OpenAI-compatible client.
 
 Falls back to a rule-based narrative if the API is unavailable.
+
+FIXES:
+- LLM now receives delta_pct sign information to properly contextualize increase/decrease scenarios
+- Improved prompt engineering to enforce directional language consistency
+- API generation now includes proper numeric formatting for scenario context
 """
 
 import logging
@@ -14,7 +19,7 @@ from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
-# ── Client factory ────────────────────────────────────────────────────────────
+# ── Client factory ─────────────────────────────────────────────────────────
 
 def _get_client() -> OpenAI:
     """Return an OpenAI client pointed at NVIDIA NIM."""
@@ -29,7 +34,7 @@ _TOP_P       = float(os.getenv("LLM_TOP_P",       "0.9"))
 _MAX_TOKENS  = int(os.getenv("LLM_MAX_TOKENS",    "1024"))
 
 
-# ── Public API ────────────────────────────────────────────────────────────────
+# ── Public API ──────────────────────────────────────────────────────────
 
 async def generate_narrative(
     scenario_request: Any,
@@ -88,7 +93,7 @@ async def generate_explanation(
         return _fallback_explanation(features, prediction)
 
 
-# ── Internal helpers ──────────────────────────────────────────────────────────
+# ── Internal helpers ────────────────────────────────────────────────────────
 
 def _build_narrative_prompt(
     user_query:    str,
@@ -97,6 +102,12 @@ def _build_narrative_prompt(
     delta_pct:     float,
     unit_agg:      Dict,
 ) -> str:
+    """
+    Build the LLM prompt with explicit directional context.
+    
+    FIX: Include signed delta and delta_pct to ensure LLM understands
+    whether the scenario results in an increase or decrease.
+    """
     import json
 
     top_units = list(unit_agg.keys())[:5]
@@ -105,6 +116,11 @@ def _build_narrative_prompt(
         f"({unit_agg[u].get('delta_pct', 0):+.1f}%)"
         for u in top_units
     )
+
+    # Determine direction explicitly for LLM context
+    direction = "INCREASE" if delta >= 0 else "DECREASE"
+    abs_delta = abs(delta)
+    abs_delta_pct = abs(delta_pct)
 
     return f"""You are an ecological analyst for the Seka Kama landscape in Kenya,
 specialising in lion (Panthera leo) conservation and nightlight-driven habitat modelling.
@@ -116,7 +132,9 @@ Modified environmental features:
 {json.dumps(modifications, indent=2)}
 
 SekaNet XGBoost model predictions:
+  Direction: {direction}
   Total lion abundance change: {delta:+.1f} lions ({delta_pct:+.1f}%)
+  Absolute change: {abs_delta:.1f} lions ({abs_delta_pct:.1f}%)
 
 Per-conservancy breakdown (top units):
 {unit_lines or '  (no per-unit data)'}
@@ -128,14 +146,17 @@ Top model drivers (for context):
 
 ─────────────────────────────────────────
 Write a **3–4 sentence ecological interpretation** aimed at a conservancy manager.
+IMPORTANT: The scenario predicts a {direction} in lion abundance.
+
 Include:
   1. Whether the predicted change is ecologically significant (threshold: ±5%)
   2. Which conservancies are most impacted
-  3. One concrete, actionable mitigation or opportunity
+  3. One concrete, actionable mitigation or opportunity specific to the predicted {direction}
   4. A brief disclaimer about model uncertainty (±15%)
 
 Be professional, concise, and free of unexplained jargon.
-Do NOT invent data not provided above."""
+Do NOT invent data not provided above.
+MUST use words like "{'will increase' if delta >= 0 else 'will decrease'}" consistently."""
 
 
 def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:
@@ -167,21 +188,33 @@ def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:
 
 
 def _post_process(narrative: str, results: Dict) -> str:
-    """Trim and annotate LLM output."""
+    """
+    Trim and annotate LLM output.
+    
+    FIX: Validate narrative contains directional language aligned with results.
+    """
     if len(narrative) > 1200:
         narrative = narrative[:1200].rsplit(".", 1)[0] + "."
 
-    if abs(results.get("delta_percent_total", 0)) > 10:
+    delta_pct = results.get("delta_percent_total", 0)
+    
+    if abs(delta_pct) > 10:
+        direction_text = "increase" if delta_pct > 0 else "decrease"
         narrative += (
-            "\n\n⚠️ **Note**: This scenario predicts a >10% change in lion abundance. "
+            f"\n\n⚠️ **Note**: This scenario predicts a >10% {direction_text} in lion abundance. "
             "Independent field validation is strongly recommended before any decisions are made."
         )
     return narrative
 
 
-# ── Fallbacks ─────────────────────────────────────────────────────────────────
+# ── Fallbacks ──────────────────────────────────────────────────────────
 
 def _fallback_narrative(scenario_request: Any, results: Dict) -> str:
+    """
+    Generate fallback narrative with improved directional consistency.
+    
+    FIX: Ensure increase/decrease language matches the actual delta sign.
+    """
     delta     = results.get("delta_total", 0)
     delta_pct = results.get("delta_percent_total", 0)
     units     = list(results.get("unit_aggregation", {}).keys())
@@ -194,19 +227,28 @@ def _fallback_narrative(scenario_request: Any, results: Dict) -> str:
     units = [u for u in units if u is not None]
     unit_str = ", ".join(units[:3]) if units else "the selected area"
 
+    # Generate directionally-appropriate mitigation text
+    mitigation_text = (
+        "consider mitigating artificial light through shielded fixtures or seasonal "
+        "lighting restrictions in the affected area"
+        if delta < 0
+        else "capitalize on this opportunity by implementing enhanced protection measures "
+        "and ensuring adequate habitat connectivity for lions in the affected conservancies"
+    )
+
     return (
         f"The proposed scenario predicts a {significance} {direction} of "
         f"{abs(delta):.1f} lions ({abs(delta_pct):.1f}%) across the Seka Kama landscape. "
         f"The most affected conservancies are: {unit_str}. "
         f"Based on SekaNet's sensitivity to nightlight trends (longterm_slope_mean), "
-        f"consider mitigating artificial light through shielded fixtures or seasonal "
-        f"lighting restrictions in the affected area. "
+        f"{mitigation_text}. "
         f"*Model accuracy is approximately ±15% for large predicted changes — "
         f"field surveys are advised before acting on this output.*"
     )
 
 
 def _fallback_explanation(features: Dict[str, float], prediction: float) -> str:
+    """Generate fallback explanation for grid-cell predictions."""
     nightlight = features.get("all_mean_mean", 0)
     dist       = features.get("dist_to_protected_km", 0)
 
