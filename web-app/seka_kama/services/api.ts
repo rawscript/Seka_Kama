@@ -30,7 +30,7 @@ export interface GridCell {
   management_unit: string | null;
   lion_density: number;
   // Top drivers from SekaNet XGBoost
-  longterm_slope_mean: number; 
+  longterm_slope_mean: number;
   all_skew_mean: number;
   dist_to_protected_km: number;
   all_mean_mean: number;
@@ -50,7 +50,7 @@ export interface ProtectedArea {
   geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon;
 }
 
-// Added missing Scenario interface for history tracking
+// Added  Scenario interface for history tracking
 export interface Scenario extends ScenarioResponse {
   created_at: string;
   request_data: ScenarioRequest;
@@ -64,9 +64,9 @@ export const api = {
   async request(endpoint: string, options: RequestInit = {}) {
     // Gracefully handle server-side rendering scenarios where localStorage isn't available
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-    
+
     const headers = new Headers(options.headers);
-    
+
     if (!headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
     }
@@ -133,7 +133,7 @@ export const api = {
       params.append('max_lon', bbox.maxLon.toString());
       params.append('max_lat', bbox.maxLat.toString());
     }
-    
+
     try {
       return await this.get(`/baseline/?${params}`);
     } catch (error) {

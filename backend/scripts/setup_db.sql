@@ -16,10 +16,15 @@ CREATE TABLE IF NOT EXISTS public.api_keys (
 -- Enable RLS
 ALTER TABLE public.api_keys ENABLE ROW LEVEL SECURITY;
 
--- Create policies (only allow users to see/revoke their own keys)
--- Create policies (only allow users to see/revoke their own keys)
--- Note: These policies assume Supabase Auth is linked to public.users via email
--- Adjust if you use a different link (like auth_user_id UUID)
+-- ============================================================
+-- RLS Policies
+-- ============================================================
+-- NOTE: The backend uses SUPABASE_SERVICE_ROLE_KEY which bypasses
+-- RLS entirely. These policies are only relevant if you also
+-- query the table through the Supabase anon/authenticated client.
+-- ============================================================
+
+-- Allow users to view their own API keys
 CREATE POLICY "Users can view their own API keys"
 ON public.api_keys FOR SELECT
 USING (EXISTS (
@@ -27,8 +32,25 @@ USING (EXISTS (
     WHERE id = user_id AND email = auth.jwt() ->> 'email'
 ));
 
+-- Allow users to create their own API keys
+CREATE POLICY "Users can create their own API keys"
+ON public.api_keys FOR INSERT
+WITH CHECK (EXISTS (
+    SELECT 1 FROM public.users 
+    WHERE id = user_id AND email = auth.jwt() ->> 'email'
+));
+
+-- Allow users to update (revoke) their own API keys
 CREATE POLICY "Users can revoke their own API keys"
 ON public.api_keys FOR UPDATE
+USING (EXISTS (
+    SELECT 1 FROM public.users 
+    WHERE id = user_id AND email = auth.jwt() ->> 'email'
+));
+
+-- Allow users to delete their own API keys
+CREATE POLICY "Users can delete their own API keys"
+ON public.api_keys FOR DELETE
 USING (EXISTS (
     SELECT 1 FROM public.users 
     WHERE id = user_id AND email = auth.jwt() ->> 'email'
@@ -37,3 +59,4 @@ USING (EXISTS (
 -- Index for fast lookup by hash (used during authentication per request)
 CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON public.api_keys(key_hash);
 CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON public.api_keys(user_id);
+

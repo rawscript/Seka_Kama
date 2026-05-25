@@ -1,11 +1,15 @@
 import secrets
 import hashlib
+import logging
+import traceback
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
 from core.database import get_db, SupabaseService
 from core.auth import get_current_user, TokenData
 from pydantic import BaseModel
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/keys", tags=["API Keys"])
 
@@ -17,7 +21,7 @@ class ApiKeyResponse(BaseModel):
     name: str
     prefix: str
     created_at: datetime
-    last_used: Optional[datetime]
+    last_used: Optional[datetime] = None
     is_active: bool
 
 class ApiKeyReveal(ApiKeyResponse):
@@ -29,7 +33,15 @@ async def list_keys(
     db: SupabaseService = Depends(get_db)
 ):
     """List all active API keys for the current user."""
-    return db.list_api_keys(current_user.user_id)
+    try:
+        return db.list_api_keys(current_user.user_id)
+    except Exception as e:
+        logger.error(f"Failed to list API keys for user {current_user.user_id}: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list API keys: {str(e)}"
+        )
 
 @router.post("/", response_model=ApiKeyReveal)
 async def create_key(
@@ -38,25 +50,37 @@ async def create_key(
     db: SupabaseService = Depends(get_db)
 ):
     """Create a new API key."""
-    # Generate a secure key
-    raw_key = f"sk-seka-{secrets.token_urlsafe(32)}"
-    key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
-    prefix = f"{raw_key[:12]}****"
-    
-    stored_key = db.create_api_key(
-        user_id=current_user.user_id,
-        name=request.name.strip(),
-        key_hash=key_hash,
-        prefix=prefix
-    )
-    
-    if not stored_key:
-        raise HTTPException(status_code=500, detail="Failed to create API key")
-    
-    return {
-        **stored_key,
-        "key": raw_key
-    }
+    try:
+        # Generate a secure key
+        raw_key = f"sk-seka-{secrets.token_urlsafe(32)}"
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        prefix = f"{raw_key[:12]}****"
+        
+        stored_key = db.create_api_key(
+            user_id=current_user.user_id,
+            name=request.name.strip(),
+            key_hash=key_hash,
+            prefix=prefix
+        )
+        
+        if not stored_key:
+            logger.error(f"create_api_key returned empty for user {current_user.user_id} — "
+                         "check that the api_keys table exists and RLS policies allow inserts with the service role key.")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to create API key. The api_keys table may not exist or RLS is blocking inserts."
+            )
+        
+        return {
+            **stored_key,
+            "key": raw_key
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unhandled error creating API key for user {current_user.user_id}: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to create API key: {str(e)}")
 
 @router.delete("/{key_id}")
 async def revoke_key(
@@ -65,7 +89,13 @@ async def revoke_key(
     db: SupabaseService = Depends(get_db)
 ):
     """Revoke an API key."""
-    success = db.revoke_api_key(current_user.user_id, key_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="API key not found or already revoked")
-    return {"message": "API key revoked successfully"}
+    try:
+        success = db.revoke_api_key(current_user.user_id, key_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="API key not found or already revoked")
+        return {"message": "API key revoked successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to revoke key {key_id} for user {current_user.user_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to revoke API key: {str(e)}")
