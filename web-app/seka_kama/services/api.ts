@@ -135,7 +135,8 @@ export const api = {
     }
 
     try {
-      return await this.get(`/baseline/?${params}`);
+      const queryString = params.toString();
+      return await this.get(queryString ? `/baseline?${queryString}` : '/baseline');
     } catch (error) {
       console.error("Baseline fetch error:", error);
       throw error;
@@ -153,21 +154,22 @@ export const api = {
       params.append('max_lon', bbox.maxLon.toString());
       params.append('max_lat', bbox.maxLat.toString());
     }
-    return this.get(`/protected-areas/?${params}`);
+    const queryString = params.toString();
+    return this.get(queryString ? `/protected-areas?${queryString}` : '/protected-areas');
   },
 
   /**
    * Runs the predictive XGBoost simulation.
    */
   async runScenario(request: ScenarioRequest): Promise<ScenarioResponse> {
-    return this.post('/scenario/', request);
+    return this.post('/scenario', request);
   },
 
   /**
    * Pulls previous simulation runs from Supabase memory.
    */
   async getScenarioHistory(limit: number = 50): Promise<Scenario[]> {
-    return this.get(`/scenarios/history/?limit=${limit}`);
+    return this.get(`/scenarios/history?limit=${limit}`);
   },
 
   /**
@@ -178,7 +180,7 @@ export const api = {
     top_feature: string;
     top_importance: number;
   }> {
-    return this.get('/feature-importance/');
+    return this.get('/feature-importance');
   },
 
   /**
@@ -189,6 +191,6 @@ export const api = {
     explanation: string;
     features: Record<string, number>;
   }> {
-    return this.get(`/explain/${cellId}/`);
+    return this.get(`/explain/${cellId}`);
   },
 };
