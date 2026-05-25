@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 import joblib
 import os
 import json
+import re
 
 from api.routes import router
 from api.auth_routes import router as auth_router
@@ -32,37 +33,69 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS — robust origin handling
+# CORS — build the explicit allowed-origins list.
+# NOTE: When allow_credentials=True, Starlette's CORSMiddleware does NOT
+# support allow_origin_regex simultaneously — it will reject all requests.
+# Vercel preview URLs are handled by checking the Origin header at request
+# time via a custom middleware below instead.
 _origins_str = os.getenv("ALLOWED_ORIGINS", "")
-_allowed_origins = [
-    "http://localhost:3000", 
+_allowed_origins: list[str] = [
+    "http://localhost:3000",
     "http://localhost:3001",
     "https://seka-kama.vercel.app",
-    "https://integrate.api.nvidia.com"
 ]
 
-# Add Vercel branch/preview domains
+# Add a specific VERCEL_URL if the env var is set (e.g. on the Vercel side)
 if os.getenv("VERCEL_URL"):
     _allowed_origins.append(f"https://{os.getenv('VERCEL_URL')}")
 
+# Allow callers to inject extra origins via comma-separated env var
 if _origins_str:
     _extra = [o.strip() for o in _origins_str.split(",") if o.strip()]
     _allowed_origins.extend(_extra)
 
-# Remove duplicates
+# Remove duplicates while preserving order
 _allowed_origins = list(dict.fromkeys(_allowed_origins))
 
-# If in debug mode or explicitly requested, allow all to unblock
+# In debug / allow-all mode credentials are dropped so wildcard is safe
 _allow_all = os.getenv("DEBUG") == "True" or os.getenv("ALLOW_ALL_ORIGINS") == "True"
-if _allow_all:
-    _allowed_origins = ["*"]
 
-# CORS — robust configuration
+# Regex for Vercel preview deployments (e.g. seka-kama-git-branch-org.vercel.app).
+# Used by the custom middleware below — NOT passed to CORSMiddleware because
+# Starlette forbids combining allow_origin_regex with allow_credentials=True.
+_VERCEL_PREVIEW_RE = re.compile(r"^https://seka-kama(-[a-z0-9-]+)?\.vercel\.app$")
+
+
+class _DynamicCORSMiddleware:
+    """
+    Thin ASGI wrapper that injects Vercel preview origins into the
+    allow-list at request time, before Starlette's CORSMiddleware sees
+    the request.  This avoids the allow_origin_regex + allow_credentials
+    incompatibility in CORSMiddleware.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers", []))
+            origin = headers.get(b"origin", b"").decode("utf-8", errors="replace")
+            if origin and _VERCEL_PREVIEW_RE.match(origin) and origin not in _allowed_origins:
+                _allowed_origins.append(origin)
+        await self.app(scope, receive, send)
+
+
+# Register the dynamic helper *before* CORSMiddleware so it runs first
+app.add_middleware(_DynamicCORSMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins if not _allow_all else ["*"],
-    allow_origin_regex=r"https://seka-kama-.*\.vercel\.app" if not _allow_all else None,
-    allow_credentials=not _allow_all, # Credentials cannot be used with wildcard "*"
+    allow_origins=["*"] if _allow_all else _allowed_origins,
+    # allow_origin_regex is intentionally omitted: it cannot be combined
+    # with allow_credentials=True (Starlette raises a ValueError / rejects
+    # all credentialed requests).  Preview-URL support is handled above.
+    allow_credentials=not _allow_all,  # wildcard "*" forbids credentials
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
