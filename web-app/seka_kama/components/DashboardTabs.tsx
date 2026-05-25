@@ -110,7 +110,7 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
             transition: 'opacity 0.3s ease',
           }}
         >
-          <SekaMap onScenarioRun={onScenarioRun} />
+          {activeTab === 'analysis' && <SekaMap onScenarioRun={onScenarioRun} />}
         </div>
 
         {/* Kepler Explorer */}
@@ -126,17 +126,19 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
             flexDirection: 'column',
           }}
         >
-          <KeplerMapNoSSR
-            onCellSelect={(cellId) => console.log('Selected cell:', cellId)}
-            onScenarioApply={(cells, modifications) => {
-              setSelectedCells(cells);
-              onScenarioRun({
-                type: 'selection',
-                cells: cells,
-                modifications: modifications,
-              });
-            }}
-          />
+          {activeTab === 'kepler' && (
+            <KeplerMapNoSSR
+              onCellSelect={(cellId) => console.log('Selected cell:', cellId)}
+              onScenarioApply={(cells, modifications) => {
+                setSelectedCells(cells);
+                onScenarioRun({
+                  type: 'selection',
+                  cells: cells,
+                  modifications: modifications,
+                });
+              }}
+            />
+          )}
         </div>
 
         {/* Scenario History */}
