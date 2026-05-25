@@ -2,11 +2,17 @@
 """
 Prediction service for SekaNet XGBoost model
 Handles model inference, feature engineering, and scenario calculations
+
+IMPROVEMENTS:
+- Feature validation to catch invalid modifications early
+- Safe numeric handling to prevent division by zero
+- Explicit None/null handling with logging
+- Comprehensive error handling and validation
 """
 
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 import logging
 from datetime import datetime
 
@@ -23,11 +29,18 @@ class PredictionService:
             model: Loaded XGBoost model
             scaler: Fitted StandardScaler
             feature_names: List of feature names in order
+            
+        Raises:
+            ValueError: If feature_names is empty or None
         """
+        if not feature_names:
+            raise ValueError("feature_names cannot be empty")
+        
         self.model = model
         self.scaler = scaler
         self.feature_names = feature_names
         self.feature_indices = {name: idx for idx, name in enumerate(feature_names)}
+        logger.info(f"Initialized PredictionService with {len(feature_names)} features")
         
     def predict_batch(self, features: np.ndarray) -> np.ndarray:
         """
@@ -38,9 +51,18 @@ class PredictionService:
             
         Returns:
             numpy array of predictions
+            
+        Raises:
+            ValueError: If features shape doesn't match model expectations
         """
         if features.ndim == 1:
             features = features.reshape(1, -1)
+        
+        if features.shape[1] != len(self.feature_names):
+            raise ValueError(
+                f"Feature count mismatch: expected {len(self.feature_names)}, "
+                f"got {features.shape[1]}"
+            )
         
         # Scale features
         features_scaled = self.scaler.transform(features)
@@ -59,15 +81,52 @@ class PredictionService:
             
         Returns:
             numpy array of predictions
+            
+        Raises:
+            ValueError: If grid_cells is empty
         """
+        if not grid_cells:
+            raise ValueError("grid_cells cannot be empty")
+        
         # Extract features in correct order
         features = []
-        for cell in grid_cells:
-            feature_vector = [cell.get(feature, 0.0) for feature in self.feature_names]
+        for idx, cell in enumerate(grid_cells):
+            feature_vector = []
+            for feature in self.feature_names:
+                value = cell.get(feature)
+                # Explicit None handling with logging
+                if value is None:
+                    logger.debug(f"Cell {idx} missing feature '{feature}', using 0.0")
+                    feature_vector.append(0.0)
+                else:
+                    try:
+                        feature_vector.append(float(value))
+                    except (ValueError, TypeError) as e:
+                        logger.warning(
+                            f"Cell {idx} feature '{feature}' has invalid value '{value}': {e}, using 0.0"
+                        )
+                        feature_vector.append(0.0)
             features.append(feature_vector)
         
-        features_array = np.array(features)
+        features_array = np.array(features, dtype=np.float64)
         return self.predict_batch(features_array)
+    
+    def _validate_modifications(self, modifications: Dict[str, float]) -> None:
+        """
+        Validate that all modification features exist in the model
+        
+        Args:
+            modifications: Dict of feature names to modification values
+            
+        Raises:
+            ValueError: If any feature in modifications is not in the model
+        """
+        invalid_features = set(modifications.keys()) - set(self.feature_names)
+        if invalid_features:
+            raise ValueError(
+                f"Invalid features in modifications: {invalid_features}. "
+                f"Valid features are: {self.feature_names}"
+            )
     
     def calculate_scenario_impact(
         self,
@@ -87,33 +146,85 @@ class PredictionService:
             
         Returns:
             Dict containing baseline and scenario predictions
+            
+        Raises:
+            ValueError: If baseline_cells is empty, modifications invalid, or data issues
         """
-        # Extract features
+        if not baseline_cells:
+            raise ValueError("baseline_cells cannot be empty")
+        
+        if not modifications:
+            raise ValueError("modifications cannot be empty")
+        
+        # Validate modifications reference valid features
+        self._validate_modifications(modifications)
+        
+        # Extract features with robust error handling
         features = []
-        for cell in baseline_cells:
-            # Explicitly handle None values from database by converting to 0.0
-            feature_vector = [float(cell.get(feature) or 0.0) for feature in self.feature_names]
-            features.append(feature_vector)
+        valid_cell_indices = []
         
-        features_array = np.array(features, dtype=float)
+        for idx, cell in enumerate(baseline_cells):
+            feature_vector = []
+            try:
+                for feature in self.feature_names:
+                    value = cell.get(feature)
+                    # Explicit None handling
+                    if value is None:
+                        logger.debug(f"Cell {idx} missing feature '{feature}', using 0.0")
+                        feature_vector.append(0.0)
+                    else:
+                        feature_vector.append(float(value))
+                
+                features.append(feature_vector)
+                valid_cell_indices.append(idx)
+            except (ValueError, TypeError) as e:
+                logger.error(f"Failed to extract features from cell {idx}: {e}")
+                raise ValueError(f"Invalid feature data in cell {idx}: {e}")
         
-        # Apply modifications
+        features_array = np.array(features, dtype=np.float64)
+        
+        # Apply modifications with validation
         modified_features = features_array.copy()
         for feature_name, mod_value in modifications.items():
-            if feature_name in self.feature_indices:
-                idx = self.feature_indices[feature_name]
-                if apply_percent:
-                    modified_features[:, idx] *= (1 + mod_value)
-                else:
-                    modified_features[:, idx] += mod_value
+            idx = self.feature_indices[feature_name]
+            
+            # Validate modification value
+            try:
+                mod_value = float(mod_value)
+            except (ValueError, TypeError):
+                raise ValueError(f"Invalid modification value for '{feature_name}': {mod_value}")
+            
+            if apply_percent:
+                modified_features[:, idx] *= (1 + mod_value)
+            else:
+                modified_features[:, idx] += mod_value
         
         # Predict both scenarios
         baseline_predictions = self.predict_batch(features_array)
         scenario_predictions = self.predict_batch(modified_features)
         
-        # Calculate deltas
+        # Calculate deltas with safe numeric handling
         deltas = scenario_predictions - baseline_predictions
-        delta_percents = (scenario_predictions / (baseline_predictions + 1e-6) - 1) * 100
+        
+        # Safe division: avoid division by zero
+        baseline_sum = baseline_predictions.sum()
+        scenario_sum = scenario_predictions.sum()
+        
+        if baseline_sum == 0:
+            logger.warning("Baseline predictions sum is zero, delta_percent_total will be 0")
+            delta_percent_total = 0.0
+        else:
+            delta_percent_total = float((scenario_sum / baseline_sum - 1) * 100)
+        
+        # Safe per-cell percent calculation
+        delta_percents = []
+        for baseline, scenario in zip(baseline_predictions, scenario_predictions):
+            if baseline == 0:
+                # If baseline is zero, we can't calculate meaningful percentage
+                delta_percents.append(0.0)
+            else:
+                delta_pct = float((scenario / baseline - 1) * 100)
+                delta_percents.append(delta_pct)
         
         # Aggregate by management unit
         unit_aggregation = {}
@@ -121,8 +232,11 @@ class PredictionService:
             baseline_cells, baseline_predictions, scenario_predictions, 
             deltas, delta_percents
         ):
-            # Use .get() but explicitly handle cases where the value is None
+            # Handle missing management_unit gracefully
             unit = cell.get('management_unit') or 'Unknown'
+            if not isinstance(unit, str):
+                unit = str(unit)
+            
             if unit not in unit_aggregation:
                 unit_aggregation[unit] = {
                     'baseline': 0.0,
@@ -131,25 +245,27 @@ class PredictionService:
                     'delta_pct': 0.0,
                     'cell_count': 0
                 }
-            unit_aggregation[unit]['baseline'] += baseline
-            unit_aggregation[unit]['scenario'] += scenario
-            unit_aggregation[unit]['delta'] += delta
+            
+            unit_aggregation[unit]['baseline'] += float(baseline)
+            unit_aggregation[unit]['scenario'] += float(scenario)
+            unit_aggregation[unit]['delta'] += float(delta)
             unit_aggregation[unit]['cell_count'] += 1
         
-        # Calculate average percent per unit
+        # Calculate average percent per unit with safe division
         for unit in unit_aggregation:
-            if unit_aggregation[unit]['baseline'] > 0:
-                unit_aggregation[unit]['delta_pct'] = (
-                    unit_aggregation[unit]['delta'] / unit_aggregation[unit]['baseline'] * 100
+            baseline_val = unit_aggregation[unit]['baseline']
+            if baseline_val > 0:
+                unit_aggregation[unit]['delta_pct'] = float(
+                    unit_aggregation[unit]['delta'] / baseline_val * 100
                 )
+            else:
+                unit_aggregation[unit]['delta_pct'] = 0.0
         
         return {
-            'baseline_total': float(baseline_predictions.sum()),
-            'scenario_total': float(scenario_predictions.sum()),
+            'baseline_total': float(baseline_sum),
+            'scenario_total': float(scenario_sum),
             'delta_total': float(deltas.sum()),
-            'delta_percent_total': float(
-                (scenario_predictions.sum() / (baseline_predictions.sum() + 1e-6) - 1) * 100
-            ),
+            'delta_percent_total': delta_percent_total,
             'per_cell_deltas': deltas.tolist(),
             'unit_aggregation': unit_aggregation,
             'affected_cells': len(baseline_cells)
@@ -158,6 +274,9 @@ class PredictionService:
     def get_feature_importance(self) -> pd.DataFrame:
         """
         Get feature importance from XGBoost model
+        
+        Returns:
+            DataFrame with feature importance ranked
         """
         importance = self.model.feature_importances_
         importance_df = pd.DataFrame({
@@ -177,12 +296,22 @@ class PredictionService:
             
         Returns:
             Dict with prediction and top contributing features
+            
+        Raises:
+            ValueError: If features don't match model features
         """
+        # Validate features
+        feature_vector = []
+        for f in self.feature_names:
+            try:
+                feature_vector.append(float(features.get(f, 0.0)))
+            except (ValueError, TypeError):
+                raise ValueError(f"Invalid feature value for '{f}': {features.get(f)}")
+        
         # Try SHAP if available
         try:
             import shap
             explainer = shap.TreeExplainer(self.model)
-            feature_vector = [features.get(f, 0.0) for f in self.feature_names]
             feature_array = self.scaler.transform(np.array([feature_vector]))
             shap_values = explainer.shap_values(feature_array)
             
@@ -207,7 +336,7 @@ class PredictionService:
             # Fallback: simple feature contribution analysis
             logger.warning("SHAP not available, using simplified explanation")
             return {
-                'prediction': float(self.predict_batch(np.array([[features.get(f, 0.0) for f in self.feature_names]]))[0]),
+                'prediction': float(self.predict_batch(np.array([feature_vector]))[0]),
                 'method': 'simple'
             }
 
@@ -235,6 +364,9 @@ async def predict_scenario(
         
     Returns:
         Dict with scenario results
+        
+    Raises:
+        ValueError: If inputs are invalid
     """
     service = PredictionService(model, scaler, feature_names)
     
@@ -256,6 +388,18 @@ async def get_baseline_predictions(
 ) -> List[float]:
     """
     Get baseline predictions for grid cells
+    
+    Args:
+        model: XGBoost model
+        scaler: Fitted scaler
+        feature_names: List of feature names
+        grid_cells: Grid cells to predict
+        
+    Returns:
+        List of predictions
+        
+    Raises:
+        ValueError: If inputs are invalid
     """
     service = PredictionService(model, scaler, feature_names)
     predictions = service.predict_grid_cells(grid_cells)
@@ -265,6 +409,13 @@ async def get_baseline_predictions(
 async def get_feature_importance_json(model, feature_names: List[str]) -> Dict:
     """
     Get feature importance as JSON for API response
+    
+    Args:
+        model: XGBoost model
+        feature_names: List of feature names
+        
+    Returns:
+        Dict with importance rankings
     """
     service = PredictionService(model, None, feature_names)
     importance_df = service.get_feature_importance()
