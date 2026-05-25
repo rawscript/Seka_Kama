@@ -5,30 +5,30 @@
 const PRODUCTION_API_URL = 'https://sekakama-production-0aa3.up.railway.app/api';
 
 export const getApiUrl = (): string => {
-  // 1. Start with the env var, falling back to localhost for dev
-  let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-
+  // If we are definitely on the client, check if we're on localhost
   if (typeof window !== 'undefined') {
     const isLocal =
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1' ||
       window.location.hostname.startsWith('192.168.');
 
-    if (!isLocal) {
-      // 2. On any non-local deployment, force the production HTTPS URL
-      //    regardless of what was baked in at build time.
-      if (url.startsWith('http://localhost') || url.startsWith('http://127.0.0.1')) {
-        url = PRODUCTION_API_URL;
-      }
-
-      // 3. Upgrade remaining http:// → https://
-      if (url.startsWith('http://')) {
-        url = url.replace('http://', 'https://');
-      }
+    if (isLocal) {
+      // Local development
+      const localEnv = process.env.NEXT_PUBLIC_API_URL;
+      return localEnv ? localEnv.replace(/\/$/, '') : 'http://localhost:8000/api';
     }
+    
+    // We are on the client, but NOT on localhost. 
+    // Always return the secure production URL, ignoring the env var entirely.
+    return PRODUCTION_API_URL;
   }
 
-  // Normalize: strip trailing slash
+  // If we are on the server (SSR), use the env var, but force HTTPS if it points to production
+  let url = process.env.NEXT_PUBLIC_API_URL || PRODUCTION_API_URL;
+  
+  if (url.includes('sekakama-production') && url.startsWith('http://')) {
+    url = url.replace('http://', 'https://');
+  }
+
   return url.endsWith('/') ? url.slice(0, -1) : url;
 };
-
