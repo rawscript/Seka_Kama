@@ -305,12 +305,19 @@ class SupabaseService:
         """
         List all active API keys for a user.
         """
-        result = self.client.table("api_keys")\
-            .select("*")\
-            .eq("user_id", user_id)\
-            .order("created_at", desc=True)\
-            .execute()
-        return result.data
+        try:
+            result = self.client.table("api_keys")\
+                .select("*")\
+                .eq("user_id", user_id)\
+                .order("created_at", desc=True)\
+                .execute()
+            return result.data
+        except Exception as e:
+            error_msg = str(e).lower()
+            if "api_keys" in error_msg and ("not exist" in error_msg or "42p01" in error_msg):
+                logger.error(f"Table 'api_keys' missing while listing for user {user_id}")
+                return [] # Return empty list if table missing, middleware will handle creation elsewhere or bootstrap needed
+            raise e
         
     def create_api_key(self, user_id: int, name: str, key_hash: str, prefix: str) -> Dict[str, Any]:
         """

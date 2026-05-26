@@ -70,17 +70,18 @@ async def create_key(
         }
     except RuntimeError as re:
         # Pass through descriptive database errors
-        logger.error(f"Database error during API key creation: {re}")
+        logger.error(f"Database error during API key creation for user {current_user.user_id}: {re}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(re)
+            detail=f"Database configuration issue: {str(re)}"
         )
     except Exception as e:
+        error_detail = traceback.format_exc()
         logger.error(f"Unhandled error creating API key for user {current_user.user_id}: {e}")
-        logger.error(traceback.format_exc())
+        logger.error(error_detail)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create API key: {str(e)}"
+            detail=f"Server error during key generation: {str(e)}. Please check backend logs."
         )
 
 @router.delete("/{key_id}")

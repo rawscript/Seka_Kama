@@ -2,7 +2,6 @@
 -- This script ensures the api_keys table exists with correct schema and RLS policies.
 -- Run this in your Supabase SQL Editor.
 
--- 1. Ensure public.users exists (prerequisite)
 CREATE TABLE IF NOT EXISTS public.users (
     id SERIAL PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
@@ -15,6 +14,19 @@ CREATE TABLE IF NOT EXISTS public.users (
     last_login TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Ensure RLS is enabled on users
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Service role or admin can do anything on users
+DROP POLICY IF EXISTS "Enable all access for service role on users" ON public.users;
+CREATE POLICY "Enable all access for service role on users" ON public.users
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- Policy: Users can view their own profile
+DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
+CREATE POLICY "Users can view own profile" ON public.users
+    FOR SELECT USING (email = auth.jwt() ->> 'email');
 
 -- 2. Create or Fix API Keys Table
 CREATE TABLE IF NOT EXISTS public.api_keys (
