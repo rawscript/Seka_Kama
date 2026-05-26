@@ -148,15 +148,71 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> TokenData:
-    """
-    Decode and validate the Bearer JWT.
+import hashlib
+from fastapi.security import APIKeyHeader
+from core.database import get_db, SupabaseService
 
-    Raises:
-      401 with detail "Token has expired"  — when the token's exp claim is in the past.
-      401 with detail "Could not validate credentials" — for any other JWT error
-          (bad signature, malformed token, missing required claims, etc.).
+# API Key configuration
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+async def get_api_key(
+    api_key: Optional[str] = Depends(api_key_header),
+    db: SupabaseService = Depends(get_db)
+) -> Optional[TokenData]:
     """
+    Validate an API key from the X-API-Key header.
+    If valid, returns TokenData for the owner of the key.
+    """
+    if not api_key:
+        return None
+        
+    try:
+        # Hash the provided key to match stored hash
+        key_hash = hashlib.sha256(api_key.encode()).hexdigest()
+        
+        # Verify in database
+        key_record = db.verify_api_key(key_hash)
+        
+        if not key_record:
+            return None
+            
+        # Update last_used in background
+        db.update_key_last_used(key_record["id"])
+        
+        # User details are nested because of users!inner(*)
+        user = key_record.get("users")
+        if not user:
+            return None
+            
+        return TokenData(
+            email=user["email"],
+            user_id=user["id"],
+            role=user.get("role", "analyst")
+        )
+    except Exception as e:
+        logger.error(f"API key validation error: {e}")
+        return None
+
+async def get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    api_key_data: Optional[TokenData] = Depends(get_api_key)
+) -> TokenData:
+    """
+    Unified authentication dependency.
+    Supports both JWT (Bearer) and API Key (X-API-Key header).
+    """
+    # 1. Try API Key first (higher priority for programmatic access)
+    if api_key_data:
+        return api_key_data
+        
+    # 2. Fallback to JWT
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required (Bearer token or X-API-Key)",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
     token = credentials.credentials
 
     try:

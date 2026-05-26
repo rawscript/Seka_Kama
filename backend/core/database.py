@@ -213,7 +213,8 @@ class SupabaseService:
         modified_features: Dict[str, float],
         predicted_lion_delta: float,
         affected_cells: int,
-        llm_narrative: str
+        llm_narrative: str,
+        request_data: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Save a scenario to history.
@@ -227,6 +228,7 @@ class SupabaseService:
             "predicted_lion_delta": predicted_lion_delta,
             "affected_cells": affected_cells,
             "llm_narrative": llm_narrative,
+            "request_data": request_data,
             "created_at": datetime.utcnow().isoformat()
         }
         result = self.client.table("scenario_history").insert(scenario_data).execute()
@@ -399,6 +401,28 @@ class SupabaseService:
             .eq("user_id", user_id)\
             .execute()
         return len(result.data) > 0
+
+    def verify_api_key(self, key_hash: str) -> Optional[Dict[str, Any]]:
+        """
+        Verify an API key hash and return the key record if valid.
+        """
+        result = self.client.table("api_keys")\
+            .select("*, users!inner(*)")\
+            .eq("key_hash", key_hash)\
+            .eq("is_active", True)\
+            .execute()
+        
+        return result.data[0] if result.data else None
+
+    def update_key_last_used(self, key_id: int) -> None:
+        """
+        Update the last_used timestamp for an API key.
+        """
+        from datetime import datetime
+        self.client.table("api_keys")\
+            .update({"last_used": datetime.utcnow().isoformat()})\
+            .eq("id", key_id)\
+            .execute()
 
 # ========== Database Functions for RPC (Run in Supabase SQL Editor) ==========
 

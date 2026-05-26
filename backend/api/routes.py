@@ -206,7 +206,8 @@ async def run_scenario(
         modified_features=scenario.feature_modifications,
         predicted_lion_delta=results["delta_total"],
         affected_cells=len(affected_cells),
-        llm_narrative=narrative
+        llm_narrative=narrative,
+        request_data=scenario.model_dump()
     )
     
     return ScenarioResponse(

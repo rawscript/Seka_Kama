@@ -217,7 +217,10 @@ function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange, onViewState
           </>
         )}
 
-        <ScenarioDrawer onScenarioRun={onScenarioRun || (() => {})} />
+        <ScenarioDrawer 
+          onScenarioRun={onScenarioRun || (() => {})} 
+          selectedUnit={selectedUnit}
+        />
       </Map>
 
       {/* Modern Loader Overlay */}
@@ -235,10 +238,10 @@ function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange, onViewState
         </div>
       )}
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .maplibregl-ctrl-attrib { display: none !important; }
         .maplibregl-canvas { outline: none !important; }
-      `}</style>
+      ` }} />
     </div>
   );
 }

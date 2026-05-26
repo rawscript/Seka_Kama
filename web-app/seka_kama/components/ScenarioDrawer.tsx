@@ -12,18 +12,23 @@ import {
   AlertTriangle, 
   Edit3,
   Dna,
-  Cpu
+  Cpu,
+  ShieldAlert,
+  Activity
 } from 'lucide-react';
 
 interface ScenarioDrawerProps {
   onScenarioRun?: (result: any) => void;
+  selectedUnit?: string;
 }
 
 const DEFAULT_MODIFICATIONS = {
   longterm_slope_mean: 0.10,
+  dist_to_protected_km: 0.0,
+  all_skew_mean: 0.0,
 };
 
-export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
+export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: ScenarioDrawerProps) {
   const { 'main-map': map } = useMap();
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [points, setPoints] = useState<[number, number][]>([]);
@@ -42,13 +47,30 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
   const handleMapDblClick = useCallback((e: any) => {
     if (!isDrawingMode) return;
     e.preventDefault();
-    e.originalEvent?.stopPropagation();
+    
     setPoints(prev => {
       if (prev.length < 3) return prev;
-      const closed: [number, number][] = [...prev, prev[0]];
+      
+      // Filter out points that are too close (common in double clicks)
+      const uniquePoints: [number, number][] = [];
+      prev.forEach(p => {
+        if (uniquePoints.length === 0) {
+          uniquePoints.push(p);
+        } else {
+          const last = uniquePoints[uniquePoints.length - 1];
+          const dist = Math.sqrt(Math.pow(p[0] - last[0], 2) + Math.pow(p[1] - last[1], 2));
+          if (dist > 0.00001) { // Very small threshold
+            uniquePoints.push(p);
+          }
+        }
+      });
+
+      if (uniquePoints.length < 3) return prev;
+
+      const closed: [number, number][] = [...uniquePoints, uniquePoints[0]];
       setDrawnGeometry({ type: 'Polygon', coordinates: [closed] });
       setIsDrawingMode(false);
-      return prev;
+      return uniquePoints;
     });
   }, [isDrawingMode]);
 
@@ -106,6 +128,7 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
         geometry: drawnGeometry,
         feature_modifications: modifications,
         user_query: userQuery,
+        management_units: selectedUnit ? [selectedUnit] : undefined,
       });
       onScenarioRun?.(result);
       cancelDrawing();
@@ -222,7 +245,7 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-amber-500" />
-                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Nightlight Intensity</span>
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Nightlight Trend</span>
                     </div>
                     <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
                       {modifications.longterm_slope_mean > 0 ? '+' : ''}
@@ -231,7 +254,7 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
                   </div>
                   <input
                     type="range" min="-0.5" max="0.5" step="0.01"
-                    value={modifications.longterm_slope_mean}
+                    value={modifications.longterm_slope_mean || 0}
                     onChange={(e) => setModifications({ ...modifications, longterm_slope_mean: parseFloat(e.target.value) })}
                     className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
                   />
@@ -241,6 +264,50 @@ export default function ScenarioDrawer({ onScenarioRun }: ScenarioDrawerProps) {
                     <span>Intense</span>
                   </div>
                 </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <ShieldAlert className="w-4 h-4 text-emerald-500" />
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Protected Proximity</span>
+                    </div>
+                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
+                      {modifications.dist_to_protected_km > 0 ? '+' : ''}
+                      {(modifications.dist_to_protected_km * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                  <input
+                    type="range" min="-0.5" max="0.5" step="0.01"
+                    value={modifications.dist_to_protected_km || 0}
+                    onChange={(e) => setModifications({ ...modifications, dist_to_protected_km: parseFloat(e.target.value) })}
+                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                  />
+                  <div className="flex justify-between mt-3 text-[9px] text-slate-600 font-bold uppercase tracking-tighter">
+                    <span>Closer</span>
+                    <span>No Change</span>
+                    <span>Farther</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-blue-500" />
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Spatial Variation</span>
+                    </div>
+                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
+                      {modifications.all_skew_mean > 0 ? '+' : ''}
+                      {(modifications.all_skew_mean * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                  <input
+                    type="range" min="-0.5" max="0.5" step="0.01"
+                    value={modifications.all_skew_mean || 0}
+                    onChange={(e) => setModifications({ ...modifications, all_skew_mean: parseFloat(e.target.value) })}
+                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                  />
+                </div>
+
 
                 <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex gap-4">
                   <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0" />

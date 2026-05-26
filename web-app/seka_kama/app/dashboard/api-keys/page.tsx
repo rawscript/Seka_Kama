@@ -164,9 +164,14 @@ export default function ApiKeysPage() {
                         <div className="font-bold tracking-tight text-lg">{key.name}</div>
                         <div className="flex items-center gap-3">
                           <code className="text-xs font-mono text-emerald-400/70">{key.prefix}</code>
-                          <span className="text-[10px] text-white/20 uppercase font-bold tracking-widest">
+                          <span className="text-[10px] text-white/20 uppercase font-bold tracking-widest border-l border-white/10 pl-3">
                             Created {new Date(key.created_at).toLocaleDateString()}
                           </span>
+                          {key.last_used && (
+                            <span className="text-[10px] text-emerald-500/40 uppercase font-bold tracking-widest border-l border-white/10 pl-3">
+                              Last used {new Date(key.last_used).toLocaleDateString()}
+                            </span>
+                          )}
                         </div>
                       </div>
                       
