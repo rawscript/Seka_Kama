@@ -411,8 +411,18 @@ async def export_grid_cells(
         df = pd.DataFrame(result.data)
         # Convert geometry to WKT for CSV
         if "geom" in df.columns:
-            from shapely import wkt
-            df["geom_wkt"] = df["geom"].apply(lambda g: g.wkt if hasattr(g, 'wkt') else str(g))
+            from shapely.geometry import shape
+            import json
+            
+            def to_wkt(g):
+                try:
+                    if isinstance(g, str):
+                        g = json.loads(g)
+                    return shape(g).wkt
+                except Exception:
+                    return str(g)
+                    
+            df["geom_wkt"] = df["geom"].apply(to_wkt)
             df = df.drop(columns=["geom"])
         csv_output = df.to_csv(index=False)
         return Response(content=csv_output, media_type="text/csv")

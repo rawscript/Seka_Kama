@@ -55,10 +55,10 @@ CREATE POLICY "Users can view own API keys" ON public.api_keys
     FOR SELECT 
     USING (
         -- If authenticated via JWT, filter by user email
-        (auth.role() = 'authenticated' AND user_id IN (SELECT id FROM public.users WHERE email = auth.jwt() ->> 'email'))
-        OR 
-        -- If the user_id matches the one in the table (backup check)
-        (auth.uid()::text = (SELECT id::text FROM public.users WHERE id = public.api_keys.user_id LIMIT 1))
+        (auth.role() = 'authenticated' AND user_id IN (
+            SELECT id FROM public.users 
+            WHERE email = auth.jwt() ->> 'email'
+        ))
     );
 
 -- Policy: Service role or admin can do anything

@@ -191,6 +191,6 @@ export const api = {
     explanation: string;
     features: Record<string, number>;
   }> {
-    return this.get(`/explain/${cellId}`);
+    return this.get(`/explain/cell/${cellId}`);
   },
 };

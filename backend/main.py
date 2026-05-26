@@ -82,12 +82,45 @@ class _DynamicCORSMiddleware:
         if scope["type"] == "http":
             headers = dict(scope.get("headers", []))
             origin = headers.get(b"origin", b"").decode("utf-8", errors="replace")
-            if origin and _VERCEL_PREVIEW_RE.match(origin) and origin not in _allowed_origins:
-                _allowed_origins.append(origin)
+            
+            # If it's a Vercel preview, we temporarily authorize it 
+            # by letting the downstream CORSMiddleware see it as "already allowed" 
+            # or by handling the CORS headers ourselves here.
+            
+            if origin and _VERCEL_PREVIEW_RE.match(origin):
+                # Handle preflight (OPTIONS)
+                if scope["method"] == "OPTIONS":
+                    await send({
+                        "type": "http.response.start",
+                        "status": 200,
+                        "headers": [
+                            (b"access-control-allow-origin", origin.encode()),
+                            (b"access-control-allow-methods", b"*"),
+                            (b"access-control-allow-headers", b"*"),
+                            (b"access-control-allow-credentials", b"true"),
+                        ]
+                    })
+                    await send({"type": "http.response.body", "body": b""})
+                    return
+
+                # For normal requests, wrap send to inject the header
+                async def wrapped_send(message):
+                    if message["type"] == "http.response.start":
+                        headers = list(message.get("headers", []))
+                        # Remove existing Access-Control-Allow-Origin if any
+                        headers = [h for h in headers if h[0].lower() != b"access-control-allow-origin"]
+                        headers.append((b"access-control-allow-origin", origin.encode()))
+                        headers.append((b"access-control-allow-credentials", b"true"))
+                        message["headers"] = headers
+                    await send(message)
+                
+                await self.app(scope, receive, wrapped_send)
+                return
+
         await self.app(scope, receive, send)
 
 
-# Register the dynamic helper *before* CORSMiddleware so it runs first
+# Register the dynamic helper *before* CORSMiddleware so it can intercept dynamic origins
 app.add_middleware(_DynamicCORSMiddleware)
 
 app.add_middleware(
@@ -98,6 +131,7 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
 
 @app.get("/api/proxy-geojson")
 async def proxy_geojson(url: str):
