@@ -67,64 +67,22 @@ _is_debug = os.getenv("DEBUG") == "True"
 _VERCEL_PREVIEW_RE = re.compile(r"^https://seka-kama(-[a-z0-9-]+)?\.vercel\.app$")
 
 
-class _DynamicCORSMiddleware:
+class SekaCORSMiddleware(CORSMiddleware):
     """
-    Thin ASGI wrapper that injects Vercel preview origins into the
-    allow-list at request time, before Starlette's CORSMiddleware sees
-    the request.  This avoids the allow_origin_regex + allow_credentials
-    incompatibility in CORSMiddleware.
+    Custom CORS middleware that supports regex matching for Vercel preview
+    deployments while still allowing credentials (which Starlette's 
+    standard CORSMiddleware forbids when using allow_origin_regex).
     """
+    def is_allowed_origin(self, origin: str) -> bool:
+        if origin in self.allow_origins or "*" in self.allow_origins:
+            return True
+        if _VERCEL_PREVIEW_RE.match(origin):
+            return True
+        return False
 
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] == "http":
-            headers = dict(scope.get("headers", []))
-            origin = headers.get(b"origin", b"").decode("utf-8", errors="replace")
-            
-            # If it's a Vercel preview, we temporarily authorize it 
-            # by letting the downstream CORSMiddleware see it as "already allowed" 
-            # or by handling the CORS headers ourselves here.
-            
-            if origin and _VERCEL_PREVIEW_RE.match(origin):
-                # Handle preflight (OPTIONS)
-                if scope["method"] == "OPTIONS":
-                    await send({
-                        "type": "http.response.start",
-                        "status": 200,
-                        "headers": [
-                            (b"access-control-allow-origin", origin.encode()),
-                            (b"access-control-allow-methods", b"*"),
-                            (b"access-control-allow-headers", b"*"),
-                            (b"access-control-allow-credentials", b"true"),
-                        ]
-                    })
-                    await send({"type": "http.response.body", "body": b""})
-                    return
-
-                # For normal requests, wrap send to inject the header
-                async def wrapped_send(message):
-                    if message["type"] == "http.response.start":
-                        headers = list(message.get("headers", []))
-                        # Remove existing Access-Control-Allow-Origin if any
-                        headers = [h for h in headers if h[0].lower() != b"access-control-allow-origin"]
-                        headers.append((b"access-control-allow-origin", origin.encode()))
-                        headers.append((b"access-control-allow-credentials", b"true"))
-                        message["headers"] = headers
-                    await send(message)
-                
-                await self.app(scope, receive, wrapped_send)
-                return
-
-        await self.app(scope, receive, send)
-
-
-# Register the dynamic helper *before* CORSMiddleware so it can intercept dynamic origins
-app.add_middleware(_DynamicCORSMiddleware)
-
+# Register the fixed CORS middleware
 app.add_middleware(
-    CORSMiddleware,
+    SekaCORSMiddleware,
     allow_origins=_allowed_origins if not _allow_all else ["*"],
     allow_credentials=not _allow_all, 
     allow_methods=["*"],
@@ -153,12 +111,17 @@ async def proxy_geojson(url: str):
             if "text/html" in content_type:
                 # Try to extract the direct download link from the warning page if it's Google Drive
                 if "drive.google.com" in url and "confirm=" not in url:
-                    # Look for a confirm token in the HTML
-                    match = re.search(r'confirm=([a-zA-Z0-9_]+)', response.text)
+                    # Look for a confirm token in the HTML (more robust regex)
+                    match = re.search(r'confirm=([a-zA-Z0-9_-]+)', response.text)
+                    if not match:
+                        # Alternative location for confirm token in some GD pages
+                        match = re.search(r'id="confirm-token" value="([a-zA-Z0-9_-]+)"', response.text)
+                    
                     if match:
                         confirm_token = match.group(1)
                         new_url = f"{url}&confirm={confirm_token}"
                         response = await client.get(new_url, timeout=20.0)
+
                 
             try:
                 data = response.json()
