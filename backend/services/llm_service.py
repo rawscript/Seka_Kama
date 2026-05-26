@@ -14,8 +14,8 @@ FIXES:
 import logging
 import os
 from typing import Any, Dict, Optional
-
 from openai import OpenAI
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -23,15 +23,13 @@ logger = logging.getLogger(__name__)
 
 def _get_client() -> OpenAI:
     """Return an OpenAI client pointed at NVIDIA NIM."""
-    api_key = os.getenv("NVIDIA_API_KEY", "")
-    base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
-    return OpenAI(base_url=base_url, api_key=api_key)
+    return OpenAI(base_url=settings.LLM_API_URL, api_key=settings.LLM_API_KEY)
 
 
-_LLM_MODEL   = os.getenv("LLM_MODEL",       "stepfun-ai/step-3.5-flash")
-_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.3"))
-_TOP_P       = float(os.getenv("LLM_TOP_P",       "0.9"))
-_MAX_TOKENS  = int(os.getenv("LLM_MAX_TOKENS",    "1024"))
+_LLM_MODEL   = settings.LLM_MODEL
+_TEMPERATURE = 0.3
+_TOP_P       = 0.9
+_MAX_TOKENS  = 1024
 
 
 # ── Public API ──────────────────────────────────────────────────────────
@@ -61,7 +59,11 @@ async def generate_narrative(
 
     try:
         narrative = _stream_completion(prompt)
-        return _post_process(narrative, scenario_results)
+        final_narrative = _post_process(narrative, scenario_results)
+        if not final_narrative:
+            logger.info("LLM returned empty narrative, using fallback")
+            return _fallback_narrative(scenario_request, scenario_results)
+        return final_narrative
     except Exception as exc:
         logger.warning("NVIDIA NIM narrative call failed: %s", exc)
         return _fallback_narrative(scenario_request, scenario_results)
@@ -190,18 +192,20 @@ def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:
 def _post_process(narrative: str, results: Dict) -> str:
     """
     Trim and annotate LLM output.
-    
-    FIX: Validate narrative contains directional language aligned with results.
     """
+    if not narrative or not narrative.strip():
+        # Handle empty narrative from LLM by explicitly going to fallback string
+        return ""
+
     if len(narrative) > 1200:
         narrative = narrative[:1200].rsplit(".", 1)[0] + "."
 
-    delta_pct = results.get("delta_percent_total", 0)
+    delta_pct = results.get("delta_percent_total", 0) or 0
     
     if abs(delta_pct) > 10:
         direction_text = "increase" if delta_pct > 0 else "decrease"
         narrative += (
-            f"\n\n⚠️ **Note**: This scenario predicts a >10% {direction_text} in lion abundance. "
+            f"\n\n **Note**: This scenario predicts a >10% {direction_text} in lion abundance. "
             "Independent field validation is strongly recommended before any decisions are made."
         )
     return narrative
@@ -215,9 +219,9 @@ def _fallback_narrative(scenario_request: Any, results: Dict) -> str:
     
     FIX: Ensure increase/decrease language matches the actual delta sign.
     """
-    delta     = results.get("delta_total", 0)
-    delta_pct = results.get("delta_percent_total", 0)
-    units     = list(results.get("unit_aggregation", {}).keys())
+    delta     = results.get("delta_total", 0) or 0
+    delta_pct = results.get("delta_percent_total", 0) or 0
+    units     = list((results.get("unit_aggregation") or {}).keys())
 
     direction    = "increase" if delta >= 0 else "decrease"
     significance = (

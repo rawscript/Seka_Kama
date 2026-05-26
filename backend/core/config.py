@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # LLM (local or cloud)
     LLM_MODEL: str = os.getenv("LLM_MODEL", "stepfun-ai/step-3.5-flash")
     LLM_API_URL: str = os.getenv("LLM_API_URL", "https://integrate.api.nvidia.com/v1")
-    LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
+    LLM_API_KEY: str = os.getenv("NVIDIA_API_KEY") or os.getenv("LLM_API_KEY", "")
     
     # API settings
     API_HOST: str = "0.0.0.0"

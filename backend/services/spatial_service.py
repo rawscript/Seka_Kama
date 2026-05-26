@@ -70,9 +70,9 @@ async def get_affected_cells(
     if management_units and len(management_units) > 0:
         query = query.in_("management_unit", management_units)
     
-    # If no unit, limit to a reasonable simulation cap (e.g. 15k cells)
+    # If no unit, limit to a reasonable simulation cap (e.g. 50k cells)
     if not management_units:
-        query = query.limit(15000)
+        query = query.limit(50000)
         
     result = query.execute()
     candidates = result.data or []

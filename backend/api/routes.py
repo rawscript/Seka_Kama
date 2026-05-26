@@ -1,9 +1,12 @@
 import json
 import numpy as np
 import pandas as pd
+import logging
 from fastapi import APIRouter, HTTPException, Request, Query, Response, Depends
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     ScenarioRequest, ScenarioResponse, BaselineResponse, 
@@ -178,11 +181,18 @@ async def run_scenario(
     supabase = request.app.state.supabase
     
     # 1. Fetch grid cells affected by user-drawn geometry
-    affected_cells = await get_affected_cells(
-        supabase, 
-        scenario.geometry, 
-        scenario.management_units
-    )
+    try:
+        affected_cells = await get_affected_cells(
+            supabase, 
+            scenario.geometry, 
+            scenario.management_units
+        )
+    except Exception as e:
+        logger.error(f"Error fetching affected cells: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Spatial processing failure: {str(e)}"
+        )
     
     if not affected_cells:
         raise HTTPException(
@@ -191,27 +201,43 @@ async def run_scenario(
         )
     
     # 2. Run prediction using the XGBoost engine
-    results = await predict_scenario(
-        model, scaler, feature_names,
-        affected_cells, scenario.feature_modifications
-    )
+    try:
+        results = await predict_scenario(
+            model, scaler, feature_names,
+            affected_cells, scenario.feature_modifications
+        )
+    except ValueError as ve:
+        logger.warning(f"Validation error in scenario: {str(ve)}")
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Prediction failure: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Simulation engine error: {str(e)}")
     
     # 3. Generate LLM reasoning narrative
-    narrative = await generate_narrative(scenario, results)
+    try:
+        narrative = await generate_narrative(scenario, results)
+    except Exception as e:
+        logger.warning(f"Narrative generation failed: {str(e)}")
+        narrative = "The simulation completed successfully, but narrative interpretation is currently unavailable. Total predicted change is listed below."
     
     # 4. Persist to Supabase for RAG memory and audit trail
-    stored = db.save_scenario(
-        user_id=current_user.user_id,
-        user_description=scenario.user_query or "",
-        modified_features=scenario.feature_modifications,
-        predicted_lion_delta=results["delta_total"],
-        affected_cells=len(affected_cells),
-        llm_narrative=narrative,
-        request_data=scenario.model_dump()
-    )
+    try:
+        stored = db.save_scenario(
+            user_id=current_user.user_id,
+            user_description=scenario.user_query or "",
+            modified_features=scenario.feature_modifications,
+            predicted_lion_delta=results["delta_total"],
+            affected_cells=len(affected_cells),
+            llm_narrative=narrative,
+            request_data=scenario.model_dump()
+        )
+    except Exception as e:
+        logger.error(f"Failed to save scenario history: {str(e)}")
+        # We still return the results even if save fails, but with a warning
+        stored = {"scenario_id": -1}
     
     return ScenarioResponse(
-        scenario_id=stored.get("scenario_id", 0),
+        scenario_id=stored.get("scenario_id", -1),
         baseline_total_lions=results["baseline_total"],
         predicted_total_lions=results["scenario_total"],
         delta_lions=results["delta_total"],
@@ -221,7 +247,7 @@ async def run_scenario(
             for unit, data in results["unit_aggregation"].items()
         },
         llm_narrative=narrative,
-        map_visualization_url=f"/api/maps/scenario/{stored.get('scenario_id', 0)}"
+        map_visualization_url=f"/api/maps/scenario/{stored.get('scenario_id', -1)}"
     )
 
 
