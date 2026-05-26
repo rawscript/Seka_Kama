@@ -57,8 +57,9 @@ if _origins_str:
 # Remove duplicates while preserving order
 _allowed_origins = list(dict.fromkeys(_allowed_origins))
 
-# In debug / allow-all mode credentials are dropped so wildcard is safe
-_allow_all = os.getenv("DEBUG") == "True" or os.getenv("ALLOW_ALL_ORIGINS") == "True"
+# CORS configuration
+_allow_all = os.getenv("ALLOW_ALL_ORIGINS") == "True"
+_is_debug = os.getenv("DEBUG") == "True"
 
 # Regex for Vercel preview deployments (e.g. seka-kama-git-branch-org.vercel.app).
 # Used by the custom middleware below — NOT passed to CORSMiddleware because
@@ -91,11 +92,8 @@ app.add_middleware(_DynamicCORSMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if _allow_all else _allowed_origins,
-    # allow_origin_regex is intentionally omitted: it cannot be combined
-    # with allow_credentials=True (Starlette raises a ValueError / rejects
-    # all credentialed requests).  Preview-URL support is handled above.
-    allow_credentials=not _allow_all,  # wildcard "*" forbids credentials
+    allow_origins=_allowed_origins if not _allow_all else ["*"],
+    allow_credentials=not _allow_all, 
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
@@ -107,24 +105,38 @@ async def proxy_geojson(url: str):
     import httpx
     try:
         async with httpx.AsyncClient(follow_redirects=True) as client:
-            # Increase timeout (Google Drive can be slow)
             response = await client.get(url, timeout=20.0)
+            
             if response.status_code != 200:
                 raise HTTPException(
                     status_code=response.status_code, 
                     detail=f"External source returned error {response.status_code}"
                 )
             
-            # Check if it's actually JSON
+            content_type = response.headers.get("Content-Type", "")
+            
+            # Check if it's actually JSON or if it's a Google Drive warning page (text/html)
+            if "text/html" in content_type:
+                # Try to extract the direct download link from the warning page if it's Google Drive
+                if "drive.google.com" in url and "confirm=" not in url:
+                    # Look for a confirm token in the HTML
+                    match = re.search(r'confirm=([a-zA-Z0-9_]+)', response.text)
+                    if match:
+                        confirm_token = match.group(1)
+                        new_url = f"{url}&confirm={confirm_token}"
+                        response = await client.get(new_url, timeout=20.0)
+                
             try:
-                return response.json()
+                data = response.json()
+                return data
             except Exception:
-                # If Google Drive shows a 'large file' warning page, it's HTML, not JSON
+                # If it's still not JSON, it might be a binary file or error page
                 raise HTTPException(
                     status_code=400, 
-                    detail="External source returned non-JSON data. The file might be too large for a direct Google Drive link (>100MB)."
+                    detail="External source returned non-JSON data. Ensure the URL points to a raw GeoJSON file."
                 )
     except Exception as e:
+        print(f"Proxy error for {url}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Proxy error: {str(e)}")
 
 app.include_router(auth_router, prefix="/api")
