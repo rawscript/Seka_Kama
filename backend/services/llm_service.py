@@ -36,19 +36,42 @@ _MAX_TOKENS  = 1024
 
 async def augment_modifications_from_text(
     user_query: str,
-    explicit_mods: Dict[str, float]
+    explicit_mods: Dict[str, float],
+    centroid_lon: float = 35.24,
+    centroid_lat: float = -1.52,
 ) -> Dict[str, float]:
     """
     Use LLM to interpret user text and suggest feature modifications.
     Combines with user-specified manual modifications.
+
+    If the prompt mentions climate/rainfall keywords, triggers a LIVE NASA
+    POWER call and injects the real rainfall value into the LLM context.
     """
     if not user_query or len(user_query.strip()) < 5:
         return explicit_mods
 
+    # ── On-demand NASA call for climate-related prompts ───────────────────────
+    rainfall_context = ""
+    try:
+        from services.ecological_data_service import fetch_rainfall_for_prompt
+        rain_data = fetch_rainfall_for_prompt(user_query, centroid_lon, centroid_lat)
+        if rain_data:
+            rainfall_context = (
+                f"\nLIVE RAINFALL DATA (NASA POWER, {rain_data['year']}):\n"
+                f"  Location: ({centroid_lat:.3f}, {centroid_lon:.3f})\n"
+                f"  Annual precipitation: {rain_data['rainfall_mm']:.1f} mm\n"
+                f"  Source: {rain_data['source']}\n"
+                f"  Triggered by keywords: {rain_data['triggered_by']}\n"
+                f"Use this real rainfall figure when interpreting drought/flood/rainfall scenarios.\n"
+            )
+            logger.info(f"[LLM Augment] Injected live rainfall: {rain_data['rainfall_mm']:.1f}mm")
+    except Exception as e:
+        logger.debug(f"[LLM Augment] Rainfall fetch skipped: {e}")
+
     prompt = f"""You are a data mapper for an ecological model. 
 A user has described a scenario in the Seka Kama landscape (Kenya):
 "{user_query}"
-
+{rainfall_context}
 The model uses these features:
 1. all_mean_mean: Nightlight intensity (0 to 1). Increase for new lights/buildings.
 2. longterm_slope_mean: Nightlight trend (-0.1 to 0.1). Increase for expected growth.
@@ -58,7 +81,8 @@ The model uses these features:
 INSTRUCTIONS:
 - Identify if the text implies changes to any of these features.
 - Provide a JSON object with PRECISE percentage deltas (e.g., 0.15 for +15%, -0.10 for -10%).
-- If the user already provided specific values in {list(explicit_mods.keys())}, PRIORITISE the user's values unless they are obviously contradictory.
+- If rainfall data is provided above and the scenario involves drought/flooding, adjust longterm_slope_mean accordingly.
+- If the user already provided specific values in {list(explicit_mods.keys())}, PRIORITISE the user's values.
 - ONLY return the JSON object. No prose.
 
 Available features to modify:
@@ -71,28 +95,26 @@ Example Response: {{"all_mean_mean": 0.2, "longterm_slope_mean": 0.05}}
 """
 
     try:
-        # Use a non-streaming call for structured data extraction
         client = _get_client()
         response = client.chat.completions.create(
             model=_LLM_MODEL,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.0, # Zero temperature for consistent mappings
+            temperature=0.0,
             max_tokens=150,
             stream=False
         )
         content = response.choices[0].message.content.strip()
-        
+
         import json
-        # Robustly parse JSON even if LLM wraps it in backticks
         if "```" in content:
             content = content.split("```")[1].replace("json", "").strip()
-            
+
         implied_mods = json.loads(content)
-        
+
         # Merge: Explicit user mods override inferred ones
         merged = implied_mods.copy()
         merged.update(explicit_mods)
-        
+
         logger.info(f"Augmented mods from text: {implied_mods}")
         return merged
     except Exception as e:
@@ -121,6 +143,7 @@ async def generate_narrative(
         delta         = delta,
         delta_pct     = delta_pct,
         unit_agg      = unit_agg,
+        eco_context   = scenario_results.get("ecological_context", {})
     )
 
     try:
@@ -169,6 +192,7 @@ def _build_narrative_prompt(
     delta:         float,
     delta_pct:     float,
     unit_agg:      Dict,
+    eco_context:   Dict,
 ) -> str:
     """
     Build the LLM prompt with explicit directional context.
@@ -190,6 +214,13 @@ def _build_narrative_prompt(
     abs_delta = abs(delta)
     abs_delta_pct = abs(delta_pct)
 
+    # Format ecological context lines
+    eco_lines = (
+        f"  - Avg Prey Density (herbivores/km²): {eco_context.get('avg_prey_density', 0):.1f}\n"
+        f"  - Avg Annual Rainfall (mm):          {eco_context.get('avg_rainfall_mm', 0):.0f}\n"
+        f"  - Human-Wildlife Conflict Risk:      {eco_context.get('avg_hwc_risk', 0):.2f}/1.0"
+    )
+
     return f"""You are an ecological analyst for the Seka Kama landscape in Kenya,
 specialising in lion (Panthera leo) conservation and nightlight-driven habitat modelling.
 
@@ -199,15 +230,18 @@ A stakeholder has proposed the following development scenario:
 Modified environmental features:
 {json.dumps(modifications, indent=2)}
 
-SekaNet XGBoost model predictions:
+SekaNet XGBoost model predictions (Nightlight Sensitivity):
   Direction: {direction}
   Total lion abundance change: {delta:+.1f} lions ({delta_pct:+.1f}%)
   Absolute change: {abs_delta:.1f} lions ({abs_delta_pct:.1f}%)
 
+Ecological Context of the Affected Area:
+{eco_lines}
+
 Per-conservancy breakdown (top units):
 {unit_lines or '  (no per-unit data)'}
 
-Top model drivers (for context):
+Top model drivers (from XGBoost):
   1. longterm_slope_mean — nightlight trend (most important)
   2. dist_to_protected_km — distance to safe zones
   3. all_skew_std — spatial heterogeneity

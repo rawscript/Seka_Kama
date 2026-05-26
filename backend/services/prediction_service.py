@@ -226,12 +226,22 @@ class PredictionService:
                 delta_pct = float((scenario / baseline - 1) * 100)
                 delta_percents.append(delta_pct)
         
+        # Initialize ecological context aggregators
+        total_prey = 0.0
+        total_rainfall = 0.0
+        total_hwc = 0.0
+        
         # Aggregate by management unit
         unit_aggregation = {}
         for cell, baseline, scenario, delta, delta_pct in zip(
             baseline_cells, baseline_predictions, scenario_predictions, 
             deltas, delta_percents
         ):
+            # Accumulate ecological data
+            total_prey += float(cell.get('prey_density', 0.0))
+            total_rainfall += float(cell.get('annual_rainfall_mm', 0.0))
+            total_hwc += float(cell.get('hwc_risk_score', 0.0))
+            
             # Handle missing management_unit gracefully
             unit = cell.get('management_unit') or 'Unknown'
             if not isinstance(unit, str):
@@ -261,6 +271,7 @@ class PredictionService:
             else:
                 unit_aggregation[unit]['delta_pct'] = 0.0
         
+        num_cells = len(baseline_cells)
         return {
             'baseline_total': float(baseline_sum),
             'scenario_total': float(scenario_sum),
@@ -268,7 +279,12 @@ class PredictionService:
             'delta_percent_total': delta_percent_total,
             'per_cell_deltas': deltas.tolist(),
             'unit_aggregation': unit_aggregation,
-            'affected_cells': len(baseline_cells)
+            'affected_cells': num_cells,
+            'ecological_context': {
+                'avg_prey_density': total_prey / num_cells if num_cells > 0 else 0,
+                'avg_rainfall_mm': total_rainfall / num_cells if num_cells > 0 else 0,
+                'avg_hwc_risk': total_hwc / num_cells if num_cells > 0 else 0
+            }
         }
     
     def get_feature_importance(self) -> pd.DataFrame:

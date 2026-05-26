@@ -200,13 +200,25 @@ async def run_scenario(
             detail="No habitat grid cells found in the selected simulation area"
         )
     
-    # 1.5 Augment modifications based on user text (optional)
+    # 1.5 Enrich cells with LIVE ecological data (NASA POWER + GBIF)
+    try:
+        from services.ecological_data_service import enrich_cells_with_live_data
+        affected_cells = await enrich_cells_with_live_data(affected_cells)
+        logger.info(
+            f"Ecological enrichment complete — rainfall/prey/HWC data applied to "
+            f"{len(affected_cells)} cells"
+        )
+    except Exception as e:
+        logger.warning(f"Ecological enrichment skipped (non-fatal): {e}")
+        # Cells continue with whatever data is already in the DB columns
+
+    # 1.6 Augment feature modifications from user text (LLM interpretation)
     from services.llm_service import augment_modifications_from_text
     final_modifications = await augment_modifications_from_text(
         scenario.user_query or "",
         scenario.feature_modifications
     )
-    
+
     # 2. Run prediction using the XGBoost engine
     try:
         results = await predict_scenario(
@@ -253,7 +265,8 @@ async def run_scenario(
             for unit, data in results["unit_aggregation"].items()
         },
         llm_narrative=narrative,
-        map_visualization_url=f"/api/maps/scenario/{stored.get('scenario_id', -1)}"
+        map_visualization_url=f"/api/maps/scenario/{stored.get('scenario_id', -1)}",
+        ecological_context=results.get("ecological_context", {})
     )
 
 

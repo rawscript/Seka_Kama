@@ -22,6 +22,7 @@ class ScenarioResponse(BaseModel):
     affected_units: Dict[str, float]
     llm_narrative: str
     map_visualization_url: str
+    ecological_context: Optional[Dict[str, float]] = None
     created_at: Optional[datetime] = None
 
 
