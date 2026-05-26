@@ -315,32 +315,9 @@ class SupabaseService:
     def create_api_key(self, user_id: int, name: str, key_hash: str, prefix: str) -> Dict[str, Any]:
         """
         Create a new API key record.
-
-        Raises RuntimeError with a descriptive message if the insert fails so
-        that callers receive actionable context rather than a silent empty dict.
+        Directly attempts insertion and handles specific Supabase/DB state errors
+        by providing clear guidance and performing recovery if RLS filters the return.
         """
-        import traceback
-
-        # --- Pre-flight: verify the api_keys table is reachable ---
-        try:
-            probe = self.client.table("api_keys").select("id").limit(1).execute()
-        except Exception as probe_exc:
-            probe_detail = str(probe_exc)
-            logger.error(
-                f"api_keys table probe failed for user {user_id}: {probe_detail}\n"
-                + traceback.format_exc()
-            )
-            if "does not exist" in probe_detail or "42P01" in probe_detail:
-                raise RuntimeError(
-                    "The 'api_keys' table does not exist in the database. "
-                    "Please create it via the Supabase SQL editor before generating API keys. "
-                    f"Supabase error: {probe_detail}"
-                ) from probe_exc
-            raise RuntimeError(
-                f"Cannot reach the 'api_keys' table (probe query failed): {probe_detail}"
-            ) from probe_exc
-
-        # --- Attempt the insert ---
         key_data = {
             "user_id": user_id,
             "name": name,
@@ -348,48 +325,51 @@ class SupabaseService:
             "prefix": prefix,
             "is_active": True,
         }
+
         try:
-            # .select() ensures the inserted row is returned in result.data
+            # We use select() to get the object back. 
+            # If RLS filters it, result.data may be empty even on success.
             result = self.client.table("api_keys").insert(key_data).select().execute()
-        except Exception as insert_exc:
-            insert_detail = str(insert_exc)
-            logger.error(
-                f"Supabase insert failed for api_keys (user {user_id}): {insert_detail}\n"
-                + traceback.format_exc()
-            )
-            # Distinguish the two most common root causes so the operator knows
-            # exactly what to fix without digging through raw Supabase logs.
-            if "42501" in insert_detail or "row-level security" in insert_detail.lower() or "rls" in insert_detail.lower():
-                raise RuntimeError(
-                    "Row-Level Security (RLS) is blocking the insert into 'api_keys'. "
-                    "Either disable RLS on the table or add a policy that permits inserts "
-                    "with the service role key. "
-                    f"Supabase error: {insert_detail}"
-                ) from insert_exc
-            if "does not exist" in insert_detail or "42P01" in insert_detail:
-                raise RuntimeError(
-                    "The 'api_keys' table does not exist in the database. "
-                    "Please create it via the Supabase SQL editor before generating API keys. "
-                    f"Supabase error: {insert_detail}"
-                ) from insert_exc
+            
+            if result.data:
+                logger.info(f"API key '{name}' created successfully for user {user_id}")
+                return result.data[0]
+            
+            # --- TACKLE: RLS ghost recovery ---
+            # If no data was returned but no exception was raised, the row was likely 
+            # inserted but hidden by an RLS SELECT policy. We tackle this by attempting 
+            # a targeted fetch by the unique key_hash.
+            logger.warning(f"Insert returned no data for user {user_id}. Attempting targeted recovery...")
+            recovery = self.client.table("api_keys").select("*").eq("key_hash", key_hash).execute()
+            
+            if recovery.data:
+                return recovery.data[0]
+                
+            # If still nothing, it's a critical logic or policy failure.
             raise RuntimeError(
-                f"Unexpected error inserting into 'api_keys': {insert_detail}"
-            ) from insert_exc
-
-        if not result.data:
-            logger.error(
-                f"api_keys insert returned no data for user {user_id}. "
-                "This may indicate an RLS policy is silently filtering the returned row "
-                "even though the insert succeeded. Check RLS SELECT policies on 'api_keys'."
-            )
-            raise RuntimeError(
-                "API key was not returned after insert. "
-                "An RLS SELECT policy may be filtering the row. "
-                "Verify that the service role key bypasses RLS, or add an appropriate SELECT policy."
+                "API key created but inaccessible due to Row-Level Security (RLS). "
+                "Ensure that the service role key bypasses RLS or add a SELECT policy for 'api_keys'."
             )
 
-        logger.info(f"API key '{name}' created successfully for user {user_id}")
-        return result.data[0]
+        except Exception as e:
+            error_msg = str(e).lower()
+            
+            # --- TACKLE: Catch common environment/db setup errors directly ---
+            if "api_keys" in error_msg and ("not exist" in error_msg or "42p01" in error_msg):
+                raise RuntimeError(
+                    "DATABASE_SCHEMA_ERROR: The 'api_keys' table is missing. "
+                    "Please execute the SQL bootstrap script located at 'backend/sql/bootstrap.sql' "
+                    "in your Supabase SQL editor to set up the required tables and functions."
+                ) from e
+            
+            if "42501" in error_msg or "rls" in error_msg or "permission denied" in error_msg:
+                 raise RuntimeError(
+                    "DATABASE_POLICY_ERROR: Row-Level Security or permissions are blocking API key creation. "
+                    "Ensure you are using the SERVICE_ROLE_KEY and it has sufficient permissions."
+                ) from e
+                
+            logger.error(f"Unhandled error in create_api_key for user {user_id}: {e}")
+            raise e
         
     def revoke_api_key(self, user_id: int, key_id: int) -> bool:
         """

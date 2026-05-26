@@ -56,6 +56,7 @@ async def create_key(
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         prefix = f"{raw_key[:12]}****"
         
+        # db.create_api_key now handles recovery and raises descriptive errors on failure
         stored_key = db.create_api_key(
             user_id=current_user.user_id,
             name=request.name.strip(),
@@ -63,24 +64,24 @@ async def create_key(
             prefix=prefix
         )
         
-        if not stored_key:
-            logger.error(f"create_api_key returned empty for user {current_user.user_id} — "
-                         "check that the api_keys table exists and RLS policies allow inserts with the service role key.")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to create API key. The api_keys table may not exist or RLS is blocking inserts."
-            )
-        
         return {
             **stored_key,
             "key": raw_key
         }
-    except HTTPException:
-        raise
+    except RuntimeError as re:
+        # Pass through descriptive database errors
+        logger.error(f"Database error during API key creation: {re}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(re)
+        )
     except Exception as e:
         logger.error(f"Unhandled error creating API key for user {current_user.user_id}: {e}")
         logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Failed to create API key: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create API key: {str(e)}"
+        )
 
 @router.delete("/{key_id}")
 async def revoke_key(
