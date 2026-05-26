@@ -34,6 +34,72 @@ _MAX_TOKENS  = 1024
 
 # ── Public API ──────────────────────────────────────────────────────────
 
+async def augment_modifications_from_text(
+    user_query: str,
+    explicit_mods: Dict[str, float]
+) -> Dict[str, float]:
+    """
+    Use LLM to interpret user text and suggest feature modifications.
+    Combines with user-specified manual modifications.
+    """
+    if not user_query or len(user_query.strip()) < 5:
+        return explicit_mods
+
+    prompt = f"""You are a data mapper for an ecological model. 
+A user has described a scenario in the Seka Kama landscape (Kenya):
+"{user_query}"
+
+The model uses these features:
+1. all_mean_mean: Nightlight intensity (0 to 1). Increase for new lights/buildings.
+2. longterm_slope_mean: Nightlight trend (-0.1 to 0.1). Increase for expected growth.
+3. dist_to_protected_km: Distance to protected areas (km). Usually stays static unless relocation happens.
+4. all_skew_mean: Spatial light heterogeneity.
+
+INSTRUCTIONS:
+- Identify if the text implies changes to any of these features.
+- Provide a JSON object with PRECISE percentage deltas (e.g., 0.15 for +15%, -0.10 for -10%).
+- If the user already provided specific values in {list(explicit_mods.keys())}, PRIORITISE the user's values unless they are obviously contradictory.
+- ONLY return the JSON object. No prose.
+
+Available features to modify:
+- all_mean_mean
+- longterm_slope_mean
+- all_skew_mean
+- all_std_mean
+
+Example Response: {{"all_mean_mean": 0.2, "longterm_slope_mean": 0.05}}
+"""
+
+    try:
+        # Use a non-streaming call for structured data extraction
+        client = _get_client()
+        response = client.chat.completions.create(
+            model=_LLM_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0, # Zero temperature for consistent mappings
+            max_tokens=150,
+            stream=False
+        )
+        content = response.choices[0].message.content.strip()
+        
+        import json
+        # Robustly parse JSON even if LLM wraps it in backticks
+        if "```" in content:
+            content = content.split("```")[1].replace("json", "").strip()
+            
+        implied_mods = json.loads(content)
+        
+        # Merge: Explicit user mods override inferred ones
+        merged = implied_mods.copy()
+        merged.update(explicit_mods)
+        
+        logger.info(f"Augmented mods from text: {implied_mods}")
+        return merged
+    except Exception as e:
+        logger.warning(f"Failed to extract features from text: {e}")
+        return explicit_mods
+
+
 async def generate_narrative(
     scenario_request: Any,
     scenario_results: Dict[str, Any],

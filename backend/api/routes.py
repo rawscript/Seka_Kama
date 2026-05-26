@@ -200,11 +200,18 @@ async def run_scenario(
             detail="No habitat grid cells found in the selected simulation area"
         )
     
+    # 1.5 Augment modifications based on user text (optional)
+    from services.llm_service import augment_modifications_from_text
+    final_modifications = await augment_modifications_from_text(
+        scenario.user_query or "",
+        scenario.feature_modifications
+    )
+    
     # 2. Run prediction using the XGBoost engine
     try:
         results = await predict_scenario(
             model, scaler, feature_names,
-            affected_cells, scenario.feature_modifications
+            affected_cells, final_modifications
         )
     except ValueError as ve:
         logger.warning(f"Validation error in scenario: {str(ve)}")
