@@ -191,9 +191,9 @@ class SupabaseService:
         """
         Update user's last login timestamp.
         """
-        from datetime import datetime
+        from datetime import datetime, timezone
         self.client.table("users").update({
-            "last_login": datetime.utcnow().isoformat()
+            "last_login": datetime.now(timezone.utc).isoformat()
         }).eq("id", user_id).execute()
     
     def update_user_preferences(self, user_id: int, preferences: Dict[str, Any]) -> None:
@@ -219,7 +219,7 @@ class SupabaseService:
         """
         Save a scenario to history.
         """
-        from datetime import datetime
+        from datetime import datetime, timezone
         
         scenario_data = {
             "user_id": user_id,
@@ -229,7 +229,7 @@ class SupabaseService:
             "affected_cells": affected_cells,
             "llm_narrative": llm_narrative,
             "request_data": request_data,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
         result = self.client.table("scenario_history").insert(scenario_data).execute()
         return result.data[0] if result.data else {}
@@ -398,9 +398,9 @@ class SupabaseService:
         """
         Update the last_used timestamp for an API key.
         """
-        from datetime import datetime
+        from datetime import datetime, timezone
         self.client.table("api_keys")\
-            .update({"last_used": datetime.utcnow().isoformat()})\
+            .update({"last_used": datetime.now(timezone.utc).isoformat()})\
             .eq("id", key_id)\
             .execute()
 

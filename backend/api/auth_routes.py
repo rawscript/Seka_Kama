@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from datetime import datetime
+from datetime import datetime, timezone
 from core.database import get_supabase_client
 from core.auth import (
     verify_password, get_password_hash, create_access_token,
@@ -38,7 +38,7 @@ async def register(user: UserCreate):
             "full_name": user.full_name,
             "organization": user.organization,
             "role": user.role,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "is_active": True
         }
         
@@ -105,7 +105,7 @@ async def login(user: UserLogin):
         )
         
         supabase.table("users").update({
-            "last_login": datetime.utcnow().isoformat()
+            "last_login": datetime.now(timezone.utc).isoformat()
         }).eq("id", db_user["id"]).execute()
         
         return Token(

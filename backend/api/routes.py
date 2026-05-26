@@ -4,7 +4,7 @@ import pandas as pd
 import logging
 from fastapi import APIRouter, HTTPException, Request, Query, Response, Depends
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -228,8 +228,7 @@ async def run_scenario(
             modified_features=scenario.feature_modifications,
             predicted_lion_delta=results["delta_total"],
             affected_cells=len(affected_cells),
-            llm_narrative=narrative,
-            request_data=scenario.model_dump()
+            llm_narrative=narrative
         )
     except Exception as e:
         logger.error(f"Failed to save scenario history: {str(e)}")
@@ -524,7 +523,7 @@ async def health_check(
     
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "database": "connected" if db_healthy else f"error: {db_error}",
         "model_loaded": True,
         "version": "2.0.0"
