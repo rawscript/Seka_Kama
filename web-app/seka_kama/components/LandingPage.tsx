@@ -151,7 +151,7 @@ export default function LandingPage() {
             <div
               key={stat.label}
               className={`flex flex-col items-center text-center p-4 md:border-r border-[#d1c5b4]/50 last:border-0 ${mounted ? 'animate-in' : 'opacity-0'}`}
-              style={{ animationDelay: `${idx * 75}ms`, fillMode: 'both' }}
+              style={{ animationDelay: `${idx * 75}ms`, animationFillMode: 'both' }}
             >
               <span className="text-[11px] font-bold text-[#775a19] mb-2 uppercase tracking-wider">{stat.label}</span>
               <span className="font-serif text-4xl md:text-5xl text-[#1a1c1c] font-normal tracking-tight">{stat.value}</span>
@@ -170,7 +170,7 @@ export default function LandingPage() {
 
       {/* Quote Section */}
       <section className="bg-[#f9f9f9] py-28 flex flex-col items-center text-center px-6 overflow-hidden">
-        <div className={`max-w-4xl ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '200ms', fillMode: 'both' }}>
+        <div className={`max-w-4xl ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
           <span className="text-[#c5a059]/40 text-6xl block mb-2 font-serif italic select-none">“</span>
           <h2 className="text-3xl md:text-4xl md:leading-relaxed italic text-[#1a1c1c] font-light max-w-3xl mx-auto">
             Intelligence is the silent guardian of the wild.
@@ -201,7 +201,7 @@ export default function LandingPage() {
               <div
                 key={item.num}
                 className={`enterprise-card bg-white group flex flex-col justify-between ${mounted ? 'animate-in' : 'opacity-0'}`}
-                style={{ animationDelay: `${idx * 100}ms`, fillMode: 'both' }}
+                style={{ animationDelay: `${idx * 100}ms`, animationFillMode: 'both' }}
               >
                 <div>
                   <div className="flex justify-between items-start mb-10">
@@ -257,7 +257,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className={`relative group ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '150ms', fillMode: 'both' }}>
+            <div className={`relative group ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
               <div className="absolute -inset-3 border border-[#775a19] opacity-15 group-hover:opacity-30 transition-opacity duration-500" />
               <img
                 alt="High-tech conservation mapping monitor setup"

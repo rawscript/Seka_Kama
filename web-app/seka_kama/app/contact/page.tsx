@@ -36,7 +36,7 @@ export default function ContactPage() {
             </div>
           </div>
 
-          <div className={`enterprise-card bg-white p-10 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '150ms', fillMode: 'both' }}>
+          <div className={`enterprise-card bg-white p-10 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
             <h3 className="text-xl font-serif font-medium text-[#1a1c1c] mb-8">Direct Inquiry</h3>
             <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
               <div className="space-y-2">

@@ -245,7 +245,7 @@ export default function DocumentationPage() {
         </aside>
 
         {/* ── Main Content ───────────────────────────────────────── */}
-        <main className={`flex-1 space-y-16 min-w-0 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '200ms', fillMode: 'both' }}>
+        <main className={`flex-1 space-y-16 min-w-0 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
 
           {/* ── Overview ──────────────────────────────────────────── */}
           <section id="overview" className="space-y-4">

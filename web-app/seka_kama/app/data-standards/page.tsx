@@ -51,7 +51,7 @@ export default function DataStandardsPage() {
             <div 
               key={standard.title} 
               className={`enterprise-card bg-white flex flex-col gap-6 ${mounted ? 'animate-in' : 'opacity-0'}`}
-              style={{ animationDelay: `${idx * 100}ms`, fillMode: 'both' }}
+              style={{ animationDelay: `${idx * 100}ms`, animationFillMode: 'both' }}
             >
               <div className="w-14 h-14 bg-[#775a19]/5 border border-[#775a19]/10 flex items-center justify-center">
                 <standard.icon className="w-6 h-6 text-[#775a19]" />
@@ -64,7 +64,7 @@ export default function DataStandardsPage() {
           ))}
         </div>
 
-        <section className={`p-10 bg-white enterprise-card border-[#d1c5b4]/40 flex flex-col md:flex-row gap-10 items-start ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '400ms', fillMode: 'both' }}>
+        <section className={`p-10 bg-white enterprise-card border-[#d1c5b4]/40 flex flex-col md:flex-row gap-10 items-start ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
            <div className="w-14 h-14 bg-[#775a19] flex items-center justify-center flex-shrink-0 shadow-lg">
               <CheckCircle2 className="w-7 h-7 text-white" />
            </div>

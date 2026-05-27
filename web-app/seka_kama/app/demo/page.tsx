@@ -42,7 +42,7 @@ export default function DemoPage() {
         </div>
 
         {/* Video Player Section */}
-        <div className={`relative aspect-video w-full max-w-5xl mx-auto rounded-sm overflow-hidden border border-[#d1c5b4]/60 shadow-enterprise group glass-effect ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '200ms', fillMode: 'both' }}>
+        <div className={`relative aspect-video w-full max-w-5xl mx-auto rounded-sm overflow-hidden border border-[#d1c5b4]/60 shadow-enterprise group glass-effect ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
            <video 
              ref={videoRef}
              className="w-full h-full object-cover"
@@ -92,7 +92,7 @@ export default function DemoPage() {
            <DemoFeature icon={BarChart3} title="Risk Matrices" desc="Identify high-priority conservation corridors automatically." delay="600ms" />
         </div>
 
-        <section className={`mt-32 py-24 border-t border-[#d1c5b4]/60 space-y-10 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '700ms', fillMode: 'both' }}>
+        <section className={`mt-32 py-24 border-t border-[#d1c5b4]/60 space-y-10 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '700ms', animationFillMode: 'both' }}>
            <h2 className="text-4xl font-serif font-medium text-[#1a1c1c] tracking-tight">Ready to start simulating?</h2>
            <a href="/register" className="inline-flex items-center gap-4 px-12 py-6 bg-[#1a1c1c] text-white font-bold hover:bg-[#775a19] transition-all group shadow-xl">
               <span className="text-[12px] tracking-[0.3em] uppercase">GET FULL ACCESS</span> 
@@ -108,7 +108,7 @@ export default function DemoPage() {
 
 function DemoFeature({ icon: Icon, title, desc, delay }: { icon: any, title: string, desc: string, delay: string }) {
   return (
-    <div className={`p-10 bg-white enterprise-card flex flex-col items-center text-center group animate-in`} style={{ animationDelay: delay, fillMode: 'both' }}>
+    <div className={`p-10 bg-white enterprise-card flex flex-col items-center text-center group animate-in`} style={{ animationDelay: delay, animationFillMode: 'both' }}>
        <div className="w-16 h-16 rounded-sm bg-[#775a19]/5 border border-[#775a19]/10 flex items-center justify-center mb-8 group-hover:bg-[#775a19] transition-colors duration-500">
           <Icon className="w-8 h-8 text-[#775a19] group-hover:text-white transition-colors duration-500" />
        </div>

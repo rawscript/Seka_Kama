@@ -58,7 +58,10 @@ const nextConfig: NextConfig = {
       child_process: false,
       os: false,
       net: false,
-      tls: false
+      tls: false,
+      // Optional native deps of `ws` — not available in the browser/edge bundle
+      bufferutil: false,
+      'utf-8-validate': false,
     };
     return config;
   },

@@ -29,7 +29,7 @@ export default function AboutPage() {
         </section>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-16 border-t border-[#d1c5b4]/60">
-          <div className={`space-y-6 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '100ms', fillMode: 'both' }}>
+          <div className={`space-y-6 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
             <div className="flex items-center gap-3 text-[#775a19]">
                <Target className="w-5 h-5" />
                <h3 className="text-[11px] font-bold uppercase tracking-[0.2em]">Our Mission</h3>
@@ -39,7 +39,7 @@ export default function AboutPage() {
               navigate the complex balance between human development and wildlife preservation.
             </p>
           </div>
-          <div className={`space-y-6 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '200ms', fillMode: 'both' }}>
+          <div className={`space-y-6 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
             <div className="flex items-center gap-3 text-[#775a19]">
                <Globe className="w-5 h-5" />
                <h3 className="text-[11px] font-bold uppercase tracking-[0.2em]">The Digital Twin</h3>
@@ -51,7 +51,7 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <section className={`mt-32 p-12 bg-white enterprise-card border-[#d1c5b4]/40 flex flex-col md:flex-row items-center justify-between gap-8 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '300ms', fillMode: 'both' }}>
+        <section className={`mt-32 p-12 bg-white enterprise-card border-[#d1c5b4]/40 flex flex-col md:flex-row items-center justify-between gap-8 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
            <div className="max-w-xl text-center md:text-left">
               <h2 className="text-2xl md:text-3xl font-serif font-medium text-[#1a1c1c] mb-4">Join the New Era of Conservation</h2>
               <p className="text-sm text-[#4e4639] font-light">Experience the power of predictive ecology and spatial synthesis.</p>

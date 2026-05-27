@@ -43,7 +43,7 @@ export default function PrivacyPage() {
           />
         </div>
 
-        <div className={`pt-16 border-t border-[#d1c5b4]/60 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '400ms', fillMode: 'both' }}>
+        <div className={`pt-16 border-t border-[#d1c5b4]/60 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
           <p className="text-sm text-[#4e4639] font-light italic">
             If you have concerns regarding data usage or wish to request data deletion, please contact our
             Data Operations lead at <span className="text-[#775a19] font-bold border-b border-[#775a19]">jasemwaura@gmail.com</span>.
@@ -58,7 +58,7 @@ export default function PrivacyPage() {
 
 function PrivacySection({ icon: Icon, title, content, delay }: { icon: any, title: string, content: string, delay: string }) {
   return (
-    <section className={`space-y-6 animate-in`} style={{ animationDelay: delay, fillMode: 'both' }}>
+    <section className={`space-y-6 animate-in`} style={{ animationDelay: delay, animationFillMode: 'both' }}>
       <div className="flex items-center gap-4 text-[#775a19]">
         <Icon className="w-6 h-6" />
         <h2 className="text-2xl font-serif font-medium tracking-tight text-[#1a1c1c]">{title}</h2>
