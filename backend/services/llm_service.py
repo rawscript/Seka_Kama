@@ -73,23 +73,70 @@ A user has described a scenario in the Seka Kama landscape (Kenya):
 "{user_query}"
 {rainfall_context}
 The model uses these features:
-1. all_mean_mean: Nightlight intensity (0 to 1). Increase for new lights/buildings.
-2. longterm_slope_mean: Nightlight trend (-0.1 to 0.1). Increase for expected growth.
-3. dist_to_protected_km: Distance to protected areas (km). Usually stays static unless relocation happens.
-4. all_skew_mean: Spatial light heterogeneity.
+1. longterm_slope_mean: Nightlight trend (-0.1 to 0.1). Increase for expected growth.
+2. longterm_slope_std: Nightlight trend variability.
+3. all_skew_mean: Spatial light skewness.
+4. all_skew_std: Spatial light skewness variability.
+5. all_mean_mean: Nightlight intensity (0 to 1). Increase for new lights/buildings.
+6. all_mean_std: Nightlight intensity variability.
+7. all_kurtosis_mean: Nightlight kurtosis (tail behavior).
+8. all_kurtosis_std: Nightlight kurtosis variability.
+9. all_median_mean: Nightlight median intensity.
+10. all_median_std: Nightlight median variability.
+11. all_variance_mean: Nightlight variance.
+12. all_variance_std: Nightlight variance variability.
+13. licorr_slope_mean: Local industrial corridor slope.
+14. licorr_slope_std: Local industrial corridor slope variability.
+15. longterm_intercept_mean: Nightlight intercept.
+16. longterm_intercept_std: Nightlight intercept variability.
+17. longterm_r2_mean: Nightlight trend R-squared (goodness of fit).
+18. longterm_r2_std: Nightlight trend R-squared variability.
+19. pop2018_mean: Population density in 2018.
+20. pop2018_std: Population density variability.
+21. primary_acf_mean: Primary autocorrelation.
+22. primary_acf_std: Primary autocorrelation variability.
+23. primary_prominence_mean: Primary prominence (dominant frequency).
+24. primary_prominence_std: Primary prominence variability.
+25. secondary_acf_mean: Secondary autocorrelation.
+26. secondary_acf_std: Secondary autocorrelation variability.
+27. secondary_prominence_mean: Secondary prominence.
+28. secondary_prominence_std: Secondary prominence variability.
+29. ann_amp_mean: Annual amplitude (seasonal variation).
+30. ann_amp_std: Annual amplitude variability.
+31. ann_cv_mean: Annual coefficient of variation.
+32. ann_cv_std: Annual CV variability.
+33. ann_peak_month_mean: Month of peak annual activity.
+34. ann_peak_month_std: Peak month variability.
+35. ann_trend_mean: Annual trend.
+36. ann_trend_std: Annual trend variability.
+37. ann_mean_mean: Annual mean intensity.
+38. ann_mean_std: Annual mean variability.
+39. density_code: Habitat density classification.
+40. hist_lag1: Historical lag-1 autocorrelation.
+41. hist_lag2: Historical lag-2 autocorrelation.
+42. cheetah_abundance: Cheetah population density (proxy for ecosystem health).
+43. dist_to_protected_km: Distance to protected areas (km). Usually stays static unless relocation happens.
 
 INSTRUCTIONS:
 - Identify if the text implies changes to any of these features.
 - Provide a JSON object with PRECISE percentage deltas (e.g., 0.15 for +15%, -0.10 for -10%).
-- If rainfall data is provided above and the scenario involves drought/flooding, adjust longterm_slope_mean accordingly.
+- If rainfall data is provided above and the scenario involves drought/flooding, adjust ann_amp_mean, ann_cv_mean, or longterm_slope_mean accordingly.
 - If the user already provided specific values in {list(explicit_mods.keys())}, PRIORITISE the user's values.
 - ONLY return the JSON object. No prose.
 
-Available features to modify:
-- all_mean_mean
-- longterm_slope_mean
-- all_skew_mean
-- all_std_mean
+Available features to modify: {', '.join([
+    'longterm_slope_mean', 'longterm_slope_std', 'all_skew_mean', 'all_skew_std',
+    'all_mean_mean', 'all_mean_std', 'all_kurtosis_mean', 'all_kurtosis_std',
+    'all_median_mean', 'all_median_std', 'all_variance_mean', 'all_variance_std',
+    'licorr_slope_mean', 'licorr_slope_std', 'longterm_intercept_mean', 'longterm_intercept_std',
+    'longterm_r2_mean', 'longterm_r2_std', 'pop2018_mean', 'pop2018_std',
+    'primary_acf_mean', 'primary_acf_std', 'primary_prominence_mean', 'primary_prominence_std',
+    'secondary_acf_mean', 'secondary_acf_std', 'secondary_prominence_mean', 'secondary_prominence_std',
+    'ann_amp_mean', 'ann_amp_std', 'ann_cv_mean', 'ann_cv_std',
+    'ann_peak_month_mean', 'ann_peak_month_std', 'ann_trend_mean', 'ann_trend_std',
+    'ann_mean_mean', 'ann_mean_std', 'density_code', 'hist_lag1', 'hist_lag2',
+    'cheetah_abundance', 'dist_to_protected_km'
+])}
 
 Example Response: {{"all_mean_mean": 0.2, "longterm_slope_mean": 0.05}}
 """
@@ -247,10 +294,17 @@ Ecological Context of the Affected Area:
 Per-conservancy breakdown (top units):
 {unit_lines or '  (no per-unit data)'}
 
-Top model drivers (from XGBoost):
+Top model drivers (from XGBoost feature importance):
   1. longterm_slope_mean — nightlight trend (most important)
   2. dist_to_protected_km — distance to safe zones
-  3. all_skew_std — spatial heterogeneity
+  3. all_skew_mean — spatial heterogeneity
+  4. cheetah_abundance — prey base proxy
+  5. pop2018_mean — human population density
+  6. ann_amp_mean — seasonal variation
+  7. all_kurtosis_mean — tail behavior of light distribution
+  8. licorr_slope_mean — industrial corridor trends
+  9. primary_prominence_mean — dominant frequency pattern
+  10. density_code — habitat classification
 
 ─────────────────────────────────────────
 Write a **3–4 sentence ecological interpretation** aimed at a conservancy manager.
