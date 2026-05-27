@@ -6,6 +6,9 @@ import os
 import json
 import re
 import urllib.parse
+import logging
+
+logger = logging.getLogger(__name__)
 
 from api.routes import router
 from api.auth_routes import router as auth_router
@@ -98,10 +101,20 @@ class DynamicCORSMiddleware:
         headers = dict(scope.get("headers", []))
         origin = headers.get(b"origin", b"").decode("latin-1")
 
-        allowed = _is_origin_allowed(origin) if origin else False
+        # `allowed` is True only when origin is non-empty AND in the allowlist.
+        allowed = bool(origin) and _is_origin_allowed(origin)
 
-        if scope["type"] == "http" and scope["method"] == "OPTIONS" and allowed:
+        logger.debug(
+            "CORS check — origin=%r allowed=%s method=%s path=%s",
+            origin,
+            allowed,
+            scope.get("method", ""),
+            scope.get("path", ""),
+        )
+
+        if scope["type"] == "http" and scope.get("method") == "OPTIONS" and allowed:
             # Preflight — respond immediately without hitting the app
+            logger.debug("CORS preflight response for origin=%r", origin)
             response_headers = [
                 (b"access-control-allow-origin",      origin.encode()),
                 (b"access-control-allow-credentials", b"true"),
@@ -120,15 +133,28 @@ class DynamicCORSMiddleware:
             return
 
         # For all other requests, inject CORS headers into the response
+        # whenever the origin is present and allowed.  The condition is
+        # `allowed` alone — it already implies `origin` is non-empty.
         async def send_with_cors(message):
-            if message["type"] == "http.response.start" and allowed and origin:
-                headers_list = list(message.get("headers", []))
-                headers_list += [
-                    (b"access-control-allow-origin",      origin.encode()),
-                    (b"access-control-allow-credentials", b"true"),
-                    (b"vary",                             b"Origin"),
-                ]
-                message = {**message, "headers": headers_list}
+            if message["type"] == "http.response.start":
+                if allowed:
+                    logger.debug(
+                        "CORS: injecting headers for origin=%r status=%s",
+                        origin,
+                        message.get("status"),
+                    )
+                    headers_list = list(message.get("headers", []))
+                    headers_list += [
+                        (b"access-control-allow-origin",      origin.encode()),
+                        (b"access-control-allow-credentials", b"true"),
+                        (b"vary",                             b"Origin"),
+                    ]
+                    message = {**message, "headers": headers_list}
+                else:
+                    logger.debug(
+                        "CORS: origin=%r not allowed, skipping headers",
+                        origin,
+                    )
             await send(message)
 
         await self.app(scope, receive, send_with_cors)
