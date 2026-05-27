@@ -68,9 +68,8 @@ const nextConfig: NextConfig = {
     workerThreads: false,
     memoryBasedWorkersCount: true,
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  }
+  // NOTE: ignoreBuildErrors was removed. Fix TypeScript errors rather than hiding them.
+  // Re-enable temporarily only if you need an emergency deploy: typescript: { ignoreBuildErrors: true }
 };
 
 export default nextConfig;

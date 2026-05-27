@@ -16,6 +16,8 @@ import { createKeplerConfig } from '@/services/kepler-config';
 
 interface KeplerMapProps {
   managementUnit?: string;
+  onCellSelect?: (cellId: number) => void;
+  onScenarioApply?: (cells: any[], modifications: Record<string, number>) => void;
 }
 
 // ── Redux Setup ─────────────────────────────────────────────────────────────
@@ -26,7 +28,7 @@ const reducers = combineReducers({
 // Create store with palm middleware for task handling
 const store = createStore(reducers, {}, applyMiddleware(taskMiddleware));
 
-function KeplerMapInner({ managementUnit }: KeplerMapProps) {
+function KeplerMapInner({ managementUnit, onCellSelect, onScenarioApply }: KeplerMapProps) {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -203,4 +205,4 @@ export default function KeplerMap(props: KeplerMapProps) {
       <KeplerMapInner {...props} />
     </Provider>
   );
-}
+}

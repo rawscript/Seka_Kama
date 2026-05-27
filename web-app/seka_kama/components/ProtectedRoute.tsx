@@ -6,10 +6,10 @@ import { getApiUrl } from '@/services/config';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'admin' | 'analyst' | 'viewer';
+  requiredRole?: 'admin' | 'analyst';
 }
 
-export default function ProtectedRoute({ children, requiredRole = 'viewer' }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, requiredRole = 'analyst' }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -40,9 +40,10 @@ export default function ProtectedRoute({ children, requiredRole = 'viewer' }: Pr
         setUserRole(user.role);
         setIsAuthenticated(true);
 
-        const roleHierarchy = { admin: 3, analyst: 2, viewer: 1 };
-        const requiredLevel = roleHierarchy[requiredRole];
-        const userLevel = roleHierarchy[user.role as keyof typeof roleHierarchy];
+        // admin > analyst; only admin routes require admin
+        const roleHierarchy: Record<string, number> = { admin: 2, analyst: 1, researcher: 1 };
+        const requiredLevel = roleHierarchy[requiredRole] ?? 1;
+        const userLevel = roleHierarchy[user.role] ?? 0;
 
         if (userLevel < requiredLevel) {
           router.push('/unauthorized');

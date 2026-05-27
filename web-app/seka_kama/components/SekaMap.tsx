@@ -3,19 +3,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Map, { Source, Layer, MapRef, MapProvider, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { ShieldCheck, Loader2, Filter, Layers, Info, Zap, Compass, Maximize2, Box } from 'lucide-react';
 import { api } from '@/services/api';
 import { getApiUrl } from '@/services/config';
 import ScenarioDrawer from './ScenarioDrawer';
-import { 
-  Loader2, 
-  Filter, 
-  Layers, 
-  Info, 
-  Zap, 
-  Compass, 
-  Maximize2,
-  Box
-} from 'lucide-react';
 
 function getDirectDriveLink(url: string) {
   if (!url) return '';
@@ -90,12 +81,13 @@ function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange, onViewState
     bearing: -10
   });
 
-  // Notify parent on mount/init
+  // Notify parent of initial view state on mount
   useEffect(() => {
     if (onViewStateChange) {
       onViewStateChange(viewState);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs once on mount only
 
   const handleMove = useCallback((evt: any) => {
     setViewState(evt.viewState);
@@ -258,5 +250,3 @@ function LegendItem({ color, label, opacity = 1, bordered = false }: { color: st
     </div>
   );
 }
-
-import { ShieldCheck } from 'lucide-react';

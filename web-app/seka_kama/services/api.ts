@@ -84,7 +84,25 @@ export const api = {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: Failed to fetch ${endpoint}`);
+      // On 401, clear the stale token and redirect to login so the user
+      // isn't stuck in a silent broken state mid-session.
+      if (response.status === 401 && typeof window !== 'undefined') {
+        localStorage.removeItem('access_token');
+        const redirect = encodeURIComponent(window.location.pathname);
+        window.location.href = `/login?redirect=${redirect}&reason=session_expired`;
+        // Throw anyway so any in-flight awaits don't continue
+        throw new Error('Session expired. Redirecting to login…');
+      }
+
+      // Try to extract the backend's error detail before throwing
+      let detail = `HTTP ${response.status}: Failed to fetch ${endpoint}`;
+      try {
+        const errBody = await response.json();
+        if (errBody?.detail) detail = errBody.detail;
+      } catch {
+        // ignore parse errors — use the default message
+      }
+      throw new Error(detail);
     }
 
     const contentType = response.headers.get("content-type");

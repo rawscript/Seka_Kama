@@ -3,11 +3,11 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import SekaMap from './SekaMap';
-import ScenarioPanel from './ScenarioPanel';
 
-// Dynamically import heavy components to avoid SSR issues
+// Both map components must be dynamically imported (no SSR) — they use browser-only APIs
+const SekaMapNoSSR = dynamic(() => import('./SekaMap'), { ssr: false });
 const KeplerMapNoSSR = dynamic(() => import('./KeplerMap'), { ssr: false });
+const ScenarioPanelNoSSR = dynamic(() => import('./ScenarioPanel'), { ssr: false });
 
 type TabType = 'analysis' | 'kepler' | 'scenarios';
 
@@ -36,7 +36,6 @@ const HistoryIcon = () => (
 
 export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('analysis');
-  const [selectedCells, setSelectedCells] = useState<any[]>([]);
 
   const tabs = [
     { id: 'analysis' as TabType, label: 'Spatial Analysis', icon: <MapIcon /> },
@@ -110,7 +109,7 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
             transition: 'opacity 0.3s ease',
           }}
         >
-          {activeTab === 'analysis' && <SekaMap onScenarioRun={onScenarioRun} />}
+          {activeTab === 'analysis' && <SekaMapNoSSR onScenarioRun={onScenarioRun} />}
         </div>
 
         {/* Kepler Explorer */}
@@ -130,7 +129,6 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
             <KeplerMapNoSSR
               onCellSelect={(cellId) => console.log('Selected cell:', cellId)}
               onScenarioApply={(cells, modifications) => {
-                setSelectedCells(cells);
                 onScenarioRun({
                   type: 'selection',
                   cells: cells,
@@ -153,8 +151,7 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
             overflowY: 'auto',
           }}
         >
-          <ScenarioPanel onScenarioSelect={(scenario) => {
-            // Switch to map and re-run scenario
+          <ScenarioPanelNoSSR onScenarioSelect={(scenario) => {
             setActiveTab('analysis');
             onScenarioRun(scenario);
           }} />

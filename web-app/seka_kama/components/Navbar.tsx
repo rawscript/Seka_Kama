@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/navigation'; // Wait, LandingPage used next/link. Next.js App router uses next/link.
+import Link from 'next/link'; // Correct import for Next.js App Router
 import { usePathname } from 'next/navigation';
 import NextLink from 'next/link';
 import { getApiUrl } from '@/services/config';
