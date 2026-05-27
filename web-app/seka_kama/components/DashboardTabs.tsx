@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import ErrorBoundary from './ErrorBoundary';
 
 // Both map components must be dynamically imported (no SSR) — they use browser-only APIs
 const SekaMapNoSSR = dynamic(() => import('./SekaMap'), { ssr: false });
@@ -109,7 +110,11 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
             transition: 'opacity 0.3s ease',
           }}
         >
-          {activeTab === 'analysis' && <SekaMapNoSSR onScenarioRun={onScenarioRun} />}
+          {activeTab === 'analysis' && (
+            <ErrorBoundary label="Spatial Analysis">
+              <SekaMapNoSSR onScenarioRun={onScenarioRun} />
+            </ErrorBoundary>
+          )}
         </div>
 
         {/* Kepler Explorer */}
@@ -126,16 +131,18 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
           }}
         >
           {activeTab === 'kepler' && (
-            <KeplerMapNoSSR
-              onCellSelect={(cellId) => console.log('Selected cell:', cellId)}
-              onScenarioApply={(cells, modifications) => {
-                onScenarioRun({
-                  type: 'selection',
-                  cells: cells,
-                  modifications: modifications,
-                });
-              }}
-            />
+            <ErrorBoundary label="Kepler Explorer">
+              <KeplerMapNoSSR
+                onCellSelect={(cellId) => console.log('Selected cell:', cellId)}
+                onScenarioApply={(cells, modifications) => {
+                  onScenarioRun({
+                    type: 'selection',
+                    cells: cells,
+                    modifications: modifications,
+                  });
+                }}
+              />
+            </ErrorBoundary>
           )}
         </div>
 
@@ -151,10 +158,12 @@ export default function DashboardTabs({ onScenarioRun }: DashboardTabsProps) {
             overflowY: 'auto',
           }}
         >
-          <ScenarioPanelNoSSR onScenarioSelect={(scenario) => {
-            setActiveTab('analysis');
-            onScenarioRun(scenario);
-          }} />
+          <ErrorBoundary label="Scenario History">
+            <ScenarioPanelNoSSR onScenarioSelect={(scenario) => {
+              setActiveTab('analysis');
+              onScenarioRun(scenario);
+            }} />
+          </ErrorBoundary>
         </div>
       </div>
     </div>

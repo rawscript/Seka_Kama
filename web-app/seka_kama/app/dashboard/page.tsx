@@ -1,24 +1,86 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import dynamic from 'next/dynamic';
 import { MapProvider, useMap } from 'react-map-gl/maplibre';
 
+// ── Dynamic imports (browser-only) ──────────────────────────────────────────
 const SekaMap = dynamic(() => import('@/components/SekaMap'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full flex items-center justify-center bg-slate-900/10 animate-pulse">
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 rounded-full border-4 border-[#775a19]/20 border-t-[#775a19] animate-spin" />
-        <p className="text-slate-500 font-medium text-xs uppercase tracking-widest">Initialising Spatial Engine...</p>
+        <p className="text-slate-500 font-medium text-xs uppercase tracking-widest">
+          Initialising Spatial Engine…
+        </p>
       </div>
     </div>
-  )
+  ),
 });
 
-const ScenarioResultPanel = dynamic(() => import('@/components/ScenarioResultPanel'), { ssr: false });
+const ScenarioResultPanel = dynamic(
+  () => import('@/components/ScenarioResultPanel'),
+  { ssr: false },
+);
 
+// ── Year range ───────────────────────────────────────────────────────────────
+const MIN_YEAR = 2020;
+const MAX_YEAR = 2026;
+
+function sliderToYear(value: number): number {
+  return Math.round(MIN_YEAR + (value / 100) * (MAX_YEAR - MIN_YEAR));
+}
+
+// ── Toggle switch sub-component ──────────────────────────────────────────────
+function LayerToggle({
+  enabled,
+  onToggle,
+  color,
+  label,
+}: {
+  enabled: boolean;
+  onToggle: () => void;
+  color: string;
+  label: string;
+}) {
+  return (
+    <label
+      className="flex items-center justify-between group cursor-pointer"
+      onClick={onToggle}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="w-3 h-3 rounded-full border border-white/50 transition-opacity"
+          style={{ backgroundColor: color, opacity: enabled ? 1 : 0.35 }}
+        />
+        <span
+          className={`text-[16px] transition-colors ${
+            enabled ? 'text-on-surface' : 'text-outline'
+          } group-hover:text-on-surface`}
+        >
+          {label}
+        </span>
+      </div>
+      {/* Toggle pill */}
+      <div
+        className={`w-8 h-4 rounded-full relative flex items-center transition-colors duration-200 ${
+          enabled ? 'bg-primary' : 'bg-outline-variant'
+        }`}
+      >
+        <div
+          className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform duration-200 ${
+            enabled ? 'translate-x-[18px]' : 'translate-x-[2px]'
+          }`}
+        />
+      </div>
+    </label>
+  );
+}
+
+// ── Page root ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   return (
     <MapProvider>
@@ -27,92 +89,136 @@ export default function DashboardPage() {
   );
 }
 
+// ── Main dashboard ───────────────────────────────────────────────────────────
 function DashboardContent() {
   const { 'main-map': mapMain } = useMap();
-  const [scenarioResult, setScenarioResult] = useState<any>(null);
-  const [selectedUnit, setSelectedUnit] = useState<string>('');
-  const [isZoneMenuOpen, setIsZoneMenuOpen] = useState(false);
-  const [currentCoords, setCurrentCoords] = useState({ lat: -1.25, lng: 35.1 });
-  const [activeLayer, setActiveLayer] = useState('SATELLITE (TRUE COLOR)');
-  const [timeValue, setTimeValue] = useState(66); // Default slider %
+
+  // Map state
+  const [scenarioResult, setScenarioResult]   = useState<any>(null);
+  const [selectedUnit, setSelectedUnit]         = useState<string>('');
+  const [isZoneMenuOpen, setIsZoneMenuOpen]     = useState(false);
+  const [currentCoords, setCurrentCoords]       = useState({ lat: -1.25, lng: 35.1 });
+  const [activeLayer, setActiveLayer]           = useState('SATELLITE (TRUE COLOR)');
+
+  // Layer visibility toggles
+  const [showProtectedAreas, setShowProtectedAreas] = useState(true);
+  const [showLandXBoundary, setShowLandXBoundary]   = useState(false);
+
+  // Temporal slider (0–100 → 2020–2026)
+  const [timeValue, setTimeValue]   = useState(66); // default ≈ 2024
+  const [isPlaying, setIsPlaying]   = useState(false);
+  const playRef                     = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const selectedYear = sliderToYear(timeValue);
+
+  // ── Playback ──────────────────────────────────────────────────────────────
+  const stopPlayback = useCallback(() => {
+    if (playRef.current) {
+      clearInterval(playRef.current);
+      playRef.current = null;
+    }
+    setIsPlaying(false);
+  }, []);
+
+  const startPlayback = useCallback(() => {
+    setIsPlaying(true);
+    playRef.current = setInterval(() => {
+      setTimeValue((prev) => {
+        if (prev >= 100) {
+          stopPlayback();
+          return 100;
+        }
+        return prev + 3; // ~2 seconds per year at 200 ms interval
+      });
+    }, 200);
+  }, [stopPlayback]);
+
+  const togglePlayback = useCallback(() => {
+    if (isPlaying) stopPlayback();
+    else startPlayback();
+  }, [isPlaying, startPlayback, stopPlayback]);
+
+  // Cleanup on unmount
+  useEffect(() => () => stopPlayback(), [stopPlayback]);
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const handleZoomIn  = () => mapMain?.zoomIn();
+  const handleZoomOut = () => mapMain?.zoomOut();
+
+  const handleViewStateChange = (viewState: any) => {
+    setCurrentCoords({ lat: viewState.latitude, lng: viewState.longitude });
+  };
 
   const units = ['Mara North', 'Olare-Motorogi', 'Naboisho', 'Ol Kinyei'];
 
-  const handleZoomIn = () => {
-    mapMain?.zoomIn();
-  };
-
-  const handleZoomOut = () => {
-    mapMain?.zoomOut();
-  };
-
-  const handleViewStateChange = (viewState: any) => {
-    setCurrentCoords({
-      lat: viewState.latitude,
-      lng: viewState.longitude
-    });
-  };
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <ProtectedRoute>
       <style dangerouslySetInnerHTML={{
         __html: `
-        .map-overlay-card {
-            background: rgba(255, 255, 255, 0.85);
+          .map-overlay-card {
+            background: rgba(255,255,255,0.85);
             backdrop-filter: blur(16px);
             border: 0.5px solid var(--outline-variant);
-        }
-
-        .premium-gradient-bar {
+          }
+          .premium-gradient-bar {
             background: linear-gradient(to right, #775a19 0%, #ffdea5 50%, #ba1a1a 100%);
-        }
-
-        .time-slider-track {
+          }
+          .time-slider-track {
             background: linear-gradient(to right, #e2dfde 0%, #775a19 100%);
-        }
-
-        .toggle-switch-ball {
-            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-      `}} />
+          }
+        `,
+      }} />
 
       <div className="relative w-full h-full bg-[#dadada]">
-        <SekaMap
-          selectedUnit={selectedUnit}
-          onUnitChange={setSelectedUnit}
-          onViewStateChange={handleViewStateChange}
-          onScenarioRun={(result) => setScenarioResult(result)}
-          activeLayer={activeLayer}
-        />
 
-        {/* Top Left Status */}
-        <div className="absolute top-8 left-8 flex items-center gap-3 px-4 py-2 bg-[#1a1c1c]/80 backdrop-blur-md rounded-full z-10">
-          <div className="w-2 h-2 rounded-full bg-[#1db954]"></div>
-          <span className="text-[10px] font-bold text-white uppercase tracking-widest">DIGITAL TWIN ACTIVE</span>
-          <span className="text-[10px] font-bold text-[#1db954] ml-2 opacity-80 uppercase tracking-widest">FPS: 60.0</span>
+        {/* ── Map ── */}
+        <ErrorBoundary label="Spatial Map" onRetry={() => window.location.reload()}>
+          <SekaMap
+            selectedUnit={selectedUnit}
+            onUnitChange={setSelectedUnit}
+            onViewStateChange={handleViewStateChange}
+            onScenarioRun={setScenarioResult}
+            activeLayer={activeLayer}
+            timeValue={timeValue}
+            showProtectedAreas={showProtectedAreas}
+            showLandXBoundary={showLandXBoundary}
+          />
+        </ErrorBoundary>
+
+        {/* ── Status pill ── */}
+        <div className="absolute top-8 left-8 flex items-center gap-3 px-4 py-2 bg-[#1a1c1c]/80 backdrop-blur-md rounded-full z-10 pointer-events-none">
+          <div className="w-2 h-2 rounded-full bg-[#1db954]" />
+          <span className="text-[10px] font-bold text-white uppercase tracking-widest">
+            DIGITAL TWIN ACTIVE
+          </span>
+          <span className="text-[10px] font-bold text-[#1db954] ml-2 opacity-80 uppercase tracking-widest">
+            {selectedYear}
+          </span>
         </div>
 
-        {/* Existing Scenario Result Panel (if active) */}
+        {/* ── Scenario result panel ── */}
         {scenarioResult && (
           <div className="absolute top-24 left-8 z-[100]">
-            <ScenarioResultPanel
-              result={scenarioResult}
-              onClose={() => setScenarioResult(null)}
-            />
+            <ErrorBoundary label="Scenario Panel">
+              <ScenarioResultPanel
+                result={scenarioResult}
+                onClose={() => setScenarioResult(null)}
+              />
+            </ErrorBoundary>
           </div>
         )}
 
-        {/* Right Side Panels (Scrollable Container) */}
+        {/* ── Right side panels ── */}
         <div className="absolute top-8 right-8 flex flex-col gap-6 w-[380px] max-h-[calc(100vh-180px)] overflow-y-auto pr-2 pb-8 z-20 custom-scrollbar">
 
-          {/* Zone Selection Panel - FUNCTIONAL */}
+          {/* Zone Selection */}
           <div className={`map-overlay-card p-6 shadow-sm rounded-sm relative ${isZoneMenuOpen ? 'z-50' : 'z-20'}`}>
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-2 text-primary font-bold">
                 <span className="material-symbols-outlined text-[20px]">location_on</span>
                 <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">ZONE SELECTION</h4>
               </div>
-              <span className="material-symbols-outlined text-secondary text-[18px] cursor-pointer hover:text-primary transition-colors">open_in_full</span>
             </div>
             <div className="relative">
               <button
@@ -120,7 +226,9 @@ function DashboardContent() {
                 className="w-full text-left flex justify-between items-center border-b border-outline-variant pb-2 text-[24px] headline-font font-medium text-on-surface hover:text-primary transition-colors"
               >
                 {selectedUnit || 'Regional Overview'}
-                <span className={`material-symbols-outlined text-outline transition-transform ${isZoneMenuOpen ? 'rotate-180' : ''}`}>keyboard_arrow_down</span>
+                <span className={`material-symbols-outlined text-outline transition-transform ${isZoneMenuOpen ? 'rotate-180' : ''}`}>
+                  keyboard_arrow_down
+                </span>
               </button>
 
               {isZoneMenuOpen && (
@@ -131,11 +239,11 @@ function DashboardContent() {
                   >
                     Regional Overview
                   </button>
-                  {units.map(u => (
+                  {units.map((u) => (
                     <button
                       key={u}
                       onClick={() => { setSelectedUnit(u); setIsZoneMenuOpen(false); }}
-                      className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium last:border-0"
+                      className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium"
                     >
                       {u}
                     </button>
@@ -145,122 +253,148 @@ function DashboardContent() {
             </div>
           </div>
 
-          {/* Scenario Simulation Panel */}
-          {/*
-          <div className="map-overlay-card p-6 shadow-sm rounded-sm">
-            <div className="flex items-center gap-2 mb-6 text-primary font-bold">
-              <span className="material-symbols-outlined text-[20px]">model_training</span>
-              <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">SIMULATION CONTROL</h4>
-            </div>
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <p className="text-[10px] font-bold text-outline tracking-wider uppercase">SIMULATE INFRASTRUCTURE</p>
-                <label className="flex items-center justify-between group cursor-pointer">
-                  <span className="text-[16px] text-secondary group-hover:text-on-surface transition-colors">Proposed Road Networks</span>
-                  <div className="w-8 h-4 bg-outline-variant rounded-full relative flex items-center transition-all">
-                    <div className="absolute left-0.5 w-3 h-3 bg-white rounded-full toggle-switch-ball"></div>
-                  </div>
-                </label>
-                <label className="flex items-center justify-between group cursor-pointer">
-                  <span className="text-[16px] text-secondary group-hover:text-on-surface transition-colors">Anti-Poaching Outposts</span>
-                  <div className="w-8 h-4 bg-primary rounded-full relative flex items-center transition-all">
-                    <div className="absolute right-0.5 w-3 h-3 bg-white rounded-full toggle-switch-ball"></div>
-                  </div>
-                </label>
-              </div>
-              <button className="w-full bg-[#1a1c1c] text-white py-3 font-bold text-[11px] tracking-[0.2em] hover:bg-primary transition-colors flex items-center justify-center gap-2 uppercase opacity-50 cursor-not-allowed">
-                <span className="material-symbols-outlined text-[18px]">play_arrow</span> Use Map Proposer
-              </button>
-              <p className="text-[10px] text-center text-outline uppercase font-bold tracking-tighter">Use the central Propose Scenario button on map</p>
-            </div>
-          </div>
- */}
-          {/* Ecosystem Indicators Panel */}
+          {/* Ecosystem Indicators */}
           <div className="map-overlay-card p-6 shadow-sm rounded-sm relative z-10">
             <div className="flex items-center gap-2 mb-8 text-primary font-bold">
               <span className="material-symbols-outlined text-[20px]">eco</span>
               <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">ECOSYSTEM INDICATORS</h4>
             </div>
             <div className="space-y-10">
+              {/* Density legend bar */}
               <div>
                 <div className="flex justify-between items-end mb-3">
-                  <span className="text-[11px] font-bold text-secondary tracking-wider">LION DENSITY GRID (XGB)</span>
+                  <span className="text-[11px] font-bold text-secondary tracking-wider">
+                    LION DENSITY GRID (XGB) — {selectedYear}
+                  </span>
                 </div>
-                <div className="h-1.5 w-full premium-gradient-bar rounded-full"></div>
+                <div className="h-1.5 w-full premium-gradient-bar rounded-full" />
                 <div className="flex justify-between mt-2">
                   <span className="text-[9px] font-bold text-outline uppercase tracking-widest">Baseline</span>
                   <span className="text-[9px] font-bold text-outline uppercase tracking-widest">High</span>
                 </div>
               </div>
+
+              {/* Layer toggles — now functional */}
               <div className="space-y-4">
-                <label className="flex items-center justify-between group cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-[#1db954] border border-white/50"></div>
-                    <span className="text-[16px] text-secondary group-hover:text-on-surface transition-colors">Protected Wildlife Zones</span>
-                  </div>
-                  <div className="w-8 h-4 bg-primary rounded-full relative flex items-center transition-all">
-                    <div className="absolute right-0.5 w-3 h-3 bg-white rounded-full toggle-switch-ball"></div>
-                  </div>
-                </label>
-                <label className="flex items-center justify-between group cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-[#e9c176] border border-white/50"></div>
-                    <span className="text-[16px] text-secondary group-hover:text-on-surface transition-colors">Land-X Admin Boundary</span>
-                  </div>
-                  <div className="w-8 h-4 bg-outline-variant rounded-full relative flex items-center transition-all">
-                    <div className="absolute left-0.5 w-3 h-3 bg-white rounded-full toggle-switch-ball"></div>
-                  </div>
-                </label>
+                <LayerToggle
+                  enabled={showProtectedAreas}
+                  onToggle={() => setShowProtectedAreas((v) => !v)}
+                  color="#1db954"
+                  label="Protected Wildlife Zones"
+                />
+                <LayerToggle
+                  enabled={showLandXBoundary}
+                  onToggle={() => setShowLandXBoundary((v) => !v)}
+                  color="#e9c176"
+                  label="Land-X Admin Boundary"
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Temporal Controls (Time Slider) */}
+        {/* ── Temporal Controls ── */}
         <div className="absolute bottom-8 right-[420px] w-[500px] z-30">
           <div className="map-overlay-card p-4 shadow-lg rounded-sm">
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2 text-primary font-bold">
                 <span className="material-symbols-outlined text-[18px]">schedule</span>
-                <span className="text-[10px] uppercase tracking-[0.15em] text-on-surface">TEMPORAL ANALYSIS</span>
+                <span className="text-[10px] uppercase tracking-[0.15em] text-on-surface">
+                  TEMPORAL ANALYSIS
+                </span>
               </div>
               <div className="flex items-center gap-3">
-                <button className="text-secondary hover:text-primary transition-colors"><span className="material-symbols-outlined text-[18px]">fast_rewind</span></button>
-                <button className="text-primary hover:opacity-80 transition-opacity"><span className="material-symbols-outlined text-[24px]">play_circle</span></button>
-                <button className="text-secondary hover:text-primary transition-colors"><span className="material-symbols-outlined text-[18px]">fast_forward</span></button>
+                {/* Rewind to start */}
+                <button
+                  title="Rewind to 2020"
+                  onClick={() => { stopPlayback(); setTimeValue(0); }}
+                  className="text-secondary hover:text-primary transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px]">fast_rewind</span>
+                </button>
+
+                {/* Play / Pause */}
+                <button
+                  title={isPlaying ? 'Pause' : 'Play timeline'}
+                  onClick={togglePlayback}
+                  className="text-primary hover:opacity-80 transition-opacity"
+                >
+                  <span className="material-symbols-outlined text-[24px]">
+                    {isPlaying ? 'pause_circle' : 'play_circle'}
+                  </span>
+                </button>
+
+                {/* Fast-forward to end */}
+                <button
+                  title="Jump to 2026"
+                  onClick={() => { stopPlayback(); setTimeValue(100); }}
+                  className="text-secondary hover:text-primary transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px]">fast_forward</span>
+                </button>
               </div>
             </div>
+
             <div className="relative pt-1">
+              {/* Track */}
               <div className="h-1 w-full bg-surface-container rounded-full overflow-hidden relative">
-                <div className="absolute left-0 top-0 h-full time-slider-track" style={{ width: `${timeValue}%` }}></div>
+                <div
+                  className="absolute left-0 top-0 h-full time-slider-track"
+                  style={{ width: `${timeValue}%` }}
+                />
               </div>
+
+              {/* Native range input (invisible, handles interaction) */}
               <input
                 type="range"
-                min="0" max="100"
+                min="0"
+                max="100"
                 value={timeValue}
-                onChange={(e) => setTimeValue(parseInt(e.target.value))}
+                onChange={(e) => {
+                  stopPlayback();
+                  setTimeValue(parseInt(e.target.value));
+                }}
                 className="absolute top-[-5px] left-0 w-full opacity-0 cursor-pointer h-4 z-40"
               />
+
+              {/* Custom thumb */}
               <div
                 className="absolute top-[-5px] w-3.5 h-3.5 bg-primary border-2 border-white rounded-full shadow-md pointer-events-none transition-all"
                 style={{ left: `calc(${timeValue}% - 7px)` }}
-              ></div>
-              <div className="flex justify-between mt-2 px-1">
-                <div className="text-center">
-                  <p className="text-[8px] font-bold text-outline uppercase tracking-widest leading-none">JAN 20</p>
-                </div>
-                <div className="text-center bg-[#c5a059]/10 px-1 py-0.5 rounded-sm">
-                  <p className="text-[9px] text-primary font-bold uppercase tracking-widest leading-none">MAR 24</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[8px] font-bold text-outline uppercase tracking-widest leading-none">DEC 26</p>
-                </div>
+              />
+
+              {/* Year labels */}
+              <div className="flex justify-between mt-3 px-1">
+                {[2020, 2021, 2022, 2023, 2024, 2025, 2026].map((yr) => {
+                  const pct = ((yr - MIN_YEAR) / (MAX_YEAR - MIN_YEAR)) * 100;
+                  const isActive = yr === selectedYear;
+                  return (
+                    <button
+                      key={yr}
+                      title={`Jump to ${yr}`}
+                      onClick={() => { stopPlayback(); setTimeValue(Math.round(pct)); }}
+                      className={`text-center transition-all ${
+                        isActive
+                          ? 'bg-[#c5a059]/10 px-1 py-0.5 rounded-sm'
+                          : 'hover:opacity-70'
+                      }`}
+                    >
+                      <p
+                        className={`text-[8px] font-bold uppercase tracking-widest leading-none ${
+                          isActive ? 'text-primary' : 'text-outline'
+                        }`}
+                      >
+                        {yr}
+                      </p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Map Legend / Controls Bottom Left */}
+        {/* ── Zoom + Layer toggle ── */}
         <div className="absolute bottom-8 left-8 flex flex-col gap-4 z-20">
           <div className="map-overlay-card p-2 flex flex-col gap-2 rounded-lg">
             <button
@@ -269,7 +403,7 @@ function DashboardContent() {
             >
               <span className="material-symbols-outlined text-[20px]">add</span>
             </button>
-            <div className="w-full h-[1px] bg-outline-variant"></div>
+            <div className="w-full h-[1px] bg-outline-variant" />
             <button
               onClick={handleZoomOut}
               className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors"
@@ -278,28 +412,40 @@ function DashboardContent() {
             </button>
           </div>
           <div
-            onClick={() => setActiveLayer(activeLayer === 'SATELLITE (TRUE COLOR)' ? 'VECTOR (TOPOGRAPHIC)' : 'SATELLITE (TRUE COLOR)')}
+            onClick={() =>
+              setActiveLayer((l) =>
+                l === 'SATELLITE (TRUE COLOR)' ? 'VECTOR (TOPOGRAPHIC)' : 'SATELLITE (TRUE COLOR)',
+              )
+            }
             className="map-overlay-card px-4 py-2 flex items-center gap-4 rounded-lg cursor-pointer hover:border-primary transition-colors"
           >
             <span className="material-symbols-outlined text-secondary text-[20px]">layers</span>
-            <div className="h-4 w-[1px] bg-outline-variant"></div>
-            <span className="text-[11px] font-bold text-on-surface uppercase tracking-widest">{activeLayer}</span>
+            <div className="h-4 w-[1px] bg-outline-variant" />
+            <span className="text-[11px] font-bold text-on-surface uppercase tracking-widest">
+              {activeLayer}
+            </span>
           </div>
         </div>
 
-        {/* Coordinate Display Bottom Right */}
+        {/* ── Coordinate display ── */}
         <div className="absolute bottom-8 right-8 z-20">
           <div className="map-overlay-card px-4 py-2 flex gap-8 rounded-lg shadow-sm">
             <div className="flex flex-col min-w-[80px]">
-              <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">Latitude</span>
+              <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">
+                Latitude
+              </span>
               <span className="text-[12px] font-bold text-on-surface tracking-tight">
-                {Math.abs(currentCoords.lat).toFixed(4)}° {currentCoords.lat >= 0 ? 'N' : 'S'}
+                {Math.abs(currentCoords.lat).toFixed(4)}°{' '}
+                {currentCoords.lat >= 0 ? 'N' : 'S'}
               </span>
             </div>
             <div className="flex flex-col min-w-[80px]">
-              <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">Longitude</span>
+              <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">
+                Longitude
+              </span>
               <span className="text-[12px] font-bold text-on-surface tracking-tight">
-                {Math.abs(currentCoords.lng).toFixed(4)}° {currentCoords.lng >= 0 ? 'E' : 'W'}
+                {Math.abs(currentCoords.lng).toFixed(4)}°{' '}
+                {currentCoords.lng >= 0 ? 'E' : 'W'}
               </span>
             </div>
           </div>

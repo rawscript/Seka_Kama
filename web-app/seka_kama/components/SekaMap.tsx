@@ -1,37 +1,66 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import Map, { Source, Layer, MapRef, MapProvider, useMap } from 'react-map-gl/maplibre';
+import { useState, useEffect, useCallback } from 'react';
+import Map, { Source, Layer, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { ShieldCheck, Loader2, Filter, Layers, Info, Zap, Compass, Maximize2, Box } from 'lucide-react';
+import { ShieldCheck, Info } from 'lucide-react';
 import { api } from '@/services/api';
 import { getApiUrl } from '@/services/config';
 import ScenarioDrawer from './ScenarioDrawer';
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function getDirectDriveLink(url: string) {
   if (!url) return '';
   const fileIdMatch = url.match(/[-\w]{25,}/);
-  if (fileIdMatch && fileIdMatch[0]) {
+  if (fileIdMatch?.[0]) {
     const rawUrl = `https://drive.google.com/uc?export=download&id=${fileIdMatch[0]}`;
     return `${getApiUrl()}/proxy-geojson?url=${encodeURIComponent(rawUrl)}`;
   }
   return url;
 }
 
-interface SekaMapProps {
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface SekaMapProps {
   onScenarioRun?: (result: any) => void;
   selectedUnit?: string;
   onUnitChange?: (unit: string) => void;
   onViewStateChange?: (viewState: any) => void;
   activeLayer?: string;
+  /** 0–100 slider value mapped to the data year range (2020–2026) */
+  timeValue?: number;
+  /** Whether the Protected Wildlife Zones layer is visible */
+  showProtectedAreas?: boolean;
+  /** Whether the Land-X Admin Boundary layer is visible */
+  showLandXBoundary?: boolean;
 }
 
-const CONSERVANCY_COORDS: Record<string, { lng: number, lat: number, zoom: number }> = {
-  'Mara North': { lng: 35.034, lat: -1.168, zoom: 11 },
-  'Olare-Motorogi': { lng: 35.138, lat: -1.296, zoom: 11 },
-  'Naboisho': { lng: 35.334, lat: -1.312, zoom: 11 },
-  'Ol Kinyei': { lng: 35.454, lat: -1.332, zoom: 11 },
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const CONSERVANCY_COORDS: Record<string, { lng: number; lat: number; zoom: number }> = {
+  'Mara North':       { lng: 35.034, lat: -1.168, zoom: 11 },
+  'Olare-Motorogi':   { lng: 35.138, lat: -1.296, zoom: 11 },
+  'Naboisho':         { lng: 35.334, lat: -1.312, zoom: 11 },
+  'Ol Kinyei':        { lng: 35.454, lat: -1.332, zoom: 11 },
 };
+
+/** Map a 0–100 slider value to a calendar year in [2020, 2026] */
+function sliderToYear(value: number): number {
+  const MIN_YEAR = 2020;
+  const MAX_YEAR = 2026;
+  return Math.round(MIN_YEAR + (value / 100) * (MAX_YEAR - MIN_YEAR));
+}
+
+// ---------------------------------------------------------------------------
+// Public wrapper (keeps MapProvider-agnostic usage simple)
+// ---------------------------------------------------------------------------
 
 export default function SekaMap(props: SekaMapProps) {
   return (
@@ -41,33 +70,56 @@ export default function SekaMap(props: SekaMapProps) {
   );
 }
 
-function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange, onViewStateChange, activeLayer }: SekaMapProps) {
+// ---------------------------------------------------------------------------
+// Inner component (needs to be inside a MapProvider to use useMap)
+// ---------------------------------------------------------------------------
+
+function SekaMapContent({
+  onScenarioRun,
+  selectedUnit,
+  onUnitChange,
+  onViewStateChange,
+  activeLayer,
+  timeValue = 66,
+  showProtectedAreas = true,
+  showLandXBoundary = false,
+}: SekaMapProps) {
   const { 'main-map': mapMain } = useMap();
   const envLandXUrl = process.env.NEXT_PUBLIC_LANDX_TILE_URL || '';
   const landXSourceUrl = getDirectDriveLink(envLandXUrl);
-  
-  // Choose style based on activeLayer
-  const currentMapStyle: any = activeLayer === 'VECTOR (TOPOGRAPHIC)' 
-    ? 'https://demotiles.maplibre.org/style.json'
-    : {
-        version: 8,
-        sources: {
-          'satellite': {
-            type: 'raster',
-            tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-            tileSize: 256,
-            attribution: 'Esri, Maxar'
-          }
-        },
-        layers: [
-          {
-            id: 'satellite-layer',
-            type: 'raster',
-            source: 'satellite',
-            paint: { 'raster-opacity': 0.85, 'raster-saturation': -0.2, 'raster-contrast': 0.1 }
-          }
-        ]
-      };
+
+  // Derive the selected year from the slider value
+  const selectedYear = sliderToYear(timeValue);
+
+  // Map style switches between satellite and vector topographic
+  const currentMapStyle: any =
+    activeLayer === 'VECTOR (TOPOGRAPHIC)'
+      ? 'https://demotiles.maplibre.org/style.json'
+      : {
+          version: 8,
+          sources: {
+            satellite: {
+              type: 'raster',
+              tiles: [
+                'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+              ],
+              tileSize: 256,
+              attribution: 'Esri, Maxar',
+            },
+          },
+          layers: [
+            {
+              id: 'satellite-layer',
+              type: 'raster',
+              source: 'satellite',
+              paint: {
+                'raster-opacity': 0.85,
+                'raster-saturation': -0.2,
+                'raster-contrast': 0.1,
+              },
+            },
+          ],
+        };
 
   const [loading, setLoading] = useState(true);
   const [baselineData, setBaselineData] = useState<any>(null);
@@ -78,59 +130,67 @@ function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange, onViewState
     latitude: -1.25,
     zoom: 9.2,
     pitch: 45,
-    bearing: -10
+    bearing: -10,
   });
 
-  // Notify parent of initial view state on mount
+  // Notify parent of initial view state once on mount
   useEffect(() => {
-    if (onViewStateChange) {
-      onViewStateChange(viewState);
-    }
+    onViewStateChange?.(viewState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally runs once on mount only
+  }, []);
 
-  const handleMove = useCallback((evt: any) => {
-    setViewState(evt.viewState);
-    if (onViewStateChange) {
-      onViewStateChange(evt.viewState);
-    }
-  }, [onViewStateChange]);
+  const handleMove = useCallback(
+    (evt: any) => {
+      setViewState(evt.viewState);
+      onViewStateChange?.(evt.viewState);
+    },
+    [onViewStateChange],
+  );
 
+  // ---------------------------------------------------------------------------
+  // Data loading — re-fetches when selectedUnit or selectedYear changes
+  // ---------------------------------------------------------------------------
   const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       const [baseline, protected_areas] = await Promise.all([
         api.getBaseline(selectedUnit || undefined),
-        api.getProtectedAreas()
+        api.getProtectedAreas(),
       ]);
-      setBaselineData(baseline);
+
+      // Filter baseline features to the selected year when the data carries a
+      // `year` property (historical snapshots). If no year property exists the
+      // full dataset is shown unchanged so the map still works without temporal data.
+      const filtered = filterByYear(baseline, selectedYear);
+
+      setBaselineData(filtered);
       setProtectedData(protected_areas);
-      setLoading(false);
     } catch (error) {
-      console.error("Failed to load map data:", error);
+      console.error('Failed to load map data:', error);
+    } finally {
       setLoading(false);
     }
-  }, [selectedUnit]);
+  }, [selectedUnit, selectedYear]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Handle Conservancy Navigation
+  // ---------------------------------------------------------------------------
+  // Conservancy fly-to
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (selectedUnit && CONSERVANCY_COORDS[selectedUnit] && mapMain) {
       const { lng, lat, zoom } = CONSERVANCY_COORDS[selectedUnit];
-      mapMain.flyTo({
-        center: [lng, lat],
-        zoom: zoom,
-        duration: 3000,
-        essential: true,
-        pitch: 50
-      });
+      mapMain.flyTo({ center: [lng, lat], zoom, duration: 3000, essential: true, pitch: 50 });
     }
   }, [selectedUnit, mapMain]);
 
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
   return (
-    <div className="w-full h-full relative group">
+    <div className="w-full h-full relative">
       <Map
         {...viewState}
         onMove={handleMove}
@@ -141,46 +201,46 @@ function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange, onViewState
       >
         {isStyleLoaded && (
           <>
-            {/* Land-X Layer (Boundaries) */}
+            {/* Land-X Admin Boundary — visibility controlled by prop */}
             {landXSourceUrl && (
               <Source id="landx-boundaries" type="geojson" data={landXSourceUrl}>
                 <Layer
                   id="landx-line"
                   type="line"
+                  layout={{ visibility: showLandXBoundary ? 'visible' : 'none' }}
                   paint={{
-                    'line-color': '#10b981',
+                    'line-color': '#e9c176',
                     'line-width': 2,
-                    'line-opacity': 0.8,
-                    'line-dasharray': [2, 1]
+                    'line-opacity': 0.85,
+                    'line-dasharray': [2, 1],
                   }}
                 />
                 <Layer
                   id="landx-fill"
                   type="fill"
-                  paint={{
-                    'fill-color': '#10b981',
-                    'fill-opacity': 0.03
-                  }}
+                  layout={{ visibility: showLandXBoundary ? 'visible' : 'none' }}
+                  paint={{ 'fill-color': '#e9c176', 'fill-opacity': 0.04 }}
                 />
               </Source>
             )}
 
-            {/* Protected Areas Layer */}
+            {/* Protected Areas — visibility controlled by prop */}
             {protectedData && (
               <Source id="protected-areas" type="geojson" data={protectedData}>
                 <Layer
                   id="protected-areas-fill"
                   type="fill"
+                  layout={{ visibility: showProtectedAreas ? 'visible' : 'none' }}
                   paint={{
                     'fill-color': '#059669',
                     'fill-opacity': 0.3,
-                    'fill-outline-color': '#10b981'
+                    'fill-outline-color': '#10b981',
                   }}
                 />
               </Source>
             )}
 
-            {/* AI Density Grid Layer */}
+            {/* Lion Density Grid — always visible, filtered by year */}
             {baselineData && (
               <Source id="lion-density" type="geojson" data={baselineData}>
                 <Layer
@@ -189,19 +249,19 @@ function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange, onViewState
                   paint={{
                     'circle-radius': [
                       'interpolate', ['linear'], ['zoom'],
-                      8, ['interpolate', ['linear'], ['coalesce', ['get', 'lion_density'], 0], 0, 1.5, 30, 10],
-                      12, ['interpolate', ['linear'], ['coalesce', ['get', 'lion_density'], 0], 0, 4, 30, 30]
+                      8,  ['interpolate', ['linear'], ['coalesce', ['get', 'lion_density'], 0], 0, 1.5, 30, 10],
+                      12, ['interpolate', ['linear'], ['coalesce', ['get', 'lion_density'], 0], 0, 4,   30, 30],
                     ],
                     'circle-color': [
                       'interpolate', ['linear'], ['coalesce', ['get', 'lion_density'], 0],
-                      0, '#fef3c7',
-                      5, '#fbbf24',
+                      0,  '#fef3c7',
+                      5,  '#fbbf24',
                       15, '#f59e0b',
-                      30, '#d97706'
+                      30, '#d97706',
                     ],
                     'circle-opacity': 0.9,
                     'circle-stroke-width': 1,
-                    'circle-stroke-color': 'rgba(255,255,255,0.1)'
+                    'circle-stroke-color': 'rgba(255,255,255,0.1)',
                   }}
                 />
               </Source>
@@ -209,36 +269,111 @@ function SekaMapContent({ onScenarioRun, selectedUnit, onUnitChange, onViewState
           </>
         )}
 
-        <ScenarioDrawer 
-          onScenarioRun={onScenarioRun || (() => {})} 
+        <ScenarioDrawer
+          onScenarioRun={onScenarioRun ?? (() => {})}
           selectedUnit={selectedUnit}
         />
       </Map>
 
-      {/* Modern Loader Overlay */}
-      {loading && (
-        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617]/90 backdrop-blur-xl animate-in fade-in duration-500">
-          <div className="relative w-24 h-24 flex items-center justify-center">
-             <div className="absolute inset-0 rounded-full border-4 border-emerald-500/10 border-t-emerald-500 animate-spin" />
-             <div className="absolute inset-4 rounded-full border-4 border-emerald-500/5 border-b-teal-500 animate-spin" style={{ animationDirection: 'reverse' }} />
-             <ShieldCheck className="w-8 h-8 text-emerald-500 animate-pulse" />
-          </div>
-          <div className="mt-8 text-center space-y-2">
-            <h2 className="text-sm font-bold text-white uppercase tracking-[0.3em] mb-0 leading-none">Initializing Hub</h2>
-            <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">Connecting to SekaNet Oracle v4.2</p>
+      {/* Year badge — shown when temporal filtering is active */}
+      {!loading && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 12,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 20,
+            pointerEvents: 'none',
+          }}
+        >
+          <div
+            style={{
+              padding: '4px 14px',
+              background: 'rgba(17,24,39,0.85)',
+              border: '1px solid rgba(16,185,129,0.3)',
+              borderRadius: '20px',
+              fontSize: '11px',
+              fontWeight: 700,
+              color: '#10b981',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            {selectedYear} snapshot
           </div>
         </div>
       )}
 
-      <style dangerouslySetInnerHTML={{ __html: `
-        .maplibregl-ctrl-attrib { display: none !important; }
-        .maplibregl-canvas { outline: none !important; }
-      ` }} />
+      {/* Loading overlay */}
+      {loading && (
+        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617]/90 backdrop-blur-xl animate-in fade-in duration-500">
+          <div className="relative w-24 h-24 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-4 border-emerald-500/10 border-t-emerald-500 animate-spin" />
+            <div
+              className="absolute inset-4 rounded-full border-4 border-emerald-500/5 border-b-teal-500 animate-spin"
+              style={{ animationDirection: 'reverse' }}
+            />
+            <ShieldCheck className="w-8 h-8 text-emerald-500 animate-pulse" />
+          </div>
+          <div className="mt-8 text-center space-y-2">
+            <h2 className="text-sm font-bold text-white uppercase tracking-[0.3em] leading-none">
+              {selectedYear !== sliderToYear(66) ? `Loading ${selectedYear} data…` : 'Initializing Hub'}
+            </h2>
+            <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">
+              Connecting to SekaNet Oracle v4.2
+            </p>
+          </div>
+        </div>
+      )}
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .maplibregl-ctrl-attrib { display: none !important; }
+          .maplibregl-canvas { outline: none !important; }
+        `,
+      }} />
     </div>
   );
 }
 
-function LegendItem({ color, label, opacity = 1, bordered = false }: { color: string; label: string; opacity?: number; bordered?: boolean }) {
+// ---------------------------------------------------------------------------
+// Utility — filter a GeoJSON FeatureCollection by year property
+// ---------------------------------------------------------------------------
+
+function filterByYear(geojson: any, year: number): any {
+  if (!geojson?.features) return geojson;
+
+  // If none of the features carry a `year` property, return as-is
+  const hasYearProp = geojson.features.some(
+    (f: any) => f.properties?.year != null,
+  );
+  if (!hasYearProp) return geojson;
+
+  // Keep features whose year matches, or features with no year (always shown)
+  const filtered = geojson.features.filter(
+    (f: any) => f.properties?.year == null || f.properties.year === year,
+  );
+
+  return { ...geojson, features: filtered };
+}
+
+// ---------------------------------------------------------------------------
+// LegendItem (used by dashboard overlay)
+// ---------------------------------------------------------------------------
+
+export function LegendItem({
+  color,
+  label,
+  opacity = 1,
+  bordered = false,
+}: {
+  color: string;
+  label: string;
+  opacity?: number;
+  bordered?: boolean;
+}) {
   return (
     <div className="flex items-center gap-3">
       <div
