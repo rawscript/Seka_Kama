@@ -59,6 +59,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
 security = HTTPBearer()
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 class Token(BaseModel):
     access_token: str
