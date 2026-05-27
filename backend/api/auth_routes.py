@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 from core.database import get_supabase_client
 from core.auth import (
     verify_password, get_password_hash, create_access_token,
-    get_current_user, require_admin,
+    get_current_user, require_admin, revoke_token, get_raw_token,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
     UserCreate, UserLogin, Token, UserResponse, TokenData
 )
 
@@ -111,7 +112,7 @@ async def login(user: UserLogin):
         return Token(
             access_token=access_token,
             token_type="bearer",
-            expires_in=60 * 24
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60  # seconds, per OAuth2 spec
         )
     except HTTPException:
         raise
@@ -161,7 +162,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         return Token(
             access_token=access_token,
             token_type="bearer",
-            expires_in=60 * 24
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60  # seconds, per OAuth2 spec
         )
     except HTTPException:
         raise
@@ -172,7 +173,13 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         )
 
 @router.post("/logout")
-async def logout(current_user: TokenData = Depends(get_current_user)):
+async def logout(
+    current_user: TokenData = Depends(get_current_user),
+    raw_token: str | None = Depends(get_raw_token),
+):
+    """Invalidate the current JWT for this process instance."""
+    if raw_token:
+        revoke_token(raw_token)
     return JSONResponse(content={"message": "Successfully logged out"})
 
 @router.get("/me", response_model=UserResponse)

@@ -309,6 +309,7 @@ class SupabaseService:
             result = self.client.table("api_keys")\
                 .select("*")\
                 .eq("user_id", user_id)\
+                .eq("is_active", True)\
                 .order("created_at", desc=True)\
                 .execute()
             return result.data
@@ -316,7 +317,7 @@ class SupabaseService:
             error_msg = str(e).lower()
             if "api_keys" in error_msg and ("not exist" in error_msg or "42p01" in error_msg):
                 logger.error(f"Table 'api_keys' missing while listing for user {user_id}")
-                return [] # Return empty list if table missing, middleware will handle creation elsewhere or bootstrap needed
+                return []
             raise e
         
     def create_api_key(self, user_id: int, name: str, key_hash: str, prefix: str) -> Dict[str, Any]:
@@ -334,49 +335,48 @@ class SupabaseService:
         }
 
         try:
-            # We use select() to get the object back. 
-            # If RLS filters it, result.data may be empty even on success.
             result = self.client.table("api_keys").insert(key_data).select().execute()
-            
+
             if result.data:
                 logger.info(f"API key '{name}' created successfully for user {user_id}")
                 return result.data[0]
-            
-            # --- TACKLE: RLS ghost recovery ---
-            # If no data was returned but no exception was raised, the row was likely 
-            # inserted but hidden by an RLS SELECT policy. We tackle this by attempting 
-            # a targeted fetch by the unique key_hash.
-            logger.warning(f"Insert returned no data for user {user_id}. Attempting targeted recovery...")
+
+            # Insert returned no data — likely RLS is hiding the row on SELECT.
+            # Attempt a targeted recovery fetch by the unique key_hash.
+            logger.warning(
+                f"Insert returned no data for user {user_id}. Attempting RLS recovery fetch..."
+            )
             recovery = self.client.table("api_keys").select("*").eq("key_hash", key_hash).execute()
-            
+
             if recovery.data:
                 return recovery.data[0]
-                
-            # If still nothing, it's a critical logic or policy failure.
+
             raise RuntimeError(
                 "API key created but inaccessible due to Row-Level Security (RLS). "
                 "Ensure that the service role key bypasses RLS or add a SELECT policy for 'api_keys'."
             )
 
+        except RuntimeError:
+            # Re-raise our own descriptive errors without wrapping them again.
+            raise
         except Exception as e:
             error_msg = str(e).lower()
-            
-            # --- TACKLE: Catch common environment/db setup errors directly ---
+
             if "api_keys" in error_msg and ("not exist" in error_msg or "42p01" in error_msg):
                 raise RuntimeError(
                     "DATABASE_SCHEMA_ERROR: The 'api_keys' table is missing. "
                     "Please execute the SQL bootstrap script located at 'backend/sql/bootstrap.sql' "
                     "in your Supabase SQL editor to set up the required tables and functions."
                 ) from e
-            
+
             if "42501" in error_msg or "rls" in error_msg or "permission denied" in error_msg:
-                 raise RuntimeError(
+                raise RuntimeError(
                     "DATABASE_POLICY_ERROR: Row-Level Security or permissions are blocking API key creation. "
                     "Ensure you are using the SERVICE_ROLE_KEY and it has sufficient permissions."
                 ) from e
-                
+
             logger.error(f"Unhandled error in create_api_key for user {user_id}: {e}")
-            raise e
+            raise
         
     def revoke_api_key(self, user_id: int, key_id: int) -> bool:
         """
@@ -404,12 +404,16 @@ class SupabaseService:
     def update_key_last_used(self, key_id: int) -> None:
         """
         Update the last_used timestamp for an API key.
+        Errors are logged but not re-raised — this is a best-effort operation.
         """
         from datetime import datetime, timezone
-        self.client.table("api_keys")\
-            .update({"last_used": datetime.now(timezone.utc).isoformat()})\
-            .eq("id", key_id)\
-            .execute()
+        try:
+            self.client.table("api_keys")\
+                .update({"last_used": datetime.now(timezone.utc).isoformat()})\
+                .eq("id", key_id)\
+                .execute()
+        except Exception as e:
+            logger.warning(f"Failed to update last_used for key {key_id}: {e}")
 
 # ========== Database Functions for RPC (Run in Supabase SQL Editor) ==========
 

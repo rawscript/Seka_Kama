@@ -3,8 +3,10 @@ from typing import Optional
 from jose import JWTError, ExpiredSignatureError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
 from pydantic import BaseModel, field_validator
+import asyncio
+import hashlib
 import logging
 import os
 
@@ -148,12 +150,15 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-import hashlib
-from fastapi.security import APIKeyHeader
 from core.database import get_db, SupabaseService
 
-# API Key configuration
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+# In-memory revoked token set (process-scoped; sufficient for single-instance deployments).
+# For multi-instance deployments, replace with a shared Redis/DB-backed store.
+_revoked_tokens: set[str] = set()
+
+def revoke_token(token: str) -> None:
+    """Mark a JWT as revoked for the lifetime of this process."""
+    _revoked_tokens.add(token)
 
 async def get_api_key(
     api_key: Optional[str] = Depends(api_key_header),
@@ -162,28 +167,31 @@ async def get_api_key(
     """
     Validate an API key from the X-API-Key header.
     If valid, returns TokenData for the owner of the key.
+    The last_used update is fire-and-forget to avoid blocking the request.
     """
     if not api_key:
         return None
-        
+
     try:
         # Hash the provided key to match stored hash
         key_hash = hashlib.sha256(api_key.encode()).hexdigest()
-        
+
         # Verify in database
         key_record = db.verify_api_key(key_hash)
-        
+
         if not key_record:
             return None
-            
-        # Update last_used in background
-        db.update_key_last_used(key_record["id"])
-        
+
+        # Update last_used asynchronously (best-effort; don't block the request)
+        asyncio.get_event_loop().run_in_executor(
+            None, db.update_key_last_used, key_record["id"]
+        )
+
         # User details are nested because of users!inner(*)
         user = key_record.get("users")
         if not user:
             return None
-            
+
         return TokenData(
             email=user["email"],
             user_id=user["id"],
@@ -200,50 +208,60 @@ async def get_current_user(
     """
     Unified authentication dependency.
     Supports both JWT (Bearer) and API Key (X-API-Key header).
+    JWT takes priority when both are present so that user-context operations
+    (e.g. key management) always run under the authenticated user's identity.
     """
-    # 1. Try API Key first (higher priority for programmatic access)
+    # 1. Try JWT first when a Bearer token is present
+    if credentials:
+        token = credentials.credentials
+
+        # Reject explicitly revoked tokens
+        if token in _revoked_tokens:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        except ExpiredSignatureError:
+            logger.warning("Expired token presented")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        except JWTError as e:
+            logger.warning(f"JWT validation failed: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        email: str = payload.get("sub")
+        user_id: int = payload.get("user_id")
+        role: str = payload.get("role", "analyst")
+
+        if not email or user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        return TokenData(email=email, user_id=user_id, role=role)
+
+    # 2. Fallback to API Key
     if api_key_data:
         return api_key_data
-        
-    # 2. Fallback to JWT
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required (Bearer token or X-API-Key)",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        
-    token = credentials.credentials
 
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except ExpiredSignatureError:
-        logger.warning(f"Token expired: {token[:10]}...")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    except JWTError as e:
-        logger.warning(f"JWT validation failed: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    email: str = payload.get("sub")
-    user_id: int = payload.get("user_id")
-    role: str = payload.get("role", "analyst")
-
-    if not email or user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return TokenData(email=email, user_id=user_id, role=role)
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required (Bearer token or X-API-Key)",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 async def require_admin(current_user: TokenData = Depends(get_current_user)) -> TokenData:
@@ -257,3 +275,10 @@ async def require_admin(current_user: TokenData = Depends(get_current_user)) -> 
             detail="Admin privileges required",
         )
     return current_user
+
+
+def get_raw_token(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> Optional[str]:
+    """Extract the raw JWT string from the Authorization header (best-effort)."""
+    return credentials.credentials if credentials else None

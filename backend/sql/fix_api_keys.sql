@@ -18,10 +18,12 @@ CREATE TABLE IF NOT EXISTS public.users (
 -- Ensure RLS is enabled on users
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
--- Policy: Service role or admin can do anything on users
+-- Policy: Service role can do anything on users
 DROP POLICY IF EXISTS "Enable all access for service role on users" ON public.users;
 CREATE POLICY "Enable all access for service role on users" ON public.users
-    FOR ALL USING (true) WITH CHECK (true);
+    FOR ALL
+    TO service_role
+    USING (true) WITH CHECK (true);
 
 -- Policy: Users can view their own profile
 DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
@@ -73,10 +75,10 @@ CREATE POLICY "Users can view own API keys" ON public.api_keys
         ))
     );
 
--- Policy: Service role or admin can do anything
--- This helps if the service role key is being used in a way that doesn't automatically bypass RLS
+-- Policy: Service role bypasses RLS entirely (scoped to service_role only)
 CREATE POLICY "Enable all access for service role" ON public.api_keys
-    FOR ALL 
+    FOR ALL
+    TO service_role
     USING (true)
     WITH CHECK (true);
 

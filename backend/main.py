@@ -6,6 +6,7 @@ import joblib
 import os
 import json
 import re
+import urllib.parse
 
 from api.routes import router
 from api.auth_routes import router as auth_router
@@ -91,10 +92,48 @@ app.add_middleware(
 )
 
 
+# Allowlist of trusted domains for the GeoJSON proxy.
+# Only requests to these hosts will be forwarded.
+_PROXY_ALLOWED_HOSTS = {
+    "drive.google.com",
+    "docs.google.com",
+    "raw.githubusercontent.com",
+    "github.com",
+    "storage.googleapis.com",
+    "opendata.arcgis.com",
+    "geojson.io",
+}
+
+def _validate_proxy_url(url: str) -> None:
+    """
+    Raise HTTPException if the URL is not from a trusted host.
+    Prevents SSRF attacks against internal services.
+    """
+    try:
+        parsed = urllib.parse.urlparse(url)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid URL")
+
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(status_code=400, detail="Only http/https URLs are allowed")
+
+    host = parsed.hostname or ""
+    # Allow exact match or subdomain of an allowed host
+    if not any(host == h or host.endswith(f".{h}") for h in _PROXY_ALLOWED_HOSTS):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Host '{host}' is not in the proxy allowlist. "
+                   "Contact the administrator to add trusted GeoJSON sources."
+        )
+
+
 @app.get("/api/proxy-geojson")
 async def proxy_geojson(url: str):
     """Proxy for external GeoJSON files with robust error handling"""
     import httpx
+
+    _validate_proxy_url(url)
+
     try:
         async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.get(url, timeout=20.0)
@@ -120,18 +159,19 @@ async def proxy_geojson(url: str):
                     if match:
                         confirm_token = match.group(1)
                         new_url = f"{url}&confirm={confirm_token}"
+                        _validate_proxy_url(new_url)
                         response = await client.get(new_url, timeout=20.0)
 
-                
             try:
                 data = response.json()
                 return data
             except Exception:
-                # If it's still not JSON, it might be a binary file or error page
                 raise HTTPException(
                     status_code=400, 
                     detail="External source returned non-JSON data. Ensure the URL points to a raw GeoJSON file."
                 )
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Proxy error for {url}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Proxy error: {str(e)}")
