@@ -210,7 +210,13 @@ def _build_narrative_prompt(
     )
 
     # Determine direction explicitly for LLM context
-    direction = "INCREASE" if delta >= 0 else "DECREASE"
+    # Handle zero change as neutral
+    if delta == 0 and delta_pct == 0:
+        direction = "NO CHANGE"
+    elif delta >= 0:
+        direction = "INCREASE"
+    else:
+        direction = "DECREASE"
     abs_delta = abs(delta)
     abs_delta_pct = abs(delta_pct)
 
@@ -258,7 +264,7 @@ Include:
 
 Be professional, concise, and free of unexplained jargon.
 Do NOT invent data not provided above.
-MUST use words like "{'will increase' if delta >= 0 else 'will decrease'}" consistently."""
+MUST use words like "{'will increase' if delta > 0 else 'will decrease' if delta < 0 else 'remains stable'}" consistently."""
 
 
 def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:
@@ -323,22 +329,46 @@ def _fallback_narrative(scenario_request: Any, results: Dict) -> str:
     delta_pct = results.get("delta_percent_total", 0) or 0
     units     = list((results.get("unit_aggregation") or {}).keys())
 
-    direction    = "increase" if delta >= 0 else "decrease"
-    significance = (
-        "significant" if abs(delta_pct) > 5 else "minor"
-    )
+    # Handle zero change as neutral, not increase
+    if delta == 0 and delta_pct == 0:
+        direction = "no change"
+        significance = "stable"
+    else:
+        direction = "increase" if delta > 0 else "decrease"
+        significance = (
+            "significant" if abs(delta_pct) > 5 else "minor"
+        )
     # Filter out any None values from the units list to prevent join errors
     units = [u for u in units if u is not None]
     unit_str = ", ".join(units[:3]) if units else "the selected area"
 
     # Generate directionally-appropriate mitigation text
-    mitigation_text = (
-        "consider mitigating artificial light through shielded fixtures or seasonal "
-        "lighting restrictions in the affected area"
-        if delta < 0
-        else "capitalize on this opportunity by implementing enhanced protection measures "
-        "and ensuring adequate habitat connectivity for lions in the affected conservancies"
-    )
+    if delta < 0:
+        mitigation_text = (
+            "consider mitigating artificial light through shielded fixtures or seasonal "
+            "lighting restrictions in the affected area"
+        )
+    elif delta > 0:
+        mitigation_text = (
+            "capitalize on this opportunity by implementing enhanced protection measures "
+            "and ensuring adequate habitat connectivity for lions in the affected conservancies"
+        )
+    else:
+        mitigation_text = (
+            "maintain current conservation practices and monitor for any future changes "
+            "in land use patterns that could impact lion habitat"
+        )
+
+    if direction == "no change":
+        return (
+            f"The proposed scenario predicts no change in lion abundance "
+            f"({abs(delta):.1f} lions, {abs(delta_pct):.1f}% change) across the Seka Kama landscape. "
+            f"The most affected conservancies are: {unit_str}. "
+            f"Based on SekaNet's sensitivity to nightlight trends (longterm_slope_mean), "
+            f"{mitigation_text}. "
+            f"*Model accuracy is approximately ±15% for large predicted changes — "
+            f"field surveys are advised before acting on this output.*"
+        )
 
     return (
         f"The proposed scenario predicts a {significance} {direction} of "
