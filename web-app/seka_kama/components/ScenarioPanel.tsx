@@ -1,7 +1,7 @@
 // web-app/seka_kama/components/ScenarioPanel.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/services/api';
 
 interface Scenario {
@@ -12,20 +12,25 @@ interface Scenario {
   predicted_lion_delta?: number;
   affected_cells?: number;
   llm_narrative?: string;
-  // API response fields from ScenarioResponse
   delta_lions?: number;
   delta_percent?: number;
   predicted_total_lions?: number;
   baseline_total_lions?: number;
   affected_units?: Record<string, number>;
-  request_data?: any;
+  request_data?: {
+    geometry?: any;
+    feature_modifications?: Record<string, number>;
+    management_units?: string[];
+    user_query?: string;
+  };
 }
 
 interface ScenarioPanelProps {
-  onScenarioSelect: (scenario: Scenario) => void;
+  /** Called when user clicks "Load & Re-run". Receives the re-run API result. */
+  onScenarioSelect: (result: any) => void;
 }
 
-// ── Icons as inline SVG components ─────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────────────────
 
 const CalendarIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -51,6 +56,13 @@ const PlayIcon = () => (
   </svg>
 );
 
+const RefreshIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+  </svg>
+);
+
 const AlertIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
@@ -66,20 +78,16 @@ const SpinnerIcon = () => (
   </svg>
 );
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  } catch {
-    return '—';
-  }
+  } catch { return '—'; }
 }
 
 function getDelta(s: Scenario): number | null {
-  if (s.predicted_lion_delta != null) return s.predicted_lion_delta;
-  if (s.delta_lions != null) return s.delta_lions;
-  return null;
+  return s.predicted_lion_delta ?? s.delta_lions ?? null;
 }
 
 function getNarrative(s: Scenario): string {
@@ -95,47 +103,92 @@ function getFeatureKeys(s: Scenario): string[] {
   return Object.keys(src).slice(0, 3);
 }
 
-function getAffectedCells(s: Scenario): number | null {
-  if (s.affected_cells != null) return s.affected_cells;
-  return null;
-}
-
-// ── Main component ────────────────────────────────────────────────────────
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  /** Tracks which scenario is currently being re-run */
+  const [rerunningId, setRerunningId] = useState<number | null>(null);
+  const [rerunError, setRerunError] = useState<{ id: number; msg: string } | null>(null);
 
-  useEffect(() => {
-    const loadScenarios = async () => {
-      try {
-        const data = await api.getScenarioHistory(50);
-        const list = Array.isArray(data) ? data : (data as any).scenarios ?? [];
-        setScenarios(list);
-      } catch (err: any) {
-        const msg = err?.message?.includes('404')
-          ? 'No scenario history found. Run your first simulation on the Spatial Analysis tab.'
-          : 'Could not reach the backend. Check your connection or API URL.';
-        setError(msg);
-        setScenarios([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadScenarios();
+  const loadScenarios = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.getScenarioHistory(50);
+      // Backend returns { scenarios: [...], count: n }
+      const list = Array.isArray(data) ? data : (data as any).scenarios ?? [];
+      setScenarios(list);
+    } catch (err: any) {
+      const msg = err?.message?.includes('404')
+        ? 'No scenario history found. Run your first simulation on the Spatial Analysis tab.'
+        : `Could not load history: ${err?.message ?? 'Unknown error'}`;
+      setError(msg);
+      setScenarios([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadScenarios(); }, [loadScenarios]);
+
+  /**
+   * Re-run a past scenario by extracting its original geometry and
+   * feature modifications from request_data and calling the API again.
+   * Falls back to showing the stored result if the geometry is missing.
+   */
+  const handleRerun = useCallback(async (scenario: Scenario) => {
+    const geometry = scenario.request_data?.geometry;
+    const featureMods =
+      scenario.request_data?.feature_modifications ??
+      scenario.modified_features ??
+      {};
+
+    // If no geometry was stored, fall back to showing the cached result
+    if (!geometry) {
+      onScenarioSelect(scenario);
+      return;
+    }
+
+    setRerunningId(scenario.scenario_id);
+    setRerunError(null);
+
+    try {
+      const result = await api.runScenario({
+        geometry,
+        feature_modifications: featureMods,
+        management_units: scenario.request_data?.management_units,
+        user_query: scenario.request_data?.user_query,
+      });
+      onScenarioSelect(result);
+    } catch (err: any) {
+      setRerunError({
+        id: scenario.scenario_id,
+        msg: err?.message ?? 'Re-run failed',
+      });
+    } finally {
+      setRerunningId(null);
+    }
+  }, [onScenarioSelect]);
+
+  // ── Loading state ─────────────────────────────────────────────────────────
 
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#0b0f1a', gap: '14px' }}>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         <SpinnerIcon />
-        <p style={{ fontSize: '12px', color: '#475569', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Loading Scenario History</p>
+        <p style={{ fontSize: '12px', color: '#475569', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          Loading Scenario History
+        </p>
       </div>
     );
   }
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ padding: '28px 32px', background: '#0b0f1a', minHeight: '100%' }}>
@@ -143,15 +196,36 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
         @keyframes spin { to { transform: rotate(360deg); } }
         .scenario-card:hover { border-color: rgba(16,185,129,0.2) !important; background: rgba(20,24,36,0.9) !important; }
         .load-btn:hover { background: rgba(16,185,129,0.2) !important; color: #10b981 !important; }
+        .load-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .expand-link:hover { color: #10b981 !important; }
       `}</style>
 
       {/* Header */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.4px' }}>Scenario History</h1>
-        <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#475569' }}>
-          Review and reload past ecosystem simulations
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.4px' }}>
+            Scenario History
+          </h1>
+          <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#475569' }}>
+            Review and re-run past ecosystem simulations
+          </p>
+        </div>
+        <button
+          onClick={loadScenarios}
+          title="Refresh"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '5px',
+            padding: '6px 12px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '8px',
+            color: '#475569',
+            fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          <RefreshIcon /> Refresh
+        </button>
       </div>
 
       {/* Error / info banner */}
@@ -171,21 +245,9 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
       {scenarios.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
           {[
-            {
-              label: 'Total Scenarios',
-              value: scenarios.length,
-              color: '#10b981',
-            },
-            {
-              label: 'Negative Impact',
-              value: scenarios.filter(s => (getDelta(s) ?? 0) < 0).length,
-              color: '#f87171',
-            },
-            {
-              label: 'Positive Impact',
-              value: scenarios.filter(s => (getDelta(s) ?? 0) > 0).length,
-              color: '#34d399',
-            },
+            { label: 'Total Scenarios', value: scenarios.length, color: '#10b981' },
+            { label: 'Negative Impact', value: scenarios.filter(s => (getDelta(s) ?? 0) < 0).length, color: '#f87171' },
+            { label: 'Positive Impact', value: scenarios.filter(s => (getDelta(s) ?? 0) > 0).length, color: '#34d399' },
           ].map(stat => (
             <div key={stat.label} style={{
               padding: '14px 16px',
@@ -193,8 +255,12 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
               border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: '10px',
             }}>
-              <div style={{ fontSize: '22px', fontWeight: 700, color: stat.color, fontVariantNumeric: 'tabular-nums' }}>{stat.value}</div>
-              <div style={{ fontSize: '11px', color: '#475569', fontWeight: 500, marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stat.label}</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: stat.color, fontVariantNumeric: 'tabular-nums' }}>
+                {stat.value}
+              </div>
+              <div style={{ fontSize: '11px', color: '#475569', fontWeight: 500, marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {stat.label}
+              </div>
             </div>
           ))}
         </div>
@@ -208,7 +274,10 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
           const isExpanded = expandedId === scenario.scenario_id;
           const narrative = getNarrative(scenario);
           const features = getFeatureKeys(scenario);
-          const cells = getAffectedCells(scenario);
+          const cells = scenario.affected_cells;
+          const isRerunning = rerunningId === scenario.scenario_id;
+          const thisRerunError = rerunError?.id === scenario.scenario_id ? rerunError.msg : null;
+          const hasGeometry = !!scenario.request_data?.geometry;
 
           return (
             <div
@@ -219,21 +288,17 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
                 border: '1px solid rgba(255,255,255,0.06)',
                 borderRadius: '12px',
                 padding: '18px 20px',
-                cursor: 'default',
                 transition: 'border-color 0.2s, background 0.2s',
               }}
             >
               {/* Card Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span style={{
-                      fontSize: '11px', fontWeight: 700, color: '#475569',
-                      fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em',
-                    }}>#{scenario.scenario_id.toString().padStart(3, '0')}</span>
-                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em' }}>
+                    #{scenario.scenario_id.toString().padStart(3, '0')}
+                  </span>
                   <h3 style={{
-                    margin: 0,
+                    margin: '4px 0 0',
                     fontSize: '14px', fontWeight: 600, color: '#e2e8f0',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>
@@ -241,7 +306,6 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
                   </h3>
                 </div>
 
-                {/* Delta Badge */}
                 {delta != null && (
                   <div style={{
                     flexShrink: 0,
@@ -275,7 +339,7 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
                 )}
               </div>
 
-              {/* Narrative section */}
+              {/* Narrative */}
               {narrative && (
                 <div style={{
                   marginTop: '14px',
@@ -299,12 +363,10 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
                       className="expand-link"
                       onClick={() => setExpandedId(isExpanded ? null : scenario.scenario_id)}
                       style={{
-                        display: 'inline-block',
-                        marginTop: '6px',
+                        display: 'inline-block', marginTop: '6px',
                         background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                         fontSize: '11.5px', fontWeight: 600, color: '#475569',
-                        transition: 'color 0.15s',
-                        fontFamily: 'inherit',
+                        transition: 'color 0.15s', fontFamily: 'inherit',
                       }}
                     >
                       {isExpanded ? 'Show less' : 'Read more'}
@@ -313,11 +375,26 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
                 </div>
               )}
 
-              {/* Actions row */}
-              <div style={{ marginTop: '14px', display: 'flex', gap: '8px' }}>
+              {/* Re-run error */}
+              {thisRerunError && (
+                <div style={{
+                  marginTop: '10px', padding: '8px 12px',
+                  background: 'rgba(248,113,113,0.07)',
+                  border: '1px solid rgba(248,113,113,0.2)',
+                  borderRadius: '8px',
+                  fontSize: '11.5px', color: '#f87171',
+                }}>
+                  Re-run failed: {thisRerunError}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{ marginTop: '14px', display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button
                   className="load-btn"
-                  onClick={() => onScenarioSelect(scenario)}
+                  onClick={() => handleRerun(scenario)}
+                  disabled={isRerunning}
+                  title={hasGeometry ? 'Re-run this simulation with the original geometry' : 'Show stored result (geometry not saved)'}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '6px',
                     padding: '7px 14px',
@@ -325,13 +402,33 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
                     border: '1px solid rgba(16,185,129,0.2)',
                     borderRadius: '8px',
                     color: '#6ee7b7',
-                    fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                    fontSize: '12px', fontWeight: 600, cursor: isRerunning ? 'not-allowed' : 'pointer',
                     transition: 'all 0.15s ease',
                     fontFamily: 'inherit',
+                    opacity: isRerunning ? 0.6 : 1,
                   }}
                 >
-                  <PlayIcon /> Load & Re-run
+                  {isRerunning ? (
+                    <>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
+                        <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                        <path d="M12 2a10 10 0 0 1 10 10" />
+                      </svg>
+                      Running…
+                    </>
+                  ) : (
+                    <>
+                      {hasGeometry ? <PlayIcon /> : <PlayIcon />}
+                      {hasGeometry ? 'Re-run Simulation' : 'Load Result'}
+                    </>
+                  )}
                 </button>
+
+                {!hasGeometry && (
+                  <span style={{ fontSize: '10px', color: '#334155', fontStyle: 'italic' }}>
+                    Geometry not stored — shows cached result
+                  </span>
+                )}
               </div>
             </div>
           );
@@ -339,7 +436,7 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
       </div>
 
       {/* Empty state */}
-      {scenarios.length === 0 && (
+      {scenarios.length === 0 && !error && (
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           padding: '80px 40px', textAlign: 'center',

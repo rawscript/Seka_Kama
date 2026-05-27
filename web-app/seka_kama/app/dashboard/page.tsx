@@ -5,8 +5,9 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import dynamic from 'next/dynamic';
 import { MapProvider, useMap } from 'react-map-gl/maplibre';
+import { api, type LandscapeStats, type HistoricalTrend } from '@/services/api';
 
-// ── Dynamic imports (browser-only) ──────────────────────────────────────────
+// ── Dynamic imports (browser-only) ───────────────────────────────────────────
 const SekaMap = dynamic(() => import('@/components/SekaMap'), {
   ssr: false,
   loading: () => (
@@ -21,66 +22,56 @@ const SekaMap = dynamic(() => import('@/components/SekaMap'), {
   ),
 });
 
-const ScenarioResultPanel = dynamic(
-  () => import('@/components/ScenarioResultPanel'),
-  { ssr: false },
-);
+const ScenarioResultPanel = dynamic(() => import('@/components/ScenarioResultPanel'), { ssr: false });
+const TrendChart = dynamic(() => import('@/components/TrendChart'), { ssr: false });
 
-// ── Year range ───────────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 const MIN_YEAR = 2020;
 const MAX_YEAR = 2026;
 
-function sliderToYear(value: number): number {
-  return Math.round(MIN_YEAR + (value / 100) * (MAX_YEAR - MIN_YEAR));
+function sliderToYear(v: number) {
+  return Math.round(MIN_YEAR + (v / 100) * (MAX_YEAR - MIN_YEAR));
 }
 
-// ── Toggle switch sub-component ──────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
+
 function LayerToggle({
-  enabled,
-  onToggle,
-  color,
-  label,
-}: {
-  enabled: boolean;
-  onToggle: () => void;
-  color: string;
-  label: string;
-}) {
+  enabled, onToggle, color, label,
+}: { enabled: boolean; onToggle: () => void; color: string; label: string }) {
   return (
-    <label
-      className="flex items-center justify-between group cursor-pointer"
-      onClick={onToggle}
-    >
+    <label className="flex items-center justify-between group cursor-pointer" onClick={onToggle}>
       <div className="flex items-center gap-3">
         <div
           className="w-3 h-3 rounded-full border border-white/50 transition-opacity"
           style={{ backgroundColor: color, opacity: enabled ? 1 : 0.35 }}
         />
-        <span
-          className={`text-[16px] transition-colors ${
-            enabled ? 'text-on-surface' : 'text-outline'
-          } group-hover:text-on-surface`}
-        >
+        <span className={`text-[16px] transition-colors ${enabled ? 'text-on-surface' : 'text-outline'} group-hover:text-on-surface`}>
           {label}
         </span>
       </div>
-      {/* Toggle pill */}
-      <div
-        className={`w-8 h-4 rounded-full relative flex items-center transition-colors duration-200 ${
-          enabled ? 'bg-primary' : 'bg-outline-variant'
-        }`}
-      >
-        <div
-          className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform duration-200 ${
-            enabled ? 'translate-x-[18px]' : 'translate-x-[2px]'
-          }`}
-        />
+      <div className={`w-8 h-4 rounded-full relative flex items-center transition-colors duration-200 ${enabled ? 'bg-primary' : 'bg-outline-variant'}`}>
+        <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform duration-200 ${enabled ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
       </div>
     </label>
   );
 }
 
-// ── Page root ────────────────────────────────────────────────────────────────
+/** Single stat card used in the landscape summary strip */
+function StatCard({
+  label, value, sub, accent = false,
+}: { label: string; value: string; sub?: string; accent?: boolean }) {
+  return (
+    <div className="map-overlay-card px-4 py-3 rounded-sm flex flex-col gap-0.5 min-w-[110px]">
+      <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-none">{label}</span>
+      <span className={`text-[18px] font-bold tracking-tight leading-tight ${accent ? 'text-primary' : 'text-on-surface'}`}>
+        {value}
+      </span>
+      {sub && <span className="text-[9px] text-outline leading-none">{sub}</span>}
+    </div>
+  );
+}
+
+// ── Page root ─────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   return (
     <MapProvider>
@@ -89,34 +80,62 @@ export default function DashboardPage() {
   );
 }
 
-// ── Main dashboard ───────────────────────────────────────────────────────────
+// ── Main dashboard ────────────────────────────────────────────────────────────
 function DashboardContent() {
   const { 'main-map': mapMain } = useMap();
 
-  // Map state
-  const [scenarioResult, setScenarioResult]   = useState<any>(null);
-  const [selectedUnit, setSelectedUnit]         = useState<string>('');
-  const [isZoneMenuOpen, setIsZoneMenuOpen]     = useState(false);
-  const [currentCoords, setCurrentCoords]       = useState({ lat: -1.25, lng: 35.1 });
-  const [activeLayer, setActiveLayer]           = useState('SATELLITE (TRUE COLOR)');
-
-  // Layer visibility toggles
+  // Map / UI state
+  const [scenarioResult, setScenarioResult] = useState<any>(null);
+  const [selectedUnit, setSelectedUnit]     = useState('');
+  const [isZoneMenuOpen, setIsZoneMenuOpen] = useState(false);
+  const [currentCoords, setCurrentCoords]   = useState({ lat: -1.25, lng: 35.1 });
+  const [activeLayer, setActiveLayer]       = useState('SATELLITE (TRUE COLOR)');
   const [showProtectedAreas, setShowProtectedAreas] = useState(true);
   const [showLandXBoundary, setShowLandXBoundary]   = useState(false);
+  const [showTrends, setShowTrends]         = useState(false);
 
-  // Temporal slider (0–100 → 2020–2026)
-  const [timeValue, setTimeValue]   = useState(66); // default ≈ 2024
-  const [isPlaying, setIsPlaying]   = useState(false);
-  const playRef                     = useRef<ReturnType<typeof setInterval> | null>(null);
-
+  // Temporal slider
+  const [timeValue, setTimeValue] = useState(66);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const selectedYear = sliderToYear(timeValue);
+
+  // Landscape stats (Gap 1)
+  const [stats, setStats]           = useState<LandscapeStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Historical trends (Gap 2)
+  const [trends, setTrends]         = useState<HistoricalTrend[]>([]);
+  const [trendsLoading, setTrendsLoading] = useState(false);
+
+  const units = ['Mara North', 'Olare-Motorogi', 'Naboisho', 'Ol Kinyei'];
+
+  // ── Fetch landscape stats on mount / unit change ──────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    setStatsLoading(true);
+    api.getStatistics(selectedUnit || undefined)
+      .then((s) => { if (!cancelled) setStats(s); })
+      .catch(() => { /* non-fatal — stats strip stays hidden */ })
+      .finally(() => { if (!cancelled) setStatsLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedUnit]);
+
+  // ── Fetch historical trends when panel is opened ──────────────────────────
+  useEffect(() => {
+    if (!showTrends) return;
+    let cancelled = false;
+    setTrendsLoading(true);
+    api.getHistoricalTrends(selectedUnit || 'Regional Total')
+      .then((r) => { if (!cancelled) setTrends(r.trends ?? []); })
+      .catch(() => { if (!cancelled) setTrends([]); })
+      .finally(() => { if (!cancelled) setTrendsLoading(false); });
+    return () => { cancelled = true; };
+  }, [showTrends, selectedUnit]);
 
   // ── Playback ──────────────────────────────────────────────────────────────
   const stopPlayback = useCallback(() => {
-    if (playRef.current) {
-      clearInterval(playRef.current);
-      playRef.current = null;
-    }
+    if (playRef.current) { clearInterval(playRef.current); playRef.current = null; }
     setIsPlaying(false);
   }, []);
 
@@ -124,51 +143,43 @@ function DashboardContent() {
     setIsPlaying(true);
     playRef.current = setInterval(() => {
       setTimeValue((prev) => {
-        if (prev >= 100) {
-          stopPlayback();
-          return 100;
-        }
-        return prev + 3; // ~2 seconds per year at 200 ms interval
+        if (prev >= 100) { stopPlayback(); return 100; }
+        return prev + 3;
       });
     }, 200);
   }, [stopPlayback]);
 
   const togglePlayback = useCallback(() => {
-    if (isPlaying) stopPlayback();
-    else startPlayback();
+    isPlaying ? stopPlayback() : startPlayback();
   }, [isPlaying, startPlayback, stopPlayback]);
 
-  // Cleanup on unmount
   useEffect(() => () => stopPlayback(), [stopPlayback]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const handleZoomIn  = () => mapMain?.zoomIn();
   const handleZoomOut = () => mapMain?.zoomOut();
-
-  const handleViewStateChange = (viewState: any) => {
-    setCurrentCoords({ lat: viewState.latitude, lng: viewState.longitude });
-  };
-
-  const units = ['Mara North', 'Olare-Motorogi', 'Naboisho', 'Ol Kinyei'];
+  const handleViewStateChange = (vs: any) =>
+    setCurrentCoords({ lat: vs.latitude, lng: vs.longitude });
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <ProtectedRoute>
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          .map-overlay-card {
-            background: rgba(255,255,255,0.85);
-            backdrop-filter: blur(16px);
-            border: 0.5px solid var(--outline-variant);
-          }
-          .premium-gradient-bar {
-            background: linear-gradient(to right, #775a19 0%, #ffdea5 50%, #ba1a1a 100%);
-          }
-          .time-slider-track {
-            background: linear-gradient(to right, #e2dfde 0%, #775a19 100%);
-          }
-        `,
-      }} />
+      <style dangerouslySetInnerHTML={{ __html: `
+        .map-overlay-card {
+          background: rgba(255,255,255,0.85);
+          backdrop-filter: blur(16px);
+          border: 0.5px solid var(--outline-variant);
+        }
+        .premium-gradient-bar {
+          background: linear-gradient(to right, #775a19 0%, #ffdea5 50%, #ba1a1a 100%);
+        }
+        .time-slider-track {
+          background: linear-gradient(to right, #e2dfde 0%, #775a19 100%);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+      `}} />
 
       <div className="relative w-full h-full bg-[#dadada]">
 
@@ -189,13 +200,41 @@ function DashboardContent() {
         {/* ── Status pill ── */}
         <div className="absolute top-8 left-8 flex items-center gap-3 px-4 py-2 bg-[#1a1c1c]/80 backdrop-blur-md rounded-full z-10 pointer-events-none">
           <div className="w-2 h-2 rounded-full bg-[#1db954]" />
-          <span className="text-[10px] font-bold text-white uppercase tracking-widest">
-            DIGITAL TWIN ACTIVE
-          </span>
-          <span className="text-[10px] font-bold text-[#1db954] ml-2 opacity-80 uppercase tracking-widest">
-            {selectedYear}
-          </span>
+          <span className="text-[10px] font-bold text-white uppercase tracking-widest">DIGITAL TWIN ACTIVE</span>
+          <span className="text-[10px] font-bold text-[#1db954] ml-2 opacity-80 uppercase tracking-widest">{selectedYear}</span>
         </div>
+
+        {/* ── Landscape stats strip (Gap 1) ── */}
+        {!statsLoading && stats && (
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 flex gap-2 pointer-events-none">
+            <StatCard
+              label="Total Lions"
+              value={stats.total_lions.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              sub="baseline estimate"
+              accent
+            />
+            <StatCard
+              label="Study Area"
+              value={`${stats.total_area_km2.toLocaleString()} km²`}
+              sub={`${stats.management_unit_count} units`}
+            />
+            <StatCard
+              label="Protected Cover"
+              value={`${stats.protected_area_coverage_km2.toLocaleString(undefined, { maximumFractionDigits: 0 })} km²`}
+              sub="WDPA / OECM"
+            />
+            <StatCard
+              label="High-Risk Cells"
+              value={stats.high_risk_cell_count.toLocaleString()}
+              sub="density < 5 & trend ↑"
+            />
+            <StatCard
+              label="Avg Density"
+              value={stats.avg_lion_density.toFixed(3)}
+              sub="lions / km²"
+            />
+          </div>
+        )}
 
         {/* ── Scenario result panel ── */}
         {scenarioResult && (
@@ -230,7 +269,6 @@ function DashboardContent() {
                   keyboard_arrow_down
                 </span>
               </button>
-
               {isZoneMenuOpen && (
                 <div className="absolute top-full left-0 w-full mt-2 bg-white/95 backdrop-blur-md border border-outline-variant shadow-xl z-50 py-2 rounded-sm animate-in fade-in slide-in-from-top-2">
                   <button
@@ -260,7 +298,6 @@ function DashboardContent() {
               <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">ECOSYSTEM INDICATORS</h4>
             </div>
             <div className="space-y-10">
-              {/* Density legend bar */}
               <div>
                 <div className="flex justify-between items-end mb-3">
                   <span className="text-[11px] font-bold text-secondary tracking-wider">
@@ -273,8 +310,6 @@ function DashboardContent() {
                   <span className="text-[9px] font-bold text-outline uppercase tracking-widest">High</span>
                 </div>
               </div>
-
-              {/* Layer toggles — now functional */}
               <div className="space-y-4">
                 <LayerToggle
                   enabled={showProtectedAreas}
@@ -291,6 +326,44 @@ function DashboardContent() {
               </div>
             </div>
           </div>
+
+          {/* Historical Trends panel (Gap 2) */}
+          <div className="map-overlay-card shadow-sm rounded-sm overflow-hidden">
+            <button
+              onClick={() => setShowTrends((v) => !v)}
+              className="w-full flex items-center justify-between p-5 text-left hover:bg-black/5 transition-colors"
+            >
+              <div className="flex items-center gap-2 text-primary font-bold">
+                <span className="material-symbols-outlined text-[20px]">show_chart</span>
+                <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">HISTORICAL TRENDS</h4>
+              </div>
+              <span className={`material-symbols-outlined text-outline transition-transform duration-200 ${showTrends ? 'rotate-180' : ''}`}>
+                keyboard_arrow_down
+              </span>
+            </button>
+
+            {showTrends && (
+              <div className="px-4 pb-5 bg-[#0b0f1a]">
+                {trendsLoading ? (
+                  <div className="flex items-center justify-center py-10 gap-3">
+                    <div className="w-4 h-4 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+                    <span className="text-[11px] text-slate-500 uppercase tracking-widest">Loading trends…</span>
+                  </div>
+                ) : trends.length === 0 ? (
+                  <p className="text-[12px] text-slate-600 text-center py-8">
+                    No historical data available for {selectedUnit || 'Regional Total'}.
+                  </p>
+                ) : (
+                  <ErrorBoundary label="Trend Chart">
+                    <TrendChart
+                      trends={trends}
+                      unit={selectedUnit || 'Regional Total'}
+                    />
+                  </ErrorBoundary>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Temporal Controls ── */}
@@ -299,71 +372,34 @@ function DashboardContent() {
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2 text-primary font-bold">
                 <span className="material-symbols-outlined text-[18px]">schedule</span>
-                <span className="text-[10px] uppercase tracking-[0.15em] text-on-surface">
-                  TEMPORAL ANALYSIS
-                </span>
+                <span className="text-[10px] uppercase tracking-[0.15em] text-on-surface">TEMPORAL ANALYSIS</span>
               </div>
               <div className="flex items-center gap-3">
-                {/* Rewind to start */}
-                <button
-                  title="Rewind to 2020"
-                  onClick={() => { stopPlayback(); setTimeValue(0); }}
-                  className="text-secondary hover:text-primary transition-colors"
-                >
+                <button title="Rewind to 2020" onClick={() => { stopPlayback(); setTimeValue(0); }} className="text-secondary hover:text-primary transition-colors">
                   <span className="material-symbols-outlined text-[18px]">fast_rewind</span>
                 </button>
-
-                {/* Play / Pause */}
-                <button
-                  title={isPlaying ? 'Pause' : 'Play timeline'}
-                  onClick={togglePlayback}
-                  className="text-primary hover:opacity-80 transition-opacity"
-                >
-                  <span className="material-symbols-outlined text-[24px]">
-                    {isPlaying ? 'pause_circle' : 'play_circle'}
-                  </span>
+                <button title={isPlaying ? 'Pause' : 'Play timeline'} onClick={togglePlayback} className="text-primary hover:opacity-80 transition-opacity">
+                  <span className="material-symbols-outlined text-[24px]">{isPlaying ? 'pause_circle' : 'play_circle'}</span>
                 </button>
-
-                {/* Fast-forward to end */}
-                <button
-                  title="Jump to 2026"
-                  onClick={() => { stopPlayback(); setTimeValue(100); }}
-                  className="text-secondary hover:text-primary transition-colors"
-                >
+                <button title="Jump to 2026" onClick={() => { stopPlayback(); setTimeValue(100); }} className="text-secondary hover:text-primary transition-colors">
                   <span className="material-symbols-outlined text-[18px]">fast_forward</span>
                 </button>
               </div>
             </div>
 
             <div className="relative pt-1">
-              {/* Track */}
               <div className="h-1 w-full bg-surface-container rounded-full overflow-hidden relative">
-                <div
-                  className="absolute left-0 top-0 h-full time-slider-track"
-                  style={{ width: `${timeValue}%` }}
-                />
+                <div className="absolute left-0 top-0 h-full time-slider-track" style={{ width: `${timeValue}%` }} />
               </div>
-
-              {/* Native range input (invisible, handles interaction) */}
               <input
-                type="range"
-                min="0"
-                max="100"
-                value={timeValue}
-                onChange={(e) => {
-                  stopPlayback();
-                  setTimeValue(parseInt(e.target.value));
-                }}
+                type="range" min="0" max="100" value={timeValue}
+                onChange={(e) => { stopPlayback(); setTimeValue(parseInt(e.target.value)); }}
                 className="absolute top-[-5px] left-0 w-full opacity-0 cursor-pointer h-4 z-40"
               />
-
-              {/* Custom thumb */}
               <div
                 className="absolute top-[-5px] w-3.5 h-3.5 bg-primary border-2 border-white rounded-full shadow-md pointer-events-none transition-all"
                 style={{ left: `calc(${timeValue}% - 7px)` }}
               />
-
-              {/* Year labels */}
               <div className="flex justify-between mt-3 px-1">
                 {[2020, 2021, 2022, 2023, 2024, 2025, 2026].map((yr) => {
                   const pct = ((yr - MIN_YEAR) / (MAX_YEAR - MIN_YEAR)) * 100;
@@ -373,17 +409,9 @@ function DashboardContent() {
                       key={yr}
                       title={`Jump to ${yr}`}
                       onClick={() => { stopPlayback(); setTimeValue(Math.round(pct)); }}
-                      className={`text-center transition-all ${
-                        isActive
-                          ? 'bg-[#c5a059]/10 px-1 py-0.5 rounded-sm'
-                          : 'hover:opacity-70'
-                      }`}
+                      className={`text-center transition-all ${isActive ? 'bg-[#c5a059]/10 px-1 py-0.5 rounded-sm' : 'hover:opacity-70'}`}
                     >
-                      <p
-                        className={`text-[8px] font-bold uppercase tracking-widest leading-none ${
-                          isActive ? 'text-primary' : 'text-outline'
-                        }`}
-                      >
+                      <p className={`text-[8px] font-bold uppercase tracking-widest leading-none ${isActive ? 'text-primary' : 'text-outline'}`}>
                         {yr}
                       </p>
                     </button>
@@ -397,33 +425,21 @@ function DashboardContent() {
         {/* ── Zoom + Layer toggle ── */}
         <div className="absolute bottom-8 left-8 flex flex-col gap-4 z-20">
           <div className="map-overlay-card p-2 flex flex-col gap-2 rounded-lg">
-            <button
-              onClick={handleZoomIn}
-              className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors"
-            >
+            <button onClick={handleZoomIn} className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
               <span className="material-symbols-outlined text-[20px]">add</span>
             </button>
             <div className="w-full h-[1px] bg-outline-variant" />
-            <button
-              onClick={handleZoomOut}
-              className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors"
-            >
+            <button onClick={handleZoomOut} className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
               <span className="material-symbols-outlined text-[20px]">remove</span>
             </button>
           </div>
           <div
-            onClick={() =>
-              setActiveLayer((l) =>
-                l === 'SATELLITE (TRUE COLOR)' ? 'VECTOR (TOPOGRAPHIC)' : 'SATELLITE (TRUE COLOR)',
-              )
-            }
+            onClick={() => setActiveLayer((l) => l === 'SATELLITE (TRUE COLOR)' ? 'VECTOR (TOPOGRAPHIC)' : 'SATELLITE (TRUE COLOR)')}
             className="map-overlay-card px-4 py-2 flex items-center gap-4 rounded-lg cursor-pointer hover:border-primary transition-colors"
           >
             <span className="material-symbols-outlined text-secondary text-[20px]">layers</span>
             <div className="h-4 w-[1px] bg-outline-variant" />
-            <span className="text-[11px] font-bold text-on-surface uppercase tracking-widest">
-              {activeLayer}
-            </span>
+            <span className="text-[11px] font-bold text-on-surface uppercase tracking-widest">{activeLayer}</span>
           </div>
         </div>
 
@@ -431,21 +447,15 @@ function DashboardContent() {
         <div className="absolute bottom-8 right-8 z-20">
           <div className="map-overlay-card px-4 py-2 flex gap-8 rounded-lg shadow-sm">
             <div className="flex flex-col min-w-[80px]">
-              <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">
-                Latitude
-              </span>
+              <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">Latitude</span>
               <span className="text-[12px] font-bold text-on-surface tracking-tight">
-                {Math.abs(currentCoords.lat).toFixed(4)}°{' '}
-                {currentCoords.lat >= 0 ? 'N' : 'S'}
+                {Math.abs(currentCoords.lat).toFixed(4)}° {currentCoords.lat >= 0 ? 'N' : 'S'}
               </span>
             </div>
             <div className="flex flex-col min-w-[80px]">
-              <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">
-                Longitude
-              </span>
+              <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">Longitude</span>
               <span className="text-[12px] font-bold text-on-surface tracking-tight">
-                {Math.abs(currentCoords.lng).toFixed(4)}°{' '}
-                {currentCoords.lng >= 0 ? 'E' : 'W'}
+                {Math.abs(currentCoords.lng).toFixed(4)}° {currentCoords.lng >= 0 ? 'E' : 'W'}
               </span>
             </div>
           </div>

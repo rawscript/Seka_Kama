@@ -1,15 +1,12 @@
 import { getApiUrl } from './config';
 
-/**
- * SekaNet Core Interfaces
- * Matches the 43-feature master matrix from the XGBoost model.
- */
+// ── Interfaces ────────────────────────────────────────────────────────────────
 
 export interface ScenarioRequest {
-  geometry: GeoJSON.Geometry; // Changed to Geometry to support LineStrings (roads)
-  feature_modifications: Record<string, number>; // e.g., {"longterm_slope_mean": 0.5}
+  geometry: GeoJSON.Geometry;
+  feature_modifications: Record<string, number>;
   management_units?: string[];
-  user_query?: string; // For NVIDIA NeMo LLM context
+  user_query?: string;
 }
 
 export interface ScenarioResponse {
@@ -19,8 +16,13 @@ export interface ScenarioResponse {
   delta_lions: number;
   delta_percent: number;
   affected_units: Record<string, number>;
-  llm_narrative: string; // From NVIDIA NeMo reasoning
-  map_visualization_url: string; // Cloudinary hosted asset
+  llm_narrative: string;
+  map_visualization_url: string;
+  ecological_context?: {
+    avg_prey_density: number;
+    avg_rainfall_mm: number;
+    avg_hwc_risk: number;
+  };
 }
 
 export interface GridCell {
@@ -29,53 +31,89 @@ export interface GridCell {
   longitude: number;
   management_unit: string | null;
   lion_density: number;
-  // Top drivers from SekaNet XGBoost
   longterm_slope_mean: number;
   all_skew_mean: number;
   dist_to_protected_km: number;
   all_mean_mean: number;
   all_kurtosis_mean: number;
-  // Additional metadata
-  pa_def: number; // 1 for WDPA, 0 for OECM [cite: 195]
+  pa_def: number;
 }
 
 export interface ProtectedArea {
-  wdpa_id: number; // Persistent identifier 
-  wdpa_pid: string; // Parcel identifier [cite: 673]
+  wdpa_id: number;
+  wdpa_pid: string;
   name: string;
   desig_eng: string;
   iucn_cat: string | null;
-  pa_def: number; // [cite: 225]
+  pa_def: number;
   rep_area: number;
   geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon;
 }
 
-// Added  Scenario interface for history tracking
 export interface Scenario extends ScenarioResponse {
   created_at: string;
   request_data: ScenarioRequest;
+  // history-shape aliases
+  user_description?: string;
+  modified_features?: Record<string, number>;
+  predicted_lion_delta?: number;
+  affected_cells?: number;
 }
+
+export interface BaselineSummary {
+  total_lions: number;
+  avg_lion_density: number;
+  avg_nightlight_intensity: number;
+  avg_nightlight_trend: number;
+  avg_distance_to_protected: number;
+  cell_count: number;
+  management_units: string[];
+}
+
+export interface LandscapeStats {
+  total_lions: number;
+  total_area_km2: number;
+  avg_lion_density: number;
+  protected_area_coverage_km2: number;
+  avg_nightlight_trend: number;
+  high_risk_cell_count: number;
+  management_unit_count: number;
+}
+
+export interface HistoricalTrend {
+  year: number;
+  lion_count: number;
+}
+
+export interface ModelMetadata {
+  model_type: string;
+  version: string;
+  training_date: string;
+  feature_count: number;
+  features: string[];
+  objective: string;
+  performance_metrics: {
+    train_mse: number;
+    train_mae: number;
+    r_squared: number;
+  };
+}
+
+// ── Core API object ───────────────────────────────────────────────────────────
 
 export const api = {
   /**
-   * Centralized request helper to automatically inject authentication headers 
-   * and handle common JSON response behaviors.
+   * Centralized request helper — injects auth, handles 401 redirect,
+   * and surfaces backend error detail strings.
    */
   async request(endpoint: string, options: RequestInit = {}) {
-    // Gracefully handle server-side rendering scenarios where localStorage isn't available
-    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    const token =
+      typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
     const headers = new Headers(options.headers);
+    if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    if (token) headers.set('Authorization', `Bearer ${token}`);
 
-    if (!headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
-    }
-
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-
-    // Ensure endpoint starts with a slash
     const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
     const response = await fetch(`${getApiUrl()}${normalizedEndpoint}`, {
@@ -84,115 +122,103 @@ export const api = {
     });
 
     if (!response.ok) {
-      // On 401, clear the stale token and redirect to login so the user
-      // isn't stuck in a silent broken state mid-session.
+      // 401 → clear token and redirect to login with return path
       if (response.status === 401 && typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
         const redirect = encodeURIComponent(window.location.pathname);
         window.location.href = `/login?redirect=${redirect}&reason=session_expired`;
-        // Throw anyway so any in-flight awaits don't continue
         throw new Error('Session expired. Redirecting to login…');
       }
 
-      // Try to extract the backend's error detail before throwing
       let detail = `HTTP ${response.status}: Failed to fetch ${endpoint}`;
       try {
         const errBody = await response.json();
         if (errBody?.detail) detail = errBody.detail;
-      } catch {
-        // ignore parse errors — use the default message
-      }
+      } catch { /* ignore */ }
       throw new Error(detail);
     }
 
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.indexOf("application/json") !== -1) {
-      return response.json();
-    }
-    return response.text();
+    const ct = response.headers.get('content-type') ?? '';
+    return ct.includes('application/json') ? response.json() : response.text();
   },
 
-  /**
-   * Generic HTTP GET
-   */
   async get(endpoint: string): Promise<any> {
     return this.request(endpoint);
   },
 
-  /**
-   * Generic HTTP POST
-   */
   async post(endpoint: string, body: any): Promise<any> {
-    return this.request(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    });
+    return this.request(endpoint, { method: 'POST', body: JSON.stringify(body) });
   },
 
-  /**
-   * Generic HTTP DELETE
-   */
   async delete(endpoint: string): Promise<any> {
-    return this.request(endpoint, {
-      method: 'DELETE',
-    });
+    return this.request(endpoint, { method: 'DELETE' });
   },
 
-  /**
-   * Fetches baseline population and nightlight data.
-   * Leverages Supabase/PostGIS for BBOX queries.
-   */
+  // ── Spatial data ────────────────────────────────────────────────────────
+
   async getBaseline(managementUnit?: string, bbox?: any): Promise<any> {
-    const params = new URLSearchParams();
-    if (managementUnit) params.append('management_unit', managementUnit);
+    const p = new URLSearchParams();
+    if (managementUnit) p.append('management_unit', managementUnit);
     if (bbox) {
-      params.append('min_lon', bbox.minLon.toString());
-      params.append('min_lat', bbox.minLat.toString());
-      params.append('max_lon', bbox.maxLon.toString());
-      params.append('max_lat', bbox.maxLat.toString());
+      p.append('min_lon', bbox.minLon.toString());
+      p.append('min_lat', bbox.minLat.toString());
+      p.append('max_lon', bbox.maxLon.toString());
+      p.append('max_lat', bbox.maxLat.toString());
     }
-
-    try {
-      const queryString = params.toString();
-      return await this.get(queryString ? `/baseline?${queryString}` : '/baseline');
-    } catch (error) {
-      console.error("Baseline fetch error:", error);
-      throw error;
-    }
+    const qs = p.toString();
+    return this.get(qs ? `/baseline?${qs}` : '/baseline');
   },
 
-  /**
-   * Retrieves protected area boundaries (WDPA/OECM).
-   */
+  async getBaselineSummary(managementUnit?: string): Promise<BaselineSummary> {
+    const p = new URLSearchParams();
+    if (managementUnit) p.append('management_unit', managementUnit);
+    const qs = p.toString();
+    return this.get(qs ? `/baseline/summary?${qs}` : '/baseline/summary');
+  },
+
   async getProtectedAreas(bbox?: any): Promise<any> {
-    const params = new URLSearchParams();
+    const p = new URLSearchParams();
     if (bbox) {
-      params.append('min_lon', bbox.minLon.toString());
-      params.append('min_lat', bbox.minLat.toString());
-      params.append('max_lon', bbox.maxLon.toString());
-      params.append('max_lat', bbox.maxLat.toString());
+      p.append('min_lon', bbox.minLon.toString());
+      p.append('min_lat', bbox.minLat.toString());
+      p.append('max_lon', bbox.maxLon.toString());
+      p.append('max_lat', bbox.maxLat.toString());
     }
-    const queryString = params.toString();
-    return this.get(queryString ? `/protected-areas?${queryString}` : '/protected-areas');
+    const qs = p.toString();
+    return this.get(qs ? `/protected-areas?${qs}` : '/protected-areas');
   },
 
-  /**
-   * Runs the predictive XGBoost simulation.
-   */
+  async getStatistics(managementUnit?: string): Promise<LandscapeStats> {
+    const p = new URLSearchParams();
+    if (managementUnit) p.append('management_unit', managementUnit);
+    const qs = p.toString();
+    return this.get(qs ? `/statistics?${qs}` : '/statistics');
+  },
+
+  // ── Scenario engine ─────────────────────────────────────────────────────
+
   async runScenario(request: ScenarioRequest): Promise<ScenarioResponse> {
     return this.post('/scenario', request);
   },
 
-  /**
-   * Pulls previous simulation runs from Supabase memory.
-   */
-  async getScenarioHistory(limit: number = 50): Promise<Scenario[]> {
+  async getScenarioHistory(limit = 50): Promise<{ scenarios: Scenario[]; count: number }> {
     return this.get(`/scenarios/history?limit=${limit}`);
   },
 
-  /**
-   * Returns the model's Permutation Importance results.
-   */
+  async getScenarioById(scenarioId: number): Promise<Scenario> {
+    return this.get(`/scenarios/history/${scenarioId}`);
+  },
+
+  async getHistoricalTrends(managementUnit = 'Regional Total'): Promise<{
+    unit: string;
+    trends: HistoricalTrend[];
+  }> {
+    const p = new URLSearchParams({ management_unit: managementUnit });
+    return this.get(`/scenarios/trends?${p.toString()}`);
+  },
+
+  // ── Model insights ──────────────────────────────────────────────────────
+
   async getFeatureImportance(): Promise<{
     feature_importance: Array<{ feature: string; importance: number }>;
     top_feature: string;
@@ -201,14 +227,40 @@ export const api = {
     return this.get('/feature-importance');
   },
 
-  /**
-   * Uses NVIDIA NeMo to explain specific grid-level outcomes.
-   */
-  async explainCell(cellId: number): Promise<{
+  async getModelMetadata(): Promise<ModelMetadata> {
+    return this.get('/model/metadata');
+  },
+
+  async explainFeatures(features: Record<string, number>): Promise<{
     prediction: number;
     explanation: string;
     features: Record<string, number>;
   }> {
+    return this.post('/explain', { features });
+  },
+
+  async explainCell(cellId: number): Promise<{
+    cell_id: number;
+    prediction: number;
+    explanation: string;
+    features: Record<string, number>;
+    management_unit: string | null;
+    location: { longitude: number; latitude: number };
+  }> {
     return this.get(`/explain/cell/${cellId}`);
+  },
+
+  // ── API key management ──────────────────────────────────────────────────
+
+  async listApiKeys(): Promise<any[]> {
+    return this.get('/keys/');
+  },
+
+  async createApiKey(name: string): Promise<{ key: string; id: number; prefix: string }> {
+    return this.post('/keys/', { name });
+  },
+
+  async revokeApiKey(keyId: number): Promise<{ message: string }> {
+    return this.delete(`/keys/${keyId}`);
   },
 };

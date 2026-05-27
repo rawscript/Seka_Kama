@@ -1,15 +1,23 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getApiUrl } from '@/services/config';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Read redirect target and expiry reason from URL
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
+  const sessionExpired = searchParams.get('reason') === 'session_expired';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(
+    sessionExpired ? 'Your session has expired. Please sign in again.' : ''
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [timeStr, setTimeStr] = useState('');
   const bgRef = useRef<HTMLImageElement>(null);
@@ -23,6 +31,7 @@ export default function LoginPage() {
     updateClock();
     return () => clearInterval(interval);
   }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -32,10 +41,7 @@ export default function LoginPage() {
       const response = await fetch(`${getApiUrl()}/auth/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          username: email,
-          password: password,
-        }),
+        body: new URLSearchParams({ username: email, password }),
       });
 
       if (!response.ok) {
@@ -45,7 +51,8 @@ export default function LoginPage() {
 
       const data = await response.json();
       localStorage.setItem('access_token', data.access_token);
-      router.push('/dashboard');
+      // Redirect back to where the user came from (or dashboard)
+      router.push(redirectTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid credentials');
     } finally {
@@ -171,7 +178,16 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div className="text-[#ba1a1a] text-sm bg-[#ba1a1a]/10 p-3 rounded border border-[#ba1a1a]/30">
+                <div className={`text-sm p-3 rounded border ${
+                  sessionExpired
+                    ? 'text-amber-300 bg-amber-500/10 border-amber-500/30'
+                    : 'text-[#ba1a1a] bg-[#ba1a1a]/10 border-[#ba1a1a]/30'
+                }`}>
+                  {sessionExpired && (
+                    <span className="font-bold block mb-0.5 text-[10px] uppercase tracking-widest">
+                      Session Expired
+                    </span>
+                  )}
                   {error}
                 </div>
               )}
@@ -229,5 +245,14 @@ export default function LoginPage() {
         </main>
       </div>
     </>
+  );
+}
+
+// useSearchParams requires Suspense in Next.js App Router
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

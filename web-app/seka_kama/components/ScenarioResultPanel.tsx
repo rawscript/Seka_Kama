@@ -59,11 +59,17 @@ function normalize(result: any) {
   const title: string = result.user_description ?? result.request_data?.user_query ?? `Scenario Intelligence`;
   const affectedCells: number | null = result.affected_cells ?? null;
 
-  return { isSelection, delta, deltaPercent, predictedTotal, baselineTotal, affectedUnits, narrative, title, affectedCells };
+  // Real ecological context from backend enrichment
+  const eco = result.ecological_context ?? null;
+
+  return {
+    isSelection, delta, deltaPercent, predictedTotal, baselineTotal,
+    affectedUnits, narrative, title, affectedCells, eco,
+  };
 }
 
 export default function ScenarioResultPanel({ result, onClose }: ScenarioResultPanelProps) {
-  const { isSelection, delta, deltaPercent, predictedTotal, baselineTotal, affectedUnits, narrative, title, affectedCells } = normalize(result);
+  const { isSelection, delta, deltaPercent, predictedTotal, baselineTotal, affectedUnits, narrative, title, affectedCells, eco } = normalize(result);
 
   const isNegative = delta != null && delta < 0;
   const accentColor = isNegative ? 'text-rose-400' : 'text-emerald-400';
@@ -136,9 +142,53 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
               <div className="grid grid-cols-2 gap-4">
                  <MiniStat label="Baseline Density" value={safeInt(baselineTotal)} unit="Lions" />
                  <MiniStat label="Scenario Projection" value={safeInt(predictedTotal)} unit="Lions" />
-                 <MiniStat label="Impact Area" value={safeInt(affectedCells)} unit="km²" />
-                 <MiniStat label="Confidence Score" value="84.2%" unit="XGB" />
+                 <MiniStat label="Impact Area" value={affectedCells != null ? safeInt(affectedCells) : '—'} unit="cells" />
+                 {/* Show real HWC risk if available, otherwise delta % */}
+                 {eco ? (
+                   <MiniStat
+                     label="HWC Risk"
+                     value={`${(eco.avg_hwc_risk * 100).toFixed(0)}%`}
+                     unit="score"
+                     tooltip="Human-Wildlife Conflict risk derived from nightlight, proximity, and rainfall"
+                   />
+                 ) : (
+                   <MiniStat
+                     label="Δ Percent"
+                     value={deltaPercent != null ? `${deltaPercent >= 0 ? '+' : ''}${deltaPercent.toFixed(1)}%` : '—'}
+                     unit="change"
+                   />
+                 )}
               </div>
+
+              {/* Ecological context — only shown when backend enrichment ran */}
+              {eco && (
+                <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl space-y-3">
+                  <div className="flex items-center gap-2 text-emerald-400 mb-1">
+                    <Activity className="w-3 h-3" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Live Ecological Context</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <EcoStat
+                      label="Prey Density"
+                      value={eco.avg_prey_density.toFixed(3)}
+                      unit="/km²"
+                      tooltip="Avg herbivore occurrence density (GBIF)"
+                    />
+                    <EcoStat
+                      label="Rainfall"
+                      value={Math.round(eco.avg_rainfall_mm).toString()}
+                      unit="mm/yr"
+                      tooltip="Annual precipitation (NASA POWER)"
+                    />
+                    <EcoStat
+                      label="HWC Risk"
+                      value={`${(eco.avg_hwc_risk * 100).toFixed(0)}%`}
+                      unit=""
+                      tooltip="Human-Wildlife Conflict risk index"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Geographic Breakdown */}
               {Object.keys(affectedUnits).length > 0 && (
@@ -196,16 +246,28 @@ function StatItem({ icon: Icon, label, value }: { icon: any, label: string, valu
   );
 }
 
-function MiniStat({ label, value, unit }: { label: string, value: any, unit: string }) {
+function MiniStat({ label, value, unit, tooltip }: { label: string; value: any; unit: string; tooltip?: string }) {
    return (
-    <div className="flex flex-col">
+    <div className="flex flex-col" title={tooltip}>
        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mb-1">{label}</span>
        <div className="flex items-baseline gap-1.5 leading-none">
           <span className="text-lg font-bold text-slate-300 font-mono tracking-tighter">{value}</span>
-          <span className="text-[10px] text-slate-600 font-medium uppercase">{unit}</span>
+          {unit && <span className="text-[10px] text-slate-600 font-medium uppercase">{unit}</span>}
        </div>
     </div>
    );
+}
+
+function EcoStat({ label, value, unit, tooltip }: { label: string; value: string; unit: string; tooltip?: string }) {
+  return (
+    <div className="flex flex-col" title={tooltip}>
+      <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-widest mb-1">{label}</span>
+      <div className="flex items-baseline gap-1 leading-none">
+        <span className="text-sm font-bold text-emerald-300 font-mono">{value}</span>
+        {unit && <span className="text-[9px] text-emerald-700 font-medium">{unit}</span>}
+      </div>
+    </div>
+  );
 }
 
 function UnitRow({ name, delta, max }: { name: string, delta: number, max: number }) {
