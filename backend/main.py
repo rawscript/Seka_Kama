@@ -1,6 +1,5 @@
 from typing import List, Dict, Optional
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import joblib
 import os
@@ -34,62 +33,108 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS — build the explicit allowed-origins list.
-# NOTE: When allow_credentials=True, Starlette's CORSMiddleware does NOT
-# support allow_origin_regex simultaneously — it will reject all requests.
-# Vercel preview URLs are handled by checking the Origin header at request
-# time via a custom middleware below instead.
+# ---------------------------------------------------------------------------
+# CORS
+# ---------------------------------------------------------------------------
+# Build the explicit allowed-origins list from hardcoded values + env vars.
 _origins_str = os.getenv("ALLOWED_ORIGINS", "")
+
 _allowed_origins: list[str] = [
     "http://localhost:3000",
     "http://localhost:3001",
     "https://seka-kama.vercel.app",
 ]
 
-# Add a specific VERCEL_URL if the env var is set (e.g. on the Vercel side)
+# Vercel injects VERCEL_URL on the frontend side; on the backend we can also
+# accept it if someone sets it as an env var.
 if os.getenv("VERCEL_URL"):
     _allowed_origins.append(f"https://{os.getenv('VERCEL_URL')}")
 
-# Allow callers to inject extra origins via comma-separated env var
+# Comma-separated extra origins from Railway env vars
 if _origins_str:
     _extra = [o.strip() for o in _origins_str.split(",") if o.strip()]
     _allowed_origins.extend(_extra)
 
-# Remove duplicates while preserving order
+# Deduplicate while preserving order
 _allowed_origins = list(dict.fromkeys(_allowed_origins))
 
-# CORS configuration
 _allow_all = os.getenv("ALLOW_ALL_ORIGINS") == "True"
-_is_debug = os.getenv("DEBUG") == "True"
 
-# Regex for Vercel preview deployments (e.g. seka-kama-git-branch-org.vercel.app).
-# Used by the custom middleware below — NOT passed to CORSMiddleware because
-# Starlette forbids combining allow_origin_regex with allow_credentials=True.
+# Regex for Vercel preview deployments, e.g. seka-kama-git-branch-org.vercel.app
 _VERCEL_PREVIEW_RE = re.compile(r"^https://seka-kama(-[a-z0-9-]+)?\.vercel\.app$")
 
 
-class SekaCORSMiddleware(CORSMiddleware):
-    """
-    Custom CORS middleware that supports regex matching for Vercel preview
-    deployments while still allowing credentials (which Starlette's 
-    standard CORSMiddleware forbids when using allow_origin_regex).
-    """
-    def is_allowed_origin(self, origin: str) -> bool:
-        if origin in self.allow_origins or "*" in self.allow_origins:
-            return True
-        if _VERCEL_PREVIEW_RE.match(origin):
-            return True
-        return False
+def _is_origin_allowed(origin: str) -> bool:
+    """Return True if the origin should receive CORS headers."""
+    if _allow_all:
+        return True
+    if origin in _allowed_origins:
+        return True
+    if _VERCEL_PREVIEW_RE.match(origin):
+        return True
+    return False
 
-# Register the fixed CORS middleware
-app.add_middleware(
-    SekaCORSMiddleware,
-    allow_origins=_allowed_origins if not _allow_all else ["*"],
-    allow_credentials=not _allow_all, 
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
+
+class DynamicCORSMiddleware:
+    """
+    Pure ASGI CORS middleware.
+
+    Starlette's built-in CORSMiddleware does not support combining
+    allow_credentials=True with a runtime origin check (it only supports
+    a static list or a regex, not both).  This middleware inspects the
+    Origin header on every request and sets the correct CORS response
+    headers dynamically, which is the only reliable way to handle both
+    a static allowlist and Vercel preview-URL patterns simultaneously.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", []))
+        origin = headers.get(b"origin", b"").decode("latin-1")
+
+        allowed = _is_origin_allowed(origin) if origin else False
+
+        if scope["type"] == "http" and scope["method"] == "OPTIONS" and allowed:
+            # Preflight — respond immediately without hitting the app
+            response_headers = [
+                (b"access-control-allow-origin",      origin.encode()),
+                (b"access-control-allow-credentials", b"true"),
+                (b"access-control-allow-methods",     b"GET, POST, PUT, PATCH, DELETE, OPTIONS"),
+                (b"access-control-allow-headers",     b"*"),
+                (b"access-control-max-age",           b"600"),
+                (b"vary",                             b"Origin"),
+                (b"content-length",                   b"0"),
+            ]
+            await send({
+                "type": "http.response.start",
+                "status": 204,
+                "headers": response_headers,
+            })
+            await send({"type": "http.response.body", "body": b""})
+            return
+
+        # For all other requests, inject CORS headers into the response
+        async def send_with_cors(message):
+            if message["type"] == "http.response.start" and allowed and origin:
+                headers_list = list(message.get("headers", []))
+                headers_list += [
+                    (b"access-control-allow-origin",      origin.encode()),
+                    (b"access-control-allow-credentials", b"true"),
+                    (b"vary",                             b"Origin"),
+                ]
+                message = {**message, "headers": headers_list}
+            await send(message)
+
+        await self.app(scope, receive, send_with_cors)
+
+
+app.add_middleware(DynamicCORSMiddleware)
 
 
 # Allowlist of trusted domains for the GeoJSON proxy.
@@ -183,15 +228,17 @@ app.include_router(router, prefix="/api")
 @app.get("/health")
 async def health_check():
     return {
-        "status": "healthy", 
-        "model_loaded": hasattr(app.state, 'model'),
-        "origins_allowed": _allowed_origins
+        "status": "healthy",
+        "model_loaded": hasattr(app.state, "model"),
+        "origins_allowed": _allowed_origins,
+        "allow_all": _allow_all,
     }
 
 @app.get("/api/cors-check")
 async def cors_check(request: Request):
+    origin = request.headers.get("origin", "")
     return {
-        "origin": request.headers.get("origin"),
-        "allowed": _allowed_origins,
-        "match": request.headers.get("origin") in _allowed_origins or "*" in _allowed_origins
+        "origin": origin,
+        "allowed": _is_origin_allowed(origin) if origin else False,
+        "explicit_origins": _allowed_origins,
     }
