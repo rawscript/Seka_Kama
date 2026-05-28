@@ -306,12 +306,7 @@ class SupabaseService:
         List all active API keys for a user.
         """
         try:
-            result = self.client.table("api_keys")\
-                .select("*")\
-                .eq("user_id", user_id)\
-                .eq("is_active", True)\
-                .order("created_at", desc=True)\
-                .execute()
+            result = self.client.table("api_keys").select("*").eq("user_id", user_id).eq("is_active", True).order("created_at", desc=True).execute()
             return result.data
         except Exception as e:
             error_msg = str(e).lower()
@@ -348,13 +343,14 @@ class SupabaseService:
         }
 
         try:
-            result = self.client.table("api_keys").insert(key_data).select().execute()
+            # In supabase-py v2, insert() returns the inserted row directly
+            result = self.client.table("api_keys").insert(key_data).execute()
 
             if result.data:
                 logger.info(f"API key '{name}' created successfully for user {user_id}")
                 return result.data[0]
 
-            # Insert returned no data — likely RLS is hiding the row on SELECT.
+            # Insert returned no data — likely RLS is hiding the row.
             # Attempt a targeted recovery fetch by the unique key_hash.
             logger.warning(
                 f"Insert returned no data for user {user_id}. Attempting RLS recovery fetch..."
