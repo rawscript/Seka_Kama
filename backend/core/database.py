@@ -326,6 +326,19 @@ class SupabaseService:
         Directly attempts insertion and handles specific Supabase/DB state errors
         by providing clear guidance and performing recovery if RLS filters the return.
         """
+        # Check if api_keys table exists first
+        try:
+            self.client.table("api_keys").select("id").limit(1).execute()
+        except Exception as e:
+            error_msg = str(e).lower()
+            if "api_keys" in error_msg and ("not exist" in error_msg or "42p01" in error_msg):
+                raise RuntimeError(
+                    "DATABASE_SCHEMA_ERROR: The 'api_keys' table is missing. "
+                    "Please execute the SQL bootstrap script located at 'backend/sql/bootstrap.sql' "
+                    "in your Supabase SQL editor to set up the required tables and functions."
+                ) from e
+            raise
+
         key_data = {
             "user_id": user_id,
             "name": name,
@@ -361,22 +374,20 @@ class SupabaseService:
             raise
         except Exception as e:
             error_msg = str(e).lower()
-
-            if "api_keys" in error_msg and ("not exist" in error_msg or "42p01" in error_msg):
-                raise RuntimeError(
-                    "DATABASE_SCHEMA_ERROR: The 'api_keys' table is missing. "
-                    "Please execute the SQL bootstrap script located at 'backend/sql/bootstrap.sql' "
-                    "in your Supabase SQL editor to set up the required tables and functions."
-                ) from e
+            error_detail = str(e)
 
             if "42501" in error_msg or "rls" in error_msg or "permission denied" in error_msg:
                 raise RuntimeError(
                     "DATABASE_POLICY_ERROR: Row-Level Security or permissions are blocking API key creation. "
-                    "Ensure you are using the SERVICE_ROLE_KEY and it has sufficient permissions."
+                    "Ensure you are using the SERVICE_ROLE_KEY and it has sufficient permissions. "
+                    "Run the updated bootstrap.sql to add the service_role bypass policy."
                 ) from e
 
             logger.error(f"Unhandled error in create_api_key for user {user_id}: {e}")
-            raise
+            raise RuntimeError(
+                f"Failed to create API key: {error_detail}. "
+                "Check backend logs for details."
+            ) from e
         
     def revoke_api_key(self, user_id: int, key_id: int) -> bool:
         """

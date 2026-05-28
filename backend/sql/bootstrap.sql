@@ -100,6 +100,24 @@ BEGIN
         CREATE POLICY "Users can view own API keys" ON public.api_keys
             FOR SELECT USING (auth.role() = 'authenticated' AND user_id = (SELECT id FROM users WHERE email = auth.email()));
     END IF;
+    
+    -- Policy: authenticated users can insert their own keys
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can insert own API keys' AND tablename = 'api_keys') THEN
+        CREATE POLICY "Users can insert own API keys" ON public.api_keys
+            FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND user_id = (SELECT id FROM users WHERE email = auth.email()));
+    END IF;
+    
+    -- Policy: authenticated users can update their own keys (for revocation)
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can update own API keys' AND tablename = 'api_keys') THEN
+        CREATE POLICY "Users can update own API keys" ON public.api_keys
+            FOR UPDATE USING (auth.role() = 'authenticated' AND user_id = (SELECT id FROM users WHERE email = auth.email()));
+    END IF;
+    
+    -- Policy: service role bypasses RLS (explicit)
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Service role bypass RLS' AND tablename = 'api_keys') THEN
+        CREATE POLICY "Service role bypass RLS" ON public.api_keys
+            FOR ALL USING (auth.role() = 'service_role');
+    END IF;
 END $$;
 
 -- 10. RPC Functions for Spatial Analysis
