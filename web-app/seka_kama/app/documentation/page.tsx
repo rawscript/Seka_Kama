@@ -365,14 +365,14 @@ export default function DocumentationPage() {
                 requestBody={`{
   "email": "researcher@wildlife.org",
   "password": "securep4ssword!",
-  "full_name": "Jane Mwende",
+  "full_name": "Zephyr ",
   "organization": "Kenya Wildlife Service",
   "role": "analyst"
 }`}
                 responseBody={`{
   "id": 42,
   "email": "researcher@wildlife.org",
-  "full_name": "Jane Mwende",
+  "full_name": "Zephyr ",
   "organization": "Kenya Wildlife Service",
   "role": "analyst",
   "created_at": "2026-05-24T12:00:00",
@@ -409,7 +409,7 @@ export default function DocumentationPage() {
                 responseBody={`{
   "id": 42,
   "email": "researcher@wildlife.org",
-  "full_name": "Jane Mwende",
+  "full_name": "Zephyr ",
   "organization": "Kenya Wildlife Service",
   "role": "analyst",
   "created_at": "2026-05-24T12:00:00",
