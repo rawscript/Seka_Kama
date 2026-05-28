@@ -119,6 +119,7 @@ async def get_protected_areas(
     )
     
     if bbox:
+        # Use PostGIS ST_MakeEnvelope for bbox filtering
         query = query.filter(
             "geom && ST_MakeEnvelope({},{},{},{}, 4326)".format(
                 bbox['min_lon'], bbox['min_lat'], 

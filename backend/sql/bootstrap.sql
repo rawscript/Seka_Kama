@@ -247,3 +247,27 @@ BEGIN
     WHERE (management_unit IS NULL OR gc.management_unit = management_unit);
 END;
 $$;
+
+-- Function: Calculate area statistics for a given geometry
+CREATE OR REPLACE FUNCTION calculate_area_stats(geom_wkt TEXT)
+RETURNS TABLE(
+    area_km2 FLOAT,
+    avg_all_mean_mean FLOAT,
+    avg_longterm_slope_mean FLOAT,
+    avg_dist_to_protected_km FLOAT,
+    cell_count BIGINT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        COALESCE(ST_Area(ST_SetSRID(ST_GeomFromText(geom_wkt), 4326)) / 1000000, 0)::FLOAT as area_km2,
+        COALESCE(AVG(gc.all_mean_mean), 0)::FLOAT as avg_all_mean_mean,
+        COALESCE(AVG(gc.longterm_slope_mean), 0)::FLOAT as avg_longterm_slope_mean,
+        COALESCE(AVG(gc.dist_to_protected_km), 0)::FLOAT as avg_dist_to_protected_km,
+        COUNT(*)::BIGINT as cell_count
+    FROM grid_cells gc
+    WHERE ST_Intersects(gc.geom, ST_SetSRID(ST_GeomFromText(geom_wkt), 4326));
+END;
+$$;
