@@ -29,12 +29,17 @@ async def lifespan(app: FastAPI):
     # Cleanup if needed
     pass
 
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+
 app = FastAPI(
     title="Seka Kama Digital Twin API",
     description="Lion population prediction and scenario analysis",
     version="2.0.0",
     lifespan=lifespan
 )
+
+# Trust proxy headers for HTTPS resolution
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # ---------------------------------------------------------------------------
 # CORS

@@ -40,9 +40,63 @@ CREATE TABLE IF NOT EXISTS public.grid_cells (
     centroid GEOMETRY(Point, 4326),
     management_unit TEXT,
     baseline_lion_density FLOAT DEFAULT 0,
+    
+    -- Nightlight Time Series Features (XGBoost Inputs)
     all_mean_mean FLOAT DEFAULT 0,
+    all_mean_std FLOAT DEFAULT 0,
     longterm_slope_mean FLOAT DEFAULT 0,
+    longterm_slope_std FLOAT DEFAULT 0,
     dist_to_protected_km FLOAT DEFAULT 0,
+    all_skew_mean FLOAT DEFAULT 0,
+    all_skew_std FLOAT DEFAULT 0,
+    all_kurtosis_mean FLOAT DEFAULT 0,
+    all_kurtosis_std FLOAT DEFAULT 0,
+    all_median_mean FLOAT DEFAULT 0,
+    all_median_std FLOAT DEFAULT 0,
+    all_variance_mean FLOAT DEFAULT 0,
+    all_variance_std FLOAT DEFAULT 0,
+    licorr_slope_mean FLOAT DEFAULT 0,
+    licorr_slope_std FLOAT DEFAULT 0,
+    longterm_intercept_mean FLOAT DEFAULT 0,
+    longterm_intercept_std FLOAT DEFAULT 0,
+    longterm_r2_mean FLOAT DEFAULT 0,
+    longterm_r2_std FLOAT DEFAULT 0,
+    
+    -- Population & Continuity Features
+    pop2018_mean FLOAT DEFAULT 0,
+    pop2018_std FLOAT DEFAULT 0,
+    primary_acf_mean FLOAT DEFAULT 0,
+    primary_acf_std FLOAT DEFAULT 0,
+    primary_prominence_mean FLOAT DEFAULT 0,
+    primary_prominence_std FLOAT DEFAULT 0,
+    secondary_acf_mean FLOAT DEFAULT 0,
+    secondary_acf_std FLOAT DEFAULT 0,
+    secondary_prominence_mean FLOAT DEFAULT 0,
+    secondary_prominence_std FLOAT DEFAULT 0,
+    
+    -- Seasonality Features
+    ann_amp_mean FLOAT DEFAULT 0,
+    ann_amp_std FLOAT DEFAULT 0,
+    ann_cv_mean FLOAT DEFAULT 0,
+    ann_cv_std FLOAT DEFAULT 0,
+    ann_peak_month_mean FLOAT DEFAULT 0,
+    ann_peak_month_std FLOAT DEFAULT 0,
+    ann_trend_mean FLOAT DEFAULT 0,
+    ann_trend_std FLOAT DEFAULT 0,
+    ann_mean_mean FLOAT DEFAULT 0,
+    ann_mean_std FLOAT DEFAULT 0,
+    
+    -- Ecological Proxy Features
+    density_code FLOAT DEFAULT 0,
+    hist_lag1 FLOAT DEFAULT 0,
+    hist_lag2 FLOAT DEFAULT 0,
+    cheetah_abundance FLOAT DEFAULT 0,
+    
+    -- Live Data Cache (Optional)
+    prey_density FLOAT DEFAULT 0,
+    annual_rainfall_mm FLOAT DEFAULT 0,
+    hwc_risk_score FLOAT DEFAULT 0,
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -162,14 +216,7 @@ CREATE OR REPLACE FUNCTION get_cells_in_geometry(
     geom_geojson JSONB,
     units TEXT[] DEFAULT '{}'::TEXT[]
 )
-RETURNS TABLE(
-    cell_id INTEGER,
-    baseline_lion_density FLOAT,
-    all_mean_mean FLOAT,
-    longterm_slope_mean FLOAT,
-    dist_to_protected_km FLOAT,
-    management_unit TEXT
-)
+RETURNS SETOF public.grid_cells
 LANGUAGE plpgsql
 AS $$
 DECLARE
@@ -178,13 +225,7 @@ BEGIN
     target_geom := ST_SetSRID(ST_GeomFromGeoJSON(geom_geojson->>'geometry'), 4326);
     
     RETURN QUERY
-    SELECT 
-        gc.cell_id,
-        gc.baseline_lion_density,
-        gc.all_mean_mean,
-        gc.longterm_slope_mean,
-        gc.dist_to_protected_km,
-        gc.management_unit
+    SELECT *
     FROM grid_cells gc
     WHERE ST_Intersects(gc.geom, target_geom)
     AND (array_length(units, 1) IS NULL OR gc.management_unit = ANY(units));

@@ -223,7 +223,8 @@ async def run_scenario(
     try:
         results = await predict_scenario(
             model, scaler, feature_names,
-            affected_cells, final_modifications
+            affected_cells, final_modifications,
+            simulation_years=scenario.simulation_years
         )
     except ValueError as ve:
         logger.warning(f"Validation error in scenario: {str(ve)}")

@@ -132,7 +132,8 @@ class PredictionService:
         self,
         baseline_cells: List[Dict],
         modifications: Dict[str, float],
-        apply_percent: bool = True
+        apply_percent: bool = True,
+        simulation_years: int = 0
     ) -> Dict[str, Any]:
         """
         Calculate impact of feature modifications on lion abundance
@@ -208,6 +209,20 @@ class PredictionService:
                 modified_features[:, idx] *= (1 + mod_value)
             else:
                 modified_features[:, idx] += mod_value
+        
+        # ── Temporal Projection ──────────────────────────────────────────────
+        # If simulation_years > 0, project trends (slope) into future intensity (mean)
+        if simulation_years > 0 and "all_mean_mean" in self.feature_names and "longterm_slope_mean" in self.feature_names:
+            logger.info(f"Projecting environmental trends over {simulation_years} years...")
+            mean_idx = self.feature_indices["all_mean_mean"]
+            slope_idx = self.feature_indices["longterm_slope_mean"]
+            
+            # Intensity_future = Intensity_now + (Slope * years)
+            # Ensure it stays within valid bounds (e.g. non-negative)
+            for year in range(simulation_years):
+                modified_features[:, mean_idx] += modified_features[:, slope_idx]
+            
+            modified_features[:, mean_idx] = np.clip(modified_features[:, mean_idx], 0, 1)
         
         # Predict both scenarios
         baseline_predictions = self.predict_batch(features_array)
@@ -376,7 +391,8 @@ async def predict_scenario(
     scaler,
     feature_names: List[str],
     affected_cells: List[Dict],
-    modifications: Dict[str, float]
+    modifications: Dict[str, float],
+    simulation_years: int = 0
 ) -> Dict[str, Any]:
     """
     Async wrapper for scenario prediction
@@ -400,7 +416,8 @@ async def predict_scenario(
     results = service.calculate_scenario_impact(
         baseline_cells=affected_cells,
         modifications=modifications,
-        apply_percent=True
+        apply_percent=True,
+        simulation_years=simulation_years
     )
     
     return results

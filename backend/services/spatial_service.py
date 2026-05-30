@@ -60,44 +60,48 @@ async def get_affected_cells(
     management_units: Optional[List[str]] = None
 ) -> List[Dict]:
     """
-    Find grid cells that intersect a drawn polygon using in-memory geometry math.
-    This avoids dependency on PostGIS/PostgREST custom operators and missing columns.
+    Find grid cells that intersect a drawn polygon using PostGIS RPC.
+    Much faster than in-memory intersection for large polygons.
     """
-    import shapely.geometry as sg
-    
-    # 1. Fetch cells (narrowed by management unit if possible)
-    query = supabase.table("grid_cells").select("*")
-    if management_units and len(management_units) > 0:
-        query = query.in_("management_unit", management_units)
-    
-    # If no unit, limit to a reasonable simulation cap (e.g. 50k cells)
-    if not management_units:
-        query = query.limit(50000)
+    try:
+        # Normalize GeoJSON if it's a Feature (common from frontend)
+        if geometry_geojson.get("type") == "Feature":
+            geometry_geojson = geometry_geojson["geometry"]
+            
+        result = supabase.rpc(
+            "get_cells_in_geometry",
+            {
+                "geom_geojson": {"geometry": geometry_geojson},
+                "units": management_units or []
+            }
+        ).execute()
         
-    result = query.execute()
-    candidates = result.data or []
-    
-    # 2. Precise filter: In-memory intersection
-    poly = sg.shape(geometry_geojson)
-    affected_cells = []
-    
-    for cell in candidates:
-        try:
-            # Use 'geom' column which contains GeoJSON
-            geom_data = cell.get('geom')
-            if isinstance(geom_data, str):
-                import json
-                geom_data = json.loads(geom_data)
-            
-            if geom_data:
-                cell_shape = sg.shape(geom_data)
-                # Check intersection between drawn polygon and cell geometry
-                if poly.intersects(cell_shape):
+        return result.data or []
+        
+    except Exception as e:
+        logger.error(f"PostGIS RPC failure: {e}. Falling back to in-memory filter.")
+        # Fallback to standard table fetch and in-memory filter if RPC fails
+        query = supabase.table("grid_cells").select("*")
+        if management_units:
+            query = query.in_("management_unit", management_units)
+        query = query.limit(1000) # Safety limit for fallback
+        
+        result = query.execute()
+        candidates = result.data or []
+        
+        import shapely.geometry as sg
+        poly = sg.shape(geometry_geojson)
+        affected_cells = []
+        for cell in candidates:
+            try:
+                geom_data = cell.get('geom')
+                if isinstance(geom_data, str):
+                    geom_data = json.loads(geom_data)
+                if geom_data and poly.intersects(sg.shape(geom_data)):
                     affected_cells.append(cell)
-        except Exception:
-            continue
-            
-    return affected_cells
+            except Exception:
+                continue
+        return affected_cells
 
 
 async def get_protected_areas(

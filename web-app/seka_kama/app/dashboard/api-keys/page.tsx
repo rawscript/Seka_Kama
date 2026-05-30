@@ -65,7 +65,7 @@ export default function ApiKeysPage() {
     
     try {
       setRevoking(id);
-      await api.delete(`/keys/${id}/`);
+      await api.revokeApiKey(id);
       setKeys(prev => prev.filter(k => k.id !== id));
     } catch (err) {
       setError('Failed to revoke API key');
