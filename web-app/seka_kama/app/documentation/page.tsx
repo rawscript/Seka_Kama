@@ -294,7 +294,7 @@ export default function DocumentationPage() {
               Protected endpoints require a <strong>Bearer token</strong> in the <code className="bg-[#f5f0e8] px-1.5 py-0.5 rounded text-[12px] font-mono">Authorization</code> header.
               Obtain a token via the <code className="bg-[#f5f0e8] px-1.5 py-0.5 rounded text-[12px] font-mono">POST /api/auth/login</code> endpoint.
             </p>
-            <CodeBlock language="http">{`Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`}</CodeBlock>
+            <CodeBlock language="http">{`Authorization: Bearer sk-seka-JhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`}</CodeBlock>
             <p className="text-sm text-[#4e4639] leading-relaxed font-light">
               Tokens expire after <strong>24 hours</strong>. Re-authenticate to obtain a new token.
               For programmatic access, use an <a href="/dashboard/api-keys" className="text-[#775a19] underline underline-offset-2 hover:text-[#4e3700] font-medium">API Key</a> instead.
@@ -365,14 +365,14 @@ export default function DocumentationPage() {
                 requestBody={`{
   "email": "researcher@wildlife.org",
   "password": "securep4ssword!",
-  "full_name": "Jane Mwende",
+  "full_name": "Zephyr ",
   "organization": "Kenya Wildlife Service",
   "role": "analyst"
 }`}
                 responseBody={`{
   "id": 42,
   "email": "researcher@wildlife.org",
-  "full_name": "Jane Mwende",
+  "full_name": "Zephyr ",
   "organization": "Kenya Wildlife Service",
   "role": "analyst",
   "created_at": "2026-05-24T12:00:00",
@@ -409,7 +409,7 @@ export default function DocumentationPage() {
                 responseBody={`{
   "id": 42,
   "email": "researcher@wildlife.org",
-  "full_name": "Jane Mwende",
+  "full_name": "Zephyr ",
   "organization": "Kenya Wildlife Service",
   "role": "analyst",
   "created_at": "2026-05-24T12:00:00",
