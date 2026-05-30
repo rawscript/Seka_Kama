@@ -1,3 +1,4 @@
+import path from 'path';
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -48,6 +49,12 @@ const nextConfig: NextConfig = {
   webpack: (config) => {
     // Disable minification to prevent SWC WorkerError crashes with massive deck.gl chunks
     config.optimization.minimize = false;
+
+    // Alias react-dom to our shim to fix findDOMNode missing in React 19
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'react-dom': path.resolve(process.cwd(), 'react-dom-shim.js'),
+    };
 
     config.resolve.fallback = {
       ...config.resolve.fallback,
