@@ -183,9 +183,19 @@ class PredictionService:
         
         features_array = np.array(features, dtype=np.float64)
         
+        # Define features that should NOT be modified as percentages (categorical or indices)
+        categorical_features = {
+            "density_code", "ann_peak_month_mean", "ann_peak_month_std",
+            "dist_to_protected_km"
+        }
+        
         # Apply modifications with validation
         modified_features = features_array.copy()
         for feature_name, mod_value in modifications.items():
+            if feature_name in categorical_features:
+                logger.debug(f"Skipping percentage modification for categorical feature: {feature_name}")
+                continue
+                
             idx = self.feature_indices[feature_name]
             
             # Validate modification value

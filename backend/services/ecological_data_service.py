@@ -14,7 +14,7 @@ Data sources:
 
 import asyncio
 import logging
-import requests
+import httpx
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 
@@ -47,12 +47,12 @@ CLIMATE_KEYWORDS = {
 
 # ── Prey density from GBIF ─────────────────────────────────────────────────────
 
-def fetch_gbif_prey_density(lon: float, lat: float, radius_km: float = 50,
-                             year: int = 2023) -> Optional[float]:
+async def fetch_gbif_prey_density(lon: float, lat: float, radius_km: float = 50,
+                                year: int = 2023) -> Optional[float]:
     """
     Queries the live GBIF API for herbivore occurrences near a coordinate.
     Returns total records / km² as a density proxy.
-    No authentication required.
+    Uses parallel async requests to prevent blocking.
     """
     deg = radius_km / 111.0   # 1° ≈ 111 km
     area_km2 = (2 * radius_km) ** 2
@@ -65,21 +65,32 @@ def fetch_gbif_prey_density(lon: float, lat: float, radius_km: float = 50,
            f"{lon-deg} {lat+deg},"
            f"{lon-deg} {lat-deg}))")
 
-    total = 0
-    for name, taxon_key in PREY_SPECIES.items():
-        try:
-            resp = requests.get(GBIF_URL, params={
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        tasks = []
+        for name, taxon_key in PREY_SPECIES.items():
+            params = {
                 "taxonKey": taxon_key,
                 "geometry": wkt,
                 "year": year,
                 "limit": 0,
-            }, timeout=15)
-            if resp.status_code == 200:
-                count = resp.json().get("count", 0)
-                total += count
-                logger.debug(f"  GBIF {name}: {count} records")
-        except Exception as e:
-            logger.debug(f"  GBIF {name} skipped: {e}")
+            }
+            tasks.append(client.get(GBIF_URL, params=params))
+        
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+        
+    total = 0
+    # Match responses back to species names
+    species_names = list(PREY_SPECIES.keys())
+    for i, resp in enumerate(responses):
+        name = species_names[i]
+        if isinstance(resp, Exception):
+            logger.debug(f"  GBIF {name} failed: {resp}")
+            continue
+        
+        if resp.status_code == 200:
+            count = resp.json().get("count", 0)
+            total += count
+            logger.debug(f"  GBIF {name}: {count} records")
 
     density = total / area_km2 if area_km2 > 0 else 0.0
     logger.info(f"GBIF prey density @ ({lat:.3f}, {lon:.3f}): "
@@ -201,9 +212,7 @@ async def enrich_cells_with_live_data(
         rainfall_mm = 800.0
 
     # ── 3. Fetch prey density (GBIF) ──────────────────────────────────────
-    prey_density = await loop.run_in_executor(
-        None, fetch_gbif_prey_density, clon, clat, 50, year
-    )
+    prey_density = await fetch_gbif_prey_density(clon, clat, 50, year)
     if prey_density is None:
         logger.warning("[EcoEnrich] GBIF unavailable — falling back to 2.5 records/km²")
         prey_density = 2.5

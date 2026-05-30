@@ -326,6 +326,33 @@ async def get_scenario_by_id(
     return result.data[0]
 
 
+@router.delete("/scenarios/history/{scenario_id}")
+async def delete_scenario(
+    scenario_id: int,
+    db: SupabaseService = Depends(get_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Delete a specific scenario from user history.
+    """
+    # Verify ownership before deletion
+    check = db.client.table("scenario_history")\
+        .select("id")\
+        .eq("id", scenario_id)\
+        .eq("user_id", current_user.user_id)\
+        .execute()
+    
+    if not check.data:
+        raise HTTPException(status_code=404, detail="Scenario not found or access denied")
+    
+    db.client.table("scenario_history")\
+        .delete()\
+        .eq("id", scenario_id)\
+        .execute()
+    
+    return {"status": "deleted", "scenario_id": scenario_id}
+
+
 # ============================================================
 # EXPLANATION ENDPOINTS
 # ============================================================

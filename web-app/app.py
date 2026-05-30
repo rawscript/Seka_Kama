@@ -22,8 +22,9 @@ app.add_middleware(
 )
 
 # Load trained model
-MODEL = joblib.load("models/sekanet_xgboost_2026.pkl")
-SCALER = joblib.load("models/sekanet_scaler_2026.pkl")
+# NOTE: Using updated filenames from backend/models/
+MODEL = joblib.load("models/sekanet_xgboost_shp.pkl")
+SCALER = joblib.load("models/sekanet_scaler_shp.pkl")
 FEATURE_NAMES = joblib.load("models/feature_names.pkl")
 
 # Supabase client (PostGIS + RAG)

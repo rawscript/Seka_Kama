@@ -253,12 +253,10 @@ app.include_router(router, prefix="/api")
 
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "model_loaded": hasattr(app.state, "model"),
-        "origins_allowed": _allowed_origins,
-        "allow_all": _allow_all,
-    }
+    """Consolidated health check (Root)"""
+    from api.routes import health_check as api_health
+    from core.database import get_db
+    return await api_health(db=get_db())
 
 @app.get("/api/cors-check")
 async def cors_check(request: Request):

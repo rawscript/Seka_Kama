@@ -105,7 +105,7 @@ async def get_protected_areas(
     bbox: Optional[Dict[str, float]] = None
 ) -> List[Dict]:
     """
-    Get protected areas for map display
+    Get protected areas for map display using PostGIS RPC
     
     Args:
         supabase: Supabase client
@@ -114,20 +114,23 @@ async def get_protected_areas(
     Returns:
         List of protected area features
     """
-    query = supabase.table("protected_areas").select(
-        "id, site_name, designation, iucn_category, geom, area_km2"
-    )
-    
     if bbox:
-        # Use PostGIS ST_MakeEnvelope for bbox filtering
-        query = query.filter(
-            "geom && ST_MakeEnvelope({},{},{},{}, 4326)".format(
-                bbox['min_lon'], bbox['min_lat'], 
-                bbox['max_lon'], bbox['max_lat']
-            )
-        )
-    
-    result = query.execute()
+        # Use PostGIS RPC for high-performance bbox filtering
+        result = supabase.rpc(
+            "get_protected_areas_in_bbox",
+            {
+                "min_lon": bbox['min_lon'], 
+                "min_lat": bbox['min_lat'],
+                "max_lon": bbox['max_lon'], 
+                "max_lat": bbox['max_lat']
+            }
+        ).execute()
+    else:
+        # Fallback to standard table fetch if no bbox
+        result = supabase.table("protected_areas")\
+            .select("id, site_name, designation, iucn_category, geom, area_km2")\
+            .limit(1000)\
+            .execute()
     
     features = []
     for row in result.data:
