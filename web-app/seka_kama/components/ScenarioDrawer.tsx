@@ -27,6 +27,7 @@ const DEFAULT_MODIFICATIONS = {
   longterm_slope_mean: 0.10,
   dist_to_protected_km: 0.0,
   all_skew_mean: 0.0,
+  simulation_years: 0,
 };
 
 export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: ScenarioDrawerProps) {
