@@ -14,7 +14,8 @@ import {
   Dna,
   Cpu,
   ShieldAlert,
-  Activity
+  Activity,
+  History
 } from 'lucide-react';
 
 interface ScenarioDrawerProps {
@@ -124,9 +125,11 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
     if (!drawnGeometry) return;
     setLoading(true);
     try {
+      const { simulation_years, ...otherMods } = modifications as any;
       const result = await api.runScenario({
         geometry: drawnGeometry,
-        feature_modifications: modifications,
+        feature_modifications: otherMods,
+        simulation_years: simulation_years || 0,
         user_query: userQuery,
         management_units: selectedUnit ? [selectedUnit] : undefined,
       });
@@ -287,6 +290,24 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
                     <span>No Change</span>
                     <span>Farther</span>
                   </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <History className="w-4 h-4 text-emerald-500" />
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Projection Horizon</span>
+                    </div>
+                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
+                      {modifications.simulation_years || 0} Years
+                    </div>
+                  </div>
+                  <input
+                    type="range" min="0" max="10" step="1"
+                    value={modifications.simulation_years || 0}
+                    onChange={(e) => setModifications({ ...modifications, simulation_years: parseInt(e.target.value) })}
+                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                  />
                 </div>
 
                 <div>

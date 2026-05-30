@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS grid_cells (
     ann_peak_month_mean FLOAT,
     dist_to_protected_km FLOAT,
     land_cover_class INTEGER,
+    year INTEGER DEFAULT 2023,
     
     -- Output columns
     baseline_lion_density FLOAT DEFAULT 0,
@@ -87,6 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_scenario_history_user ON scenario_history(user_id
 -- 4. RPC Functions
 
 -- Function: Get cells within bounding box
+DROP FUNCTION IF EXISTS get_cells_in_bbox(FLOAT, FLOAT, FLOAT, FLOAT, INTEGER);
 CREATE OR REPLACE FUNCTION get_cells_in_bbox(
     min_lon FLOAT,
     min_lat FLOAT,
@@ -101,7 +103,8 @@ RETURNS TABLE(
     baseline_lion_density FLOAT,
     all_mean_mean FLOAT,
     longterm_slope_mean FLOAT,
-    dist_to_protected_km FLOAT
+    dist_to_protected_km FLOAT,
+    year INTEGER
 )
 LANGUAGE plpgsql
 AS $$
@@ -114,7 +117,8 @@ BEGIN
         gc.baseline_lion_density,
         gc.all_mean_mean,
         gc.longterm_slope_mean,
-        gc.dist_to_protected_km
+        gc.dist_to_protected_km,
+        gc.year
     FROM grid_cells gc
     WHERE gc.centroid && ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326)
     LIMIT limit_val;
@@ -122,6 +126,7 @@ END;
 $$;
 
 -- Function: Get cells intersecting a geometry
+DROP FUNCTION IF EXISTS get_cells_in_geometry(JSONB, VARCHAR[]);
 CREATE OR REPLACE FUNCTION get_cells_in_geometry(
     geom_geojson JSONB,
     units VARCHAR[] DEFAULT NULL
@@ -140,7 +145,8 @@ RETURNS TABLE(
     ann_amp_mean FLOAT,
     ann_cv_mean FLOAT,
     ann_peak_month_mean FLOAT,
-    dist_to_protected_km FLOAT
+    dist_to_protected_km FLOAT,
+    year INTEGER
 )
 LANGUAGE plpgsql
 AS $$
@@ -163,7 +169,8 @@ BEGIN
         gc.ann_amp_mean,
         gc.ann_cv_mean,
         gc.ann_peak_month_mean,
-        gc.dist_to_protected_km
+        gc.dist_to_protected_km,
+        gc.year
     FROM grid_cells gc
     WHERE ST_Intersects(gc.centroid, target_geom)
     AND (units IS NULL OR array_length(units, 1) = 0 OR gc.management_unit = ANY(units));
@@ -171,6 +178,7 @@ END;
 $$;
 
 -- Function: Get spatial summary statistics
+DROP FUNCTION IF EXISTS get_spatial_summary(VARCHAR);
 CREATE OR REPLACE FUNCTION get_spatial_summary(management_unit_val VARCHAR DEFAULT NULL)
 RETURNS TABLE(
     total_lions FLOAT,

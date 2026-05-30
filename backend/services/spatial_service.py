@@ -16,18 +16,22 @@ async def get_baseline_grid(
     supabase: Client,
     management_unit: Optional[str] = None,
     bbox: Optional[Dict[str, float]] = None,
+    year: Optional[int] = None,
     limit: int = 10000
 ) -> List[Dict]:
     """
-    Get baseline grid cells with predictions
+    Get baseline grid cells for a specific year
     """
     query = supabase.table("grid_cells").select(
-        "cell_id, geom, centroid, management_unit, baseline_lion_density, "
+        "cell_id, geom, centroid, management_unit, year, baseline_lion_density, "
         "all_mean_mean, longterm_slope_mean, dist_to_protected_km"
     )
     
     if management_unit:
         query = query.eq("management_unit", management_unit)
+    
+    if year:
+        query = query.eq("year", year)
     
     # Database-side bbox filtering is skipped if pt_lon/pt_lat are missing.
     # We fetch by management unit or global limit and return.

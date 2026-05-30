@@ -426,6 +426,7 @@ class SupabaseService:
 
 RPC_FUNCTIONS_SQL = """
 -- Function: Get cells within bounding box
+DROP FUNCTION IF EXISTS get_cells_in_bbox(FLOAT, FLOAT, FLOAT, FLOAT, INTEGER);
 CREATE OR REPLACE FUNCTION get_cells_in_bbox(
     min_lon FLOAT,
     min_lat FLOAT,
@@ -440,7 +441,8 @@ RETURNS TABLE(
     baseline_lion_density FLOAT,
     all_mean_mean FLOAT,
     longterm_slope_mean FLOAT,
-    dist_to_protected_km FLOAT
+    dist_to_protected_km FLOAT,
+    year INTEGER
 )
 LANGUAGE plpgsql
 AS $$
@@ -453,7 +455,8 @@ BEGIN
         gc.baseline_lion_density,
         gc.all_mean_mean,
         gc.longterm_slope_mean,
-        gc.dist_to_protected_km
+        gc.dist_to_protected_km,
+        gc.year
     FROM grid_cells gc
     WHERE gc.centroid && ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326)
     LIMIT limit_val;
@@ -494,6 +497,7 @@ END;
 $$;
 
 -- Function: Get spatial summary statistics
+DROP FUNCTION IF EXISTS get_spatial_summary(VARCHAR);
 CREATE OR REPLACE FUNCTION get_spatial_summary(management_unit VARCHAR DEFAULT NULL)
 RETURNS TABLE(
     total_lions FLOAT,

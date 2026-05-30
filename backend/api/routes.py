@@ -32,6 +32,7 @@ async def get_baseline(
     min_lat: Optional[float] = Query(None),
     max_lon: Optional[float] = Query(None),
     max_lat: Optional[float] = Query(None),
+    year: Optional[int] = Query(None),
     db: SupabaseService = Depends(get_db)
 ):
     """
@@ -45,7 +46,7 @@ async def get_baseline(
         bbox = {"min_lon": min_lon, "min_lat": min_lat, "max_lon": max_lon, "max_lat": max_lat}
     
     # Get grid cells from spatial service (which uses Supabase)
-    features = await get_baseline_grid(supabase, management_unit, bbox, limit=50000)
+    features = await get_baseline_grid(supabase, management_unit, bbox, year, limit=50000)
     total_lions = sum(float(f["properties"].get("lion_density") or 0) for f in features)
     
     return BaselineResponse(
@@ -267,7 +268,28 @@ async def run_scenario(
         },
         llm_narrative=narrative,
         map_visualization_url=f"/api/maps/scenario/{stored.get('scenario_id', -1)}",
-        ecological_context=results.get("ecological_context", {})
+        ecological_context=results.get("ecological_context", {}),
+        scenario_geojson={
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": cell.get("geom") if isinstance(cell.get("geom"), dict) else json.loads(cell.get("geom", "{}")),
+                    "properties": {
+                        "cell_id": cell.get("cell_id"),
+                        "baseline_density": float(baseline),
+                        "scenario_density": float(scenario),
+                        "delta": float(delta)
+                    }
+                }
+                for cell, baseline, scenario, delta in zip(
+                    affected_cells, 
+                    results["baseline_total_per_cell"], 
+                    results["scenario_total_per_cell"],
+                    results["per_cell_deltas"]
+                )
+            ]
+        }
     )
 
 

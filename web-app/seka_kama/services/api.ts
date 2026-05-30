@@ -7,6 +7,7 @@ export interface ScenarioRequest {
   feature_modifications: Record<string, number>;
   management_units?: string[];
   user_query?: string;
+  simulation_years?: number;
 }
 
 export interface ScenarioResponse {
@@ -156,9 +157,10 @@ export const api = {
 
   // ── Spatial data ────────────────────────────────────────────────────────
 
-  async getBaseline(managementUnit?: string, bbox?: any): Promise<any> {
+  async getBaseline(managementUnit?: string, year?: number, bbox?: any): Promise<any> {
     const p = new URLSearchParams();
     if (managementUnit) p.append('management_unit', managementUnit);
+    if (year) p.append('year', year.toString());
     if (bbox) {
       p.append('min_lon', bbox.minLon.toString());
       p.append('min_lat', bbox.minLat.toString());

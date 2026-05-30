@@ -186,8 +186,7 @@ class PredictionService:
         
         # Define features that should NOT be modified as percentages (categorical or indices)
         categorical_features = {
-            "density_code", "ann_peak_month_mean", "ann_peak_month_std",
-            "dist_to_protected_km"
+            "density_code", "ann_peak_month_mean", "ann_peak_month_std"
         }
         
         # Apply modifications with validation
@@ -303,6 +302,8 @@ class PredictionService:
             'delta_total': float(deltas.sum()),
             'delta_percent_total': delta_percent_total,
             'per_cell_deltas': deltas.tolist(),
+            'baseline_total_per_cell': baseline_predictions.tolist(),
+            'scenario_total_per_cell': scenario_predictions.tolist(),
             'unit_aggregation': unit_aggregation,
             'affected_cells': num_cells,
             'ecological_context': {

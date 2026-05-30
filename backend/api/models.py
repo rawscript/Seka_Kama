@@ -24,6 +24,7 @@ class ScenarioResponse(BaseModel):
     llm_narrative: str
     map_visualization_url: str
     ecological_context: Optional[Dict[str, float]] = None
+    scenario_geojson: Optional[Dict[str, Any]] = None
     created_at: Optional[datetime] = None
 
 

@@ -97,12 +97,19 @@ CREATE TABLE IF NOT EXISTS public.grid_cells (
     annual_rainfall_mm FLOAT DEFAULT 0,
     hwc_risk_score FLOAT DEFAULT 0,
     
+    -- Temporal Metadata
+    year INTEGER DEFAULT 2023,
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Ensure temporal columns exist for existing tables
+ALTER TABLE public.grid_cells ADD COLUMN IF NOT EXISTS year INTEGER DEFAULT 2023;
 
 CREATE INDEX IF NOT EXISTS idx_grid_cells_geom ON public.grid_cells USING GIST (geom);
 CREATE INDEX IF NOT EXISTS idx_grid_cells_centroid ON public.grid_cells USING GIST (centroid);
 CREATE INDEX IF NOT EXISTS idx_grid_cells_unit ON public.grid_cells(management_unit);
+CREATE INDEX IF NOT EXISTS idx_grid_cells_year ON public.grid_cells(year);
 
 -- 5. Create Protected Areas Table
 CREATE TABLE IF NOT EXISTS public.protected_areas (
@@ -177,6 +184,7 @@ END $$;
 -- 10. RPC Functions for Spatial Analysis
 
 -- Function: Get cells within bounding box
+DROP FUNCTION IF EXISTS get_cells_in_bbox(FLOAT, FLOAT, FLOAT, FLOAT, INTEGER);
 CREATE OR REPLACE FUNCTION get_cells_in_bbox(
     min_lon FLOAT,
     min_lat FLOAT,
@@ -191,7 +199,8 @@ RETURNS TABLE(
     baseline_lion_density FLOAT,
     all_mean_mean FLOAT,
     longterm_slope_mean FLOAT,
-    dist_to_protected_km FLOAT
+    dist_to_protected_km FLOAT,
+    year INTEGER
 )
 LANGUAGE plpgsql
 AS $$
@@ -204,7 +213,8 @@ BEGIN
         gc.baseline_lion_density,
         gc.all_mean_mean,
         gc.longterm_slope_mean,
-        gc.dist_to_protected_km
+        gc.dist_to_protected_km,
+        gc.year
     FROM grid_cells gc
     WHERE gc.centroid && ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326)
     LIMIT limit_val;
@@ -212,6 +222,7 @@ END;
 $$;
 
 -- Function: Get cells intersecting a GeoJSON geometry
+DROP FUNCTION IF EXISTS get_cells_in_geometry(JSONB, TEXT[]);
 CREATE OR REPLACE FUNCTION get_cells_in_geometry(
     geom_geojson JSONB,
     units TEXT[] DEFAULT '{}'::TEXT[]
@@ -266,6 +277,7 @@ END;
 $$;
 
 -- Function: Get spatial summary statistics
+DROP FUNCTION IF EXISTS get_spatial_summary(VARCHAR);
 CREATE OR REPLACE FUNCTION get_spatial_summary(management_unit VARCHAR DEFAULT NULL)
 RETURNS TABLE(
     total_lions FLOAT,

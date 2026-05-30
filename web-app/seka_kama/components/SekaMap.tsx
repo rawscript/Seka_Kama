@@ -85,6 +85,7 @@ function SekaMapContent({
   showLandXBoundary = false,
 }: SekaMapProps) {
   const { 'main-map': mapMain } = useMap();
+  const [onScenarioRunResult, setOnScenarioRunResult] = useState<any>(null);
   const envLandXUrl = process.env.NEXT_PUBLIC_LANDX_TILE_URL || '';
   const landXSourceUrl = getDirectDriveLink(envLandXUrl);
 
@@ -154,7 +155,7 @@ function SekaMapContent({
     setLoading(true);
     try {
       const [baseline, protected_areas] = await Promise.all([
-        api.getBaseline(selectedUnit || undefined),
+        api.getBaseline(selectedUnit || undefined, selectedYear),
         api.getProtectedAreas(),
       ]);
 
@@ -266,11 +267,41 @@ function SekaMapContent({
                 />
               </Source>
             )}
+
+            {/* Future Scenario Layer — shown only after a run */}
+            {onScenarioRunResult?.scenario_geojson && (
+              <Source id="scenario-result" type="geojson" data={onScenarioRunResult.scenario_geojson}>
+                <Layer
+                  id="scenario-heatmap"
+                  type="circle"
+                  paint={{
+                    'circle-radius': [
+                      'interpolate', ['linear'], ['zoom'],
+                      8,  ['interpolate', ['linear'], ['coalesce', ['get', 'scenario_density'], 0], 0, 2, 30, 12],
+                      12, ['interpolate', ['linear'], ['coalesce', ['get', 'scenario_density'], 0], 0, 6, 30, 40],
+                    ],
+                    'circle-color': [
+                      'interpolate', ['linear'], ['coalesce', ['get', 'scenario_density'], 0],
+                      0,  '#eff6ff',
+                      5,  '#3b82f6',
+                      15, '#1d4ed8',
+                      30, '#1e3a8a',
+                    ],
+                    'circle-opacity': 1.0,
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#fff',
+                  }}
+                />
+              </Source>
+            )}
           </>
         )}
 
         <ScenarioDrawer
-          onScenarioRun={onScenarioRun ?? (() => {})}
+          onScenarioRun={(res) => {
+            setOnScenarioRunResult(res);
+            onScenarioRun?.(res);
+          }}
           selectedUnit={selectedUnit}
         />
       </Map>
