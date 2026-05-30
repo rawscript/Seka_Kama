@@ -1,7 +1,16 @@
-import * as ReactDOM from 'react-dom-base';
+import * as ReactDOM from 'react-dom-lib';
 
-// Re-export everything from the real react-dom (via the base alias)
-export * from 'react-dom-base';
+// Re-export everything from the real react-dom
+export * from 'react-dom-lib';
+
+/**
+ * Explicitly re-export common functions to ensure Webpack's static analysis
+ * finds them even through the alias.
+ */
+export const createPortal = ReactDOM.createPortal;
+export const flushSync = ReactDOM.flushSync;
+export const unmountComponentAtNode = ReactDOM.unmountComponentAtNode;
+export const version = ReactDOM.version;
 
 /**
  * Polyfill findDOMNode for React 19 compatibility with older libraries 

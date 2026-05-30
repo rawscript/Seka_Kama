@@ -53,6 +53,7 @@ const nextConfig: NextConfig = {
     // Alias react-dom to our shim to fix findDOMNode missing in React 19
     config.resolve.alias = {
       ...config.resolve.alias,
+      'react-dom-lib': path.resolve(process.cwd(), 'node_modules/react-dom'),
       'react-dom$': path.resolve(process.cwd(), 'react-dom-shim.js'),
     };
 
