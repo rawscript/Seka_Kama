@@ -36,18 +36,56 @@ logger = logging.getLogger(__name__)
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
+
+# ─── Startup environment validator ───────────────────────────────────────────
+
+CRITICAL_ENV_VARS = [
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_KEY",
+    "JWT_SECRET_KEY",
+    "NVIDIA_API_KEY",
+]
+
+def _validate_env() -> None:
+    """
+    Check that all critical environment variables are set before the server
+    starts accepting traffic. Raises RuntimeError in production; logs warnings
+    in development so local iteration is not blocked.
+    """
+    import os
+    missing = [k for k in CRITICAL_ENV_VARS if not os.getenv(k)]
+    if not missing:
+        logger.info("Environment validation passed — all critical vars present.")
+        return
+
+    msg = (
+        f"Missing critical environment variables: {', '.join(missing)}. "
+        "The server may not function correctly."
+    )
+    if settings.DEBUG:
+        logger.warning(msg)
+    else:
+        raise RuntimeError(msg)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load models on startup"""
-    print("Loading SekaNet models...")
+    """Validate env, load models and initialise services on startup."""
+    # 1. Fail fast if critical secrets are absent
+    _validate_env()
+
+    # 2. Load SekaNet ML artefacts
+    logger.info("Loading SekaNet models…")
     app.state.model = joblib.load(settings.MODEL_PATH)
     app.state.scaler = joblib.load(settings.SCALER_PATH)
     app.state.feature_names = joblib.load(settings.FEATURE_NAMES_PATH)
     app.state.supabase = init_supabase()
-    print("Models loaded successfully")
+    logger.info(
+        "SekaNet ready — model v%s, %d features.",
+        "2.0.0",
+        len(app.state.feature_names),
+    )
     yield
-    # Cleanup if needed
-    pass
+    logger.info("Shutting down SekaNet — releasing resources.")
 
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 

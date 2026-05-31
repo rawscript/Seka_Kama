@@ -377,12 +377,114 @@ function SekaMapContent({
         </div>
       )}
 
+      {/* ── Map Legend ────────────────────────────────────────────── */}
+      <MapLegend hasScenario={!!onScenarioRunResult?.scenario_geojson} />
+
       <style dangerouslySetInnerHTML={{
         __html: `
           .maplibregl-ctrl-attrib { display: none !important; }
           .maplibregl-canvas { outline: none !important; }
         `,
       }} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// MapLegend — collapsible legend overlay, rendered inside the map canvas
+// ---------------------------------------------------------------------------
+
+const DENSITY_RAMP = [
+  { color: '#fef3c7', label: 'Very low  (0–5)' },
+  { color: '#fbbf24', label: 'Low       (5–15)' },
+  { color: '#f59e0b', label: 'Moderate  (15–30)' },
+  { color: '#d97706', label: 'High      (30+)' },
+];
+
+function MapLegend({ hasScenario }: { hasScenario: boolean }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        bottom: 28,
+        right: 14,
+        zIndex: 30,
+        width: 192,
+        background: 'rgba(2,6,23,0.82)',
+        backdropFilter: 'blur(12px)',
+        border: '1px solid rgba(16,185,129,0.18)',
+        borderRadius: 8,
+        overflow: 'hidden',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+        fontFamily: 'monospace',
+      }}
+    >
+      {/* Header */}
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          padding: '8px 12px',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          color: '#10b981',
+        }}
+      >
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          Layer Legend
+        </span>
+        <span style={{ fontSize: 10, opacity: 0.6 }}>{collapsed ? '▲' : '▼'}</span>
+      </button>
+
+      {!collapsed && (
+        <div style={{ padding: '0 12px 12px' }}>
+          {/* Lion Density Ramp */}
+          <p style={{ fontSize: 8, color: '#6ee7b7', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 6 }}>
+            Lion Density (lions/km²)
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
+            {DENSITY_RAMP.map(({ color, label }) => (
+              <div key={color} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 2, background: color, flexShrink: 0 }} />
+                <span style={{ fontSize: 9, color: '#94a3b8' }}>{label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Protected Areas */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 2, background: '#059669', opacity: 0.7, flexShrink: 0 }} />
+            <span style={{ fontSize: 9, color: '#94a3b8' }}>Protected zones</span>
+          </div>
+
+          {/* Scenario layer — only shown after a run */}
+          {hasScenario && (
+            <>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '8px 0' }} />
+              <p style={{ fontSize: 8, color: '#fbbf24', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 6 }}>
+                Scenario Projection
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 2, background: '#f59e0b', border: '2px solid #fff', flexShrink: 0 }} />
+                <span style={{ fontSize: 9, color: '#94a3b8' }}>Predicted future density</span>
+              </div>
+            </>
+          )}
+
+          {/* Attribution */}
+          <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 8 }}>
+            <span style={{ fontSize: 8, color: '#475569', letterSpacing: '0.1em' }}>
+              SekaNet v2.0 · XGBoost · ESRI Satellite
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
