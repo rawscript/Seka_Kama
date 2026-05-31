@@ -15,14 +15,29 @@ export default function DemoPage() {
     setMounted(true);
   }, []);
 
-  const togglePlay = () => {
+  // Handle play/pause logic via effect to avoid promise interruptions
+  useEffect(() => {
     if (!videoRef.current) return;
+
+    const video = videoRef.current;
     
     if (isPlaying) {
-      videoRef.current.pause();
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          // Ignore AbortError as it's just a promise interruption
+          if (error.name !== 'AbortError') {
+            console.error("Playback failed:", error);
+          }
+        });
+      }
     } else {
-      videoRef.current.play();
+      video.pause();
     }
+  }, [isPlaying]);
+
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
   };
 
   return (
@@ -59,8 +74,6 @@ export default function DemoPage() {
              ref={videoRef}
              className="w-full h-full object-cover"
              poster="https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&q=80&w=2000"
-             onPlay={() => setIsPlaying(true)}
-             onPause={() => setIsPlaying(false)}
              loop
              muted={false}
              playsInline
