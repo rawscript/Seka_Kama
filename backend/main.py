@@ -121,15 +121,11 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
 
 # Initialize Prometheus instrumentation — only expose in debug/dev
 instrumentator = Instrumentator().instrument(app)
 if settings.DEBUG:
     instrumentator.expose(app)
-
-# Trust proxy headers for HTTPS resolution
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # ---------------------------------------------------------------------------
 # CORS
@@ -279,8 +275,21 @@ class SecurityHeadersMiddleware:
 
         await self.app(scope, receive, send_with_security_headers)
 
+# ── Middleware stack — ORDER MATTERS ────────────────────────────────────────
+# Starlette applies add_middleware() in REVERSE order, so the LAST call added
+# becomes the OUTERMOST wrapper (first to receive a request).
+#
+# Desired execution order:
+#   DynamicCORSMiddleware  ← must be first to handle OPTIONS preflights
+#   SecurityHeadersMiddleware
+#   ProxyHeadersMiddleware (trust X-Forwarded-* from Railway's load balancer)
+#   SlowAPIMiddleware      ← rate-limiter's 429s will now have CORS headers
+#
+# To achieve this, register them in REVERSE order:
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(DynamicCORSMiddleware)
+app.add_middleware(DynamicCORSMiddleware)  # ← outermost: added LAST
 
 
 # Allowlist of trusted domains for the GeoJSON proxy.
