@@ -15,8 +15,9 @@ from .models import (
 from services.prediction_service import predict_scenario, get_feature_importance_json
 from services.spatial_service import get_baseline_grid, get_affected_cells, get_protected_areas
 from services.llm_service import generate_narrative, generate_explanation
+from services.audit_service import audit_service
 from core.database import get_db, SupabaseService
-from core.auth import get_current_user, TokenData
+from core.auth import get_current_user, TokenData, require_admin
 
 router = APIRouter()
 
@@ -256,6 +257,19 @@ async def run_scenario(
         logger.error(f"Failed to save scenario history: {str(e)}")
         # We still return the results even if save fails, but with a warning
         stored = {"scenario_id": -1}
+    
+    # 5. Log audit action
+    await audit_service.log(
+        action="Intelligence Scenario Executed",
+        resource_type="Intelligence",
+        resource_id=str(stored.get("id") or stored.get("scenario_id")),
+        user_id=current_user.user_id,
+        details={
+            "delta": results["delta_total"],
+            "message": f"Simulated {abs(results['delta_total']):.1f} lion delta in {scenario.user_query or 'selected habitat'}."
+        },
+        request=request
+    )
     
     return ScenarioResponse(
         scenario_id=stored.get("scenario_id", -1),
@@ -573,6 +587,30 @@ async def get_statistics(
         "management_unit_count": len(set(c.get("management_unit") for c in cells if c.get("management_unit")))
     }
 
+
+# ============================================================
+# AUDIT LOGS
+# ============================================================
+
+@router.get("/audit-logs")
+async def get_audit_logs(
+    limit: int = Query(20, ge=1, le=100),
+    db: SupabaseService = Depends(get_db),
+    current_user: TokenData = Depends(require_admin)
+):
+    """
+    Get recent system audit logs. Requires administrator privileges.
+    """
+    result = db.client.table("audit_logs")\
+        .select("*, users(email, full_name)")\
+        .order("created_at", descending=True)\
+        .limit(limit)\
+        .execute()
+    
+    return {
+        "logs": result.data,
+        "count": len(result.data)
+    }
 
 # ============================================================
 # HEALTH CHECK

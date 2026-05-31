@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { getApiUrl } from '@/services/config';
+import NotificationPanel from '@/components/NotificationPanel';
 
 interface User {
   id: number;
@@ -22,7 +23,9 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -51,6 +54,9 @@ export default function DashboardLayout({
     const handleClickOutside = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setIsUserMenuOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        setIsNotificationOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -222,10 +228,16 @@ export default function DashboardLayout({
                 <span className="text-[12px] font-semibold text-secondary uppercase tracking-widest">System Operational</span>
               </div>
               
-              <button className="text-secondary hover:text-on-surface transition-colors relative">
-                <span className="material-symbols-outlined">notifications</span>
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full border border-white"></span>
-              </button>
+              <div className="relative" ref={notificationRef}>
+                <button 
+                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                  className={`text-secondary hover:text-on-surface transition-colors relative ${isNotificationOpen ? 'text-primary' : ''}`}
+                >
+                  <span className="material-symbols-outlined">notifications</span>
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full border border-white"></span>
+                </button>
+                <NotificationPanel isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
+              </div>
 
               <div className="flex items-center gap-3 pl-4 border-l border-outline-variant relative" ref={userMenuRef}>
                 <div className="text-right">
