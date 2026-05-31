@@ -18,6 +18,16 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+import sentry_sdk
+from prometheus_fastapi_instrumentator import Instrumentator
+
+# Initialize Sentry
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
+    )
 
 # Initialize logging
 setup_logging(debug=settings.DEBUG)
@@ -42,14 +52,38 @@ async def lifespan(app: FastAPI):
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 app = FastAPI(
-    title="Seka Kama Digital Twin API",
-    description="Lion population prediction and scenario analysis",
+    title="Seka Kama: Ecological Digital Twin API",
+    description="""
+    The Seka Kama API provides high-precision ecological simulations and predictive modelling 
+    for lion population dynamics in the Kenyan landscape.
+    
+    ### Capabilities:
+    *   **Spatial Analysis**: High-resolution grid-based ecosystem snapshots.
+    *   **Scenario Modelling**: XGBoost-driven 'what-if' simulations for land-use changes.
+    *   **AI Narratives**: Natural language ecological interpretations powered by Stepfun AI.
+    *   **Live Connectivity**: Real-time enrichment from NASA POWER and GBIF.
+    
+    *Enterprise Grade — Observability, Analytics, and Audit Logging Enabled.*
+    """,
     version="2.0.0",
+    terms_of_service="https://seka-kama.vercel.app/terms/",
+    contact={
+        "name": "Seka Kama Engineering",
+        "url": "https://github.com/rawscript/Seka_Kama",
+        "email": "engineering@seka-kama.io",
+    },
+    license_info={
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    },
     lifespan=lifespan
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+
+# Initialize Prometheus instrumentation
+Instrumentator().instrument(app).expose(app)
 
 # Trust proxy headers for HTTPS resolution
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
@@ -178,6 +212,31 @@ class DynamicCORSMiddleware:
         await self.app(scope, receive, send_with_cors)
 
 
+class SecurityHeadersMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_with_security_headers(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.extend([
+                    (b"content-security-policy", b"default-src 'self'; script-src 'self'; object-src 'none'; frame-ancestors 'none';"),
+                    (b"x-content-type-options", b"nosniff"),
+                    (b"x-frame-options", b"DENY"),
+                    (b"x-xss-protection", b"1; mode=block"),
+                    (b"strict-transport-security", b"max-age=31536000; includeSubDomains"),
+                ])
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_with_security_headers)
+
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(DynamicCORSMiddleware)
 
 

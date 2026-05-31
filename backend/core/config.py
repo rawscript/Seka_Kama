@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     LLM_API_URL: str = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
     LLM_API_KEY: str = os.getenv("NVIDIA_API_KEY") or os.getenv("LLM_API_KEY", "")
     
+    # Observability
+    SENTRY_DSN: Optional[str] = os.getenv("SENTRY_DSN")
+
     # API settings
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
