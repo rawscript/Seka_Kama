@@ -76,14 +76,19 @@ app = FastAPI(
         "name": "Apache 2.0",
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
     },
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-# Initialize Prometheus instrumentation
-Instrumentator().instrument(app).expose(app)
+# Initialize Prometheus instrumentation — only expose in debug/dev
+instrumentator = Instrumentator().instrument(app)
+if settings.DEBUG:
+    instrumentator.expose(app)
 
 # Trust proxy headers for HTTPS resolution
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
