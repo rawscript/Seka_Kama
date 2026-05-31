@@ -11,8 +11,11 @@ import {
   Activity,
   ChevronRight,
   ShieldAlert,
-  Brain
+  Brain,
+  Download,
+  GitCompare
 } from 'lucide-react';
+import { exportScenarioResult } from '../services/exportService';
 
 interface ScenarioResultPanelProps {
   result: any;
@@ -226,6 +229,18 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
       {/* Footer Info */}
       <div className="p-4 bg-black/40 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-600 font-mono">
          <span className="flex items-center gap-1.5"><Activity className="w-3 h-3" /> Real-time Compute</span>
+         <button 
+           onClick={() => exportScenarioResult(result)}
+           className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+         >
+           <Download className="w-3 h-3" /> Export Intelligence
+         </button>
+         <button 
+           onClick={() => alert("Scenario added to comparison queue. Select another scenario to compare results.")}
+           className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+         >
+           <GitCompare className="w-3 h-3" /> Compare
+         </button>
          <span>v4.2.1-Prod</span>
       </div>
     </div>

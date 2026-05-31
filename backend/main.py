@@ -8,13 +8,23 @@ import re
 import urllib.parse
 import logging
 
-logger = logging.getLogger(__name__)
-
 from api.routes import router
 from api.auth_routes import router as auth_router
 from api.key_routes import router as keys_router
 from core.config import settings
 from core.database import init_supabase
+from core.logging_config import setup_logging
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
+# Initialize logging
+setup_logging(debug=settings.DEBUG)
+logger = logging.getLogger(__name__)
+
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,6 +47,9 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Trust proxy headers for HTTPS resolution
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")

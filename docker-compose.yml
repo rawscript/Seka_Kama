@@ -22,13 +22,6 @@ services:
     build: ./web-app/seka_kama
     ports:
       - "3000:3000"
-  
-  ollama:  # Local LLM for narratives
-    image: ollama/ollama:latest
-    volumes:
-      - ollama_data:/root/.ollama
-    command: serve
 
 volumes:
   postgis_data:
-  ollama_data:

@@ -34,8 +34,8 @@ services:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       DATABASE_URL: postgresql://sekakama_user:${DB_PASSWORD}@postgis:5432/sekakama
-      LLM_API_URL: ${LLM_API_URL:-http://ollama:11434/api/generate}
-      LLM_MODEL: ${LLM_MODEL:-llama3}
+      LLM_API_URL: ${LLM_API_URL:-https://integrate.api.nvidia.com/v1}
+      LLM_MODEL: ${LLM_MODEL:-stepfun-ai/step-3.5-flash}
       DEBUG: ${DEBUG:-false}
     volumes:
       - ./models:/app/models
@@ -71,19 +71,6 @@ services:
       - sekakama_network
     restart: unless-stopped
 
-  # Optional: Ollama for local LLM (narrative generation)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: sekakama_ollama
-    volumes:
-      - ollama_data:/root/.ollama
-    ports:
-      - "11434:11434"
-    networks:
-      - sekakama_network
-    restart: unless-stopped
-    # Pull llama3 on startup (uncomment if needed)
-    # command: sh -c "ollama pull llama3 && ollama serve"
 
   # Optional: Nginx for reverse proxy (production)
   nginx:
@@ -110,4 +97,3 @@ networks:
 
 volumes:
   postgis_data:
-  ollama_data:
