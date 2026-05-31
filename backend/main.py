@@ -285,10 +285,22 @@ async def proxy_geojson(url: str):
     """Proxy for external GeoJSON files with robust error handling"""
     import httpx
 
+    class _AllowlistTransport(httpx.AsyncBaseTransport):
+        def __init__(self, inner: httpx.AsyncBaseTransport) -> None:
+            self._inner = inner
+
+        async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+            _validate_proxy_url(str(request.url))
+            return await self._inner.handle_async_request(request)
+
+        async def aclose(self) -> None:
+            await self._inner.aclose()
+
     _validate_proxy_url(url)
 
     try:
-        async with httpx.AsyncClient(follow_redirects=True) as client:
+        transport = _AllowlistTransport(httpx.AsyncHTTPTransport())
+        async with httpx.AsyncClient(follow_redirects=True, transport=transport) as client:
             response = await client.get(url, timeout=20.0)
             
             if response.status_code != 200:
