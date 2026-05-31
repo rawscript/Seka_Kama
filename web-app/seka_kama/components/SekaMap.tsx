@@ -190,6 +190,22 @@ function SekaMapContent({
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
+  const onMapClick = (event: any) => {
+    const features = event.features;
+    if (features && features.length > 0) {
+      const cell = features.find((f: any) => f.layer.id === 'lions-heatmap' || f.layer.id === 'scenario-heatmap');
+      if (cell) {
+        onScenarioRun?.({
+          type: 'selection',
+          cells: [{
+            properties: cell.properties,
+            geometry: cell.geometry
+          }]
+        });
+      }
+    }
+  };
+
   return (
     <div className="w-full h-full relative">
       <Map
@@ -199,6 +215,8 @@ function SekaMapContent({
         style={{ width: '100%', height: '100%' }}
         mapStyle={currentMapStyle}
         id="main-map"
+        onClick={onMapClick}
+        interactiveLayerIds={['lions-heatmap', 'scenario-heatmap']}
       >
         {isStyleLoaded && (
           <>
@@ -282,10 +300,10 @@ function SekaMapContent({
                     ],
                     'circle-color': [
                       'interpolate', ['linear'], ['coalesce', ['get', 'scenario_density'], 0],
-                      0,  '#eff6ff',
-                      5,  '#3b82f6',
-                      15, '#1d4ed8',
-                      30, '#1e3a8a',
+                      0,  '#fef3c7',
+                      5,  '#fbbf24',
+                      15, '#f59e0b',
+                      30, '#d97706',
                     ],
                     'circle-opacity': 1.0,
                     'circle-stroke-width': 2,

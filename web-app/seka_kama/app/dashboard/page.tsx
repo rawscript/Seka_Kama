@@ -110,16 +110,16 @@ function DashboardContent() {
 
   const units = ['Mara North', 'Olare-Motorogi', 'Naboisho', 'Ol Kinyei'];
 
-  // ── Fetch landscape stats on mount / unit change ──────────────────────────
+  // ── Fetch landscape stats on mount / unit change / year change ──────────
   useEffect(() => {
     let cancelled = false;
     setStatsLoading(true);
-    api.getStatistics(selectedUnit || undefined)
+    api.getStatistics(selectedUnit || undefined, selectedYear)
       .then((s) => { if (!cancelled) setStats(s); })
       .catch(() => { /* non-fatal — stats strip stays hidden */ })
       .finally(() => { if (!cancelled) setStatsLoading(false); });
     return () => { cancelled = true; };
-  }, [selectedUnit]);
+  }, [selectedUnit, selectedYear]);
 
   // ── Fetch historical trends when panel is opened ──────────────────────────
   useEffect(() => {

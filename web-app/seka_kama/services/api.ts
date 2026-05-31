@@ -190,9 +190,10 @@ export const api = {
     return this.get(qs ? `/protected-areas?${qs}` : '/protected-areas');
   },
 
-  async getStatistics(managementUnit?: string): Promise<LandscapeStats> {
+  async getStatistics(managementUnit?: string, year?: number): Promise<LandscapeStats> {
     const p = new URLSearchParams();
     if (managementUnit) p.append('management_unit', managementUnit);
+    if (year) p.append('year', year.toString());
     const qs = p.toString();
     return this.get(qs ? `/statistics?${qs}` : '/statistics');
   },

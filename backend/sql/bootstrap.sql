@@ -277,8 +277,11 @@ END;
 $$;
 
 -- Function: Get spatial summary statistics
-DROP FUNCTION IF EXISTS get_spatial_summary(VARCHAR);
-CREATE OR REPLACE FUNCTION get_spatial_summary(management_unit VARCHAR DEFAULT NULL)
+DROP FUNCTION IF EXISTS get_spatial_summary(VARCHAR, INTEGER);
+CREATE OR REPLACE FUNCTION get_spatial_summary(
+    management_unit VARCHAR DEFAULT NULL,
+    target_year INTEGER DEFAULT 2023
+)
 RETURNS TABLE(
     total_lions FLOAT,
     avg_nightlight FLOAT,
@@ -297,7 +300,8 @@ BEGIN
         COALESCE(AVG(gc.dist_to_protected_km), 0)::FLOAT as avg_distance_to_protected,
         COUNT(*)::BIGINT as cell_count
     FROM grid_cells gc
-    WHERE (management_unit IS NULL OR gc.management_unit = management_unit);
+    WHERE (management_unit IS NULL OR gc.management_unit = management_unit)
+    AND (target_year IS NULL OR gc.year = target_year);
 END;
 $$;
 

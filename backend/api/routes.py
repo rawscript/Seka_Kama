@@ -60,12 +60,13 @@ async def get_baseline(
 @router.get("/baseline/summary")
 async def get_baseline_summary(
     management_unit: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
     db: SupabaseService = Depends(get_db)
 ):
     """
     Get aggregated summary statistics for baseline data.
     """
-    cells = db.get_grid_cells(management_unit=management_unit, limit=50000)
+    cells = db.get_grid_cells(management_unit=management_unit, year=year, limit=50000)
     
     if not cells:
         return {
@@ -529,13 +530,14 @@ async def export_grid_cells(
 @router.get("/statistics")
 async def get_statistics(
     management_unit: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
     db: SupabaseService = Depends(get_db)
 ):
     """
     Get comprehensive statistics for the Seka Kama landscape.
     Used for dashboard summary cards and reporting.
     """
-    cells = db.get_grid_cells(management_unit=management_unit, limit=50000)
+    cells = db.get_grid_cells(management_unit=management_unit, year=year, limit=50000)
     
     if not cells:
         return {

@@ -140,8 +140,8 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
 
               {/* Grid of secondary metrics */}
               <div className="grid grid-cols-2 gap-4">
-                 <MiniStat label="Baseline Density" value={safeInt(baselineTotal)} unit="Lions" />
-                 <MiniStat label="Scenario Projection" value={safeInt(predictedTotal)} unit="Lions" />
+                 <MiniStat label="Baseline Population" value={safeInt(baselineTotal)} unit="Lions" />
+                 <MiniStat label="Scenario Population" value={safeInt(predictedTotal)} unit="Lions" />
                  <MiniStat label="Impact Area" value={affectedCells != null ? safeInt(affectedCells) : '—'} unit="cells" />
                  {/* Show real HWC risk if available, otherwise delta % */}
                  {eco ? (

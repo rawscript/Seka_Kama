@@ -52,6 +52,7 @@ class SupabaseService:
     def get_grid_cells(
         self,
         management_unit: Optional[str] = None,
+        year: Optional[int] = None,
         limit: int = 10000,
         offset: int = 0,
         order_by: str = "cell_id",
@@ -64,6 +65,9 @@ class SupabaseService:
         
         if management_unit:
             query = query.eq("management_unit", management_unit)
+        
+        if year:
+            query = query.eq("year", year)
         
         order_expr = order_by if not order_desc else f"{order_by}.desc"
         query = query.order(order_expr).limit(limit).offset(offset)
