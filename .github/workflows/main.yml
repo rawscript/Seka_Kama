@@ -11,39 +11,72 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install dependencies
         run: |
           cd backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Run tests
+
+      - name: Run tests with coverage
+        env:
+          DEBUG: "true"
+          JWT_SECRET_KEY: "ci-test-secret-key-at-least-32-chars!!"
+          SUPABASE_URL: "https://placeholder.supabase.co"
+          SUPABASE_SERVICE_KEY: "placeholder-service-key"
+          NVIDIA_API_KEY: "placeholder-nvidia-key"
         run: |
           cd backend
-          python -m pytest
+          python -m pytest --cov=. --cov-report=xml --cov-report=term-missing -v
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: backend/coverage.xml
 
   test-frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: web-app/seka_kama/package-lock.json
+
       - name: Install dependencies
         run: |
           cd web-app/seka_kama
           npm install
-      - name: Build
+
+      - name: Type check
         run: |
           cd web-app/seka_kama
-          npm run build
+          npx tsc --noEmit || true
+
       - name: Lint
         run: |
           cd web-app/seka_kama
           npm run lint
+
+      - name: Build
+        run: |
+          cd web-app/seka_kama
+          npm run build

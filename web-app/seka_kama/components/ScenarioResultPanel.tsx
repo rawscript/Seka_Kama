@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   X, 
   TrendingDown, 
@@ -9,11 +9,13 @@ import {
   MapPin, 
   Users, 
   Activity,
-  ChevronRight,
   ShieldAlert,
   Brain,
   Download,
-  GitCompare
+  GitCompare,
+  ChevronRight,
+  BarChart3,
+  ArrowRight,
 } from 'lucide-react';
 import { exportScenarioResult } from '../services/exportService';
 
@@ -41,7 +43,7 @@ function safeInt(val: any): string {
   return Math.round(n).toLocaleString();
 }
 
-// -- Normalize accept both live ScenarioResponse and history shapes --
+// -- Normalize: accept both live ScenarioResponse and history shapes --
 function normalize(result: any) {
   const isSelection = result.type === 'selection';
   
@@ -61,8 +63,6 @@ function normalize(result: any) {
   const narrative: string = result.llm_narrative ?? result.request_data?.user_query ?? '';
   const title: string = result.user_description ?? result.request_data?.user_query ?? `Scenario Intelligence`;
   const affectedCells: number | null = result.affected_cells ?? null;
-
-  // Real ecological context from backend enrichment
   const eco = result.ecological_context ?? null;
 
   return {
@@ -71,13 +71,36 @@ function normalize(result: any) {
   };
 }
 
+// -- Comparison queue (module-level store, simple approach without Redux) --
+let compareQueue: any[] = [];
+
 export default function ScenarioResultPanel({ result, onClose }: ScenarioResultPanelProps) {
   const { isSelection, delta, deltaPercent, predictedTotal, baselineTotal, affectedUnits, narrative, title, affectedCells, eco } = normalize(result);
+  const [showCompare, setShowCompare] = useState(false);
+  const [queueSize, setQueueSize] = useState(compareQueue.length);
 
   const isNegative = delta != null && delta < 0;
   const accentColor = isNegative ? 'text-rose-400' : 'text-emerald-400';
   const accentBg = isNegative ? 'bg-rose-500/10' : 'bg-emerald-500/10';
   const accentBorder = isNegative ? 'border-rose-500/20' : 'border-emerald-500/20';
+
+  const handleAddToCompare = () => {
+    const alreadyIn = compareQueue.some(s => s.scenario_id === result.scenario_id && result.scenario_id !== undefined);
+    if (!alreadyIn) {
+      compareQueue = [...compareQueue, result];
+      setQueueSize(compareQueue.length);
+    }
+    setShowCompare(true);
+  };
+
+  if (showCompare && compareQueue.length >= 1) {
+    return (
+      <ComparePanel
+        scenarios={compareQueue}
+        onClose={() => { setShowCompare(false); compareQueue = []; setQueueSize(0); }}
+      />
+    );
+  }
 
   return (
     <div className="w-[400px] enterprise-card overflow-hidden flex flex-col p-0 animate-in fade-in slide-in-from-right-8 duration-500">
@@ -146,7 +169,6 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
                  <MiniStat label="Baseline Population" value={safeInt(baselineTotal)} unit="Lions" />
                  <MiniStat label="Scenario Population" value={safeInt(predictedTotal)} unit="Lions" />
                  <MiniStat label="Impact Area" value={affectedCells != null ? safeInt(affectedCells) : '—'} unit="cells" />
-                 {/* Show real HWC risk if available, otherwise delta % */}
                  {eco ? (
                    <MiniStat
                      label="HWC Risk"
@@ -163,7 +185,7 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
                  )}
               </div>
 
-              {/* Ecological context — only shown when backend enrichment ran */}
+              {/* Ecological context */}
               {eco && (
                 <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl space-y-3">
                   <div className="flex items-center gap-2 text-emerald-400 mb-1">
@@ -171,24 +193,9 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
                     <span className="text-[10px] font-bold uppercase tracking-widest">Live Ecological Context</span>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    <EcoStat
-                      label="Prey Density"
-                      value={eco.avg_prey_density.toFixed(3)}
-                      unit="/km²"
-                      tooltip="Avg herbivore occurrence density (GBIF)"
-                    />
-                    <EcoStat
-                      label="Rainfall"
-                      value={Math.round(eco.avg_rainfall_mm).toString()}
-                      unit="mm/yr"
-                      tooltip="Annual precipitation (NASA POWER)"
-                    />
-                    <EcoStat
-                      label="HWC Risk"
-                      value={`${(eco.avg_hwc_risk * 100).toFixed(0)}%`}
-                      unit=""
-                      tooltip="Human-Wildlife Conflict risk index"
-                    />
+                    <EcoStat label="Prey Density" value={eco.avg_prey_density.toFixed(3)} unit="/km²" tooltip="Avg herbivore occurrence density (GBIF)" />
+                    <EcoStat label="Rainfall" value={Math.round(eco.avg_rainfall_mm).toString()} unit="mm/yr" tooltip="Annual precipitation (NASA POWER)" />
+                    <EcoStat label="HWC Risk" value={`${(eco.avg_hwc_risk * 100).toFixed(0)}%`} unit="" tooltip="Human-Wildlife Conflict risk index" />
                   </div>
                 </div>
               )}
@@ -226,23 +233,177 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
         )}
       </div>
 
-      {/* Footer Info */}
+      {/* Footer */}
       <div className="p-4 bg-black/40 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-600 font-mono">
          <span className="flex items-center gap-1.5"><Activity className="w-3 h-3" /> Real-time Compute</span>
          <button 
            onClick={() => exportScenarioResult(result)}
            className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
          >
-           <Download className="w-3 h-3" /> Export Intelligence
+           <Download className="w-3 h-3" /> Export
          </button>
          <button 
-           onClick={() => alert("Scenario added to comparison queue. Select another scenario to compare results.")}
-           className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+           onClick={handleAddToCompare}
+           className="flex items-center gap-1.5 hover:text-amber-400 transition-colors cursor-pointer relative"
          >
-           <GitCompare className="w-3 h-3" /> Compare
+           <GitCompare className="w-3 h-3" />
+           Compare
+           {queueSize > 0 && (
+             <span className="absolute -top-2 -right-2 w-3.5 h-3.5 bg-amber-500 rounded-full text-[8px] text-black font-bold flex items-center justify-center">
+               {queueSize}
+             </span>
+           )}
          </button>
          <span>v4.2.1-Prod</span>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ComparePanel — side-by-side scenario comparison view
+// ---------------------------------------------------------------------------
+
+function ComparePanel({ scenarios, onClose }: { scenarios: any[]; onClose: () => void }) {
+  const a = normalize(scenarios[0]);
+  const b = scenarios[1] ? normalize(scenarios[1]) : null;
+
+  return (
+    <div className="w-[520px] enterprise-card overflow-hidden flex flex-col p-0 animate-in fade-in slide-in-from-right-8 duration-500">
+      <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/2">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-amber-400" />
+          <h3 className="text-sm font-bold text-white uppercase tracking-widest">Scenario Comparison</h3>
+          <span className="text-[9px] font-mono text-slate-500 bg-white/5 px-2 py-0.5 rounded">
+            {scenarios.length} scenario{scenarios.length !== 1 ? 's' : ''} queued
+          </span>
+        </div>
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-all">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {b ? (
+        <div className="p-5 space-y-5 overflow-y-auto custom-scrollbar max-h-[70vh]">
+          {/* Header row */}
+          <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
+            <ScenarioLabel result={scenarios[0]} index="A" />
+            <ArrowRight className="w-4 h-4 text-slate-600" />
+            <ScenarioLabel result={scenarios[1]} index="B" />
+          </div>
+
+          {/* Delta comparison */}
+          <CompareRow
+            label="Population Δ (Lions)"
+            aVal={a.delta}
+            bVal={b.delta}
+            format={(v) => (v != null ? safeFixed(v, 1) : '—')}
+            higherIsBetter={true}
+          />
+          <CompareRow
+            label="Baseline Population"
+            aVal={a.baselineTotal}
+            bVal={b.baselineTotal}
+            format={safeInt}
+          />
+          <CompareRow
+            label="Predicted Population"
+            aVal={a.predictedTotal}
+            bVal={b.predictedTotal}
+            format={safeInt}
+            higherIsBetter={true}
+          />
+          <CompareRow
+            label="Impact Area (cells)"
+            aVal={a.affectedCells}
+            bVal={b.affectedCells}
+            format={safeInt}
+          />
+          <CompareRow
+            label="Δ Percent"
+            aVal={a.deltaPercent}
+            bVal={b.deltaPercent}
+            format={(v) => (v != null ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : '—')}
+            higherIsBetter={true}
+          />
+
+          {/* Narratives */}
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+            {[a, b].map((s, i) => s.narrative && (
+              <div key={i} className="p-3 bg-white/2 border border-white/5 rounded-xl">
+                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  Scenario {i === 0 ? 'A' : 'B'} — AI Narrative
+                </p>
+                <p className="text-[10px] text-slate-400 italic leading-relaxed line-clamp-5">"{s.narrative}"</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* Waiting for second scenario */
+        <div className="p-10 flex flex-col items-center justify-center gap-4 text-center">
+          <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+            <GitCompare className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white mb-1">Scenario A Queued</p>
+            <p className="text-xs text-slate-500 leading-relaxed max-w-[200px]">
+              Close this panel, run another scenario, then click <strong className="text-amber-400">Compare</strong> to see a side-by-side analysis.
+            </p>
+          </div>
+          <div className="mt-2 p-3 bg-white/3 border border-white/5 rounded-xl w-full">
+            <p className="text-[9px] font-mono text-amber-400 uppercase tracking-widest mb-1">Queued: Scenario A</p>
+            <p className="text-xs text-slate-400 truncate">{a.title}</p>
+            <p className="text-[10px] font-mono text-emerald-400 mt-1">
+              Δ {a.delta != null ? safeFixed(a.delta, 1) : '—'} Lions
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="p-3 border-t border-white/5 bg-black/40 text-[9px] font-mono text-slate-600 text-center">
+        SekaNet Comparison Engine · Base model XGBoost v2.0
+      </div>
+    </div>
+  );
+}
+
+function ScenarioLabel({ result, index }: { result: any; index: string }) {
+  const n = normalize(result);
+  return (
+    <div className={`p-3 rounded-xl bg-white/3 border border-white/5 ${index === 'B' ? 'text-right' : ''}`}>
+      <span className="text-[9px] font-bold text-amber-400 uppercase tracking-widest">Scenario {index}</span>
+      <p className="text-xs text-white font-semibold truncate mt-0.5">{n.title}</p>
+      <p className="text-[10px] font-mono text-slate-400">
+        Δ {n.delta != null ? safeFixed(n.delta, 1) : '—'} Lions
+      </p>
+    </div>
+  );
+}
+
+function CompareRow({
+  label, aVal, bVal, format, higherIsBetter = false
+}: {
+  label: string;
+  aVal: any;
+  bVal: any;
+  format: (v: any) => string;
+  higherIsBetter?: boolean;
+}) {
+  const aNum = typeof aVal === 'number' ? aVal : parseFloat(aVal);
+  const bNum = typeof bVal === 'number' ? bVal : parseFloat(bVal);
+  const aWins = isFinite(aNum) && isFinite(bNum) && (higherIsBetter ? aNum > bNum : aNum < bNum);
+  const bWins = isFinite(aNum) && isFinite(bNum) && (higherIsBetter ? bNum > aNum : bNum < aNum);
+
+  return (
+    <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+      <span className={`text-right text-sm font-mono font-bold ${aWins ? 'text-emerald-400' : 'text-slate-300'}`}>
+        {format(aVal)}
+      </span>
+      <span className="text-[9px] text-slate-600 uppercase tracking-widest text-center min-w-[90px]">{label}</span>
+      <span className={`text-sm font-mono font-bold ${bWins ? 'text-emerald-400' : 'text-slate-300'}`}>
+        {format(bVal)}
+      </span>
     </div>
   );
 }
