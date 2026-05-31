@@ -128,7 +128,7 @@ export default function LandingPage() {
               Seka Kama: <br />
               <span className="italic font-light text-[#4e3700]">The Digital Twin</span>
             </h1>
-            <p className="text-base md:text-lg leading-relaxed text-[#4e4639] mb-10 max-w-lg font-light">
+            <p className="text-base md:text-lg leading-relaxed text-[#f7f5f0] mb-10 max-w-lg font-light">
               Coordinating the future of biodiversity through real-time geospatial intelligence and predictive ecology for the Greater Mara ecosystem.
             </p>
             <div className="flex flex-wrap gap-4">
