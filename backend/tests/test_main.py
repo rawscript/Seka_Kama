@@ -1,5 +1,12 @@
 from fastapi.testclient import TestClient
-from main import app
+# Import using absolute path from backend root
+try:
+    from main import app
+except ImportError:
+    import sys
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from main import app
 
 client = TestClient(app)
 
