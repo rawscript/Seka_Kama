@@ -39,11 +39,12 @@ limiter = Limiter(key_func=get_remote_address)
 
 # ─── Startup environment validator ───────────────────────────────────────────
 
+# These must match the exact variable names set in Railway / your .env file.
+# config.py reads SUPABASE_SERVICE_ROLE_KEY (the standard Supabase service role key name).
 CRITICAL_ENV_VARS = [
     "SUPABASE_URL",
-    "SUPABASE_SERVICE_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",  # was incorrectly "SUPABASE_SERVICE_KEY"
     "JWT_SECRET_KEY",
-    "NVIDIA_API_KEY",
 ]
 
 def _validate_env() -> None:
