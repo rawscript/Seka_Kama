@@ -40,7 +40,7 @@ export default function GeospatialPage() {
             Advanced <span className="italic font-light text-[#4e3700]">Geospatial Intelligence</span>
           </h1>
           <p className="text-lg md:text-xl leading-relaxed text-[#4e4639] font-light max-w-2xl">
-            Seka Kama utilizes world-class spatial engineering to mirror the complexity of the natural world. Our geospatial engine converts raw telemetry into actionable conservation insights.
+            Seka Kama utilizes world-class spatial engineering to mirror the complexity of the natural world. The Seka Kama geospatial engine converts raw telemetry into actionable conservation insights.
           </p>
         </section>
 
@@ -69,7 +69,7 @@ export default function GeospatialPage() {
                 <span className="italic font-light text-[#4e3700]">Critical Corridors</span>
               </h2>
               <p className="text-base text-[#4e4639] font-light leading-relaxed">
-                By integrating PostGIS spatial databases with Kepler.gl visualization pipelines, we enable conservationists to identify and protect vital wildlife corridors that are often invisible to the naked eye.
+                By integrating PostGIS spatial databases with Kepler.gl visualization pipelines, Seka Kama enables conservationists to identify and protect vital wildlife corridors that are often invisible to the naked eye.
               </p>
               <div className="space-y-4">
                 <div className="flex gap-4 items-start">

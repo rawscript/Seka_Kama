@@ -41,8 +41,8 @@ export default function DataStandardsPage() {
             <span className="italic font-light text-[#4e3700]">Standards & Integrity</span>
           </h1>
           <p className="text-lg text-[#4e4639] leading-relaxed font-light">
-            At Seka Kama, we adhere to strict international standards for geospatial and ecological data to 
-            ensure interoperability between conservation agencies and our predictive engine.
+            Seka Kama adheres to strict international standards for geospatial and ecological data to 
+            ensure interoperability between conservation agencies and the Seka Kama predictive engine.
           </p>
         </section>
 
@@ -73,7 +73,7 @@ export default function DataStandardsPage() {
               <p className="text-base text-[#4e4639] leading-relaxed font-light">
                 Before any dataset is ingested into the SekaNet Oracle, it undergoes a three-stage validation 
                 process: Coordinate validation, Schema matching, and Statistical outlier detection. This 
-                ensures that our simulations remain grounded in high-quality empirical data.
+                ensures that Seka Kama simulations remain grounded in high-quality empirical data.
               </p>
            </div>
         </section>

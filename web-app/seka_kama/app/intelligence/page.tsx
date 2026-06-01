@@ -40,7 +40,7 @@ export default function IntelligencePage() {
             The <span className="italic font-light text-[#4e3700]">Intelligence Layer</span>
           </h1>
           <p className="text-lg md:text-xl leading-relaxed text-[#4e4639] font-light max-w-2xl">
-            SekaNet is the neural backbone of our digital twin. Utilizing gradient-boosted tree architectures to predict biodiversity trends and simulate the impact of human expansion.
+            SekaNet is the neural backbone of the Seka Kama digital twin. Utilizing gradient-boosted tree architectures to predict biodiversity trends and simulate the impact of human expansion.
           </p>
         </section>
 
@@ -108,7 +108,7 @@ export default function IntelligencePage() {
                 <span className="italic font-light text-[#4e3700]">Actionable Foresight</span>
               </h2>
               <p className="text-base text-[#4e4639] font-light leading-relaxed">
-                We believe that data without intelligence is noise. SekaNet processes millions of data points annually—from vegetation indices to nightlight trends—providing conservancy managers with the "What-If" capabilities needed to make informed decisions for a shared future.
+                Seka Kama operates on the principle that data without intelligence is noise. SekaNet processes millions of data points annually—from vegetation indices to nightlight trends—providing conservancy managers with the "What-If" capabilities needed to make informed decisions for a shared future.
               </p>
               <div className="flex gap-10 pt-4">
                  <div>

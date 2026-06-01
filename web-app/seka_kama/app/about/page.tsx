@@ -32,10 +32,10 @@ export default function AboutPage() {
           <div className={`space-y-6 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
             <div className="flex items-center gap-3 text-[#775a19]">
                <Target className="w-5 h-5" />
-               <h3 className="text-[11px] font-bold uppercase tracking-[0.2em]">Our Mission</h3>
+               <h3 className="text-[11px] font-bold uppercase tracking-[0.2em]">The Mission</h3>
             </div>
             <p className="text-[#4e4639] leading-relaxed font-light">
-              To provide conservancy managers and researchers with the "What-If" capabilities needed to 
+              Seka Kama provides conservancy managers and researchers with the "What-If" capabilities needed to 
               navigate the complex balance between human development and wildlife preservation.
             </p>
           </div>
@@ -45,7 +45,7 @@ export default function AboutPage() {
                <h3 className="text-[11px] font-bold uppercase tracking-[0.2em]">The Digital Twin</h3>
             </div>
             <p className="text-[#4e4639] leading-relaxed font-light">
-              We leverage VIIRS DNB, LandDX, and WDPA datasets to simulate 271,211 individual 1km² 
+              Seka Kama leverages VIIRS DNB, LandDX, and WDPA datasets to simulate 271,211 individual 1km² 
               grid cells, ensuring a granular understanding of every acre in the ecosystem.
             </p>
           </div>

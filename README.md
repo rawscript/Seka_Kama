@@ -11,11 +11,11 @@ This project addresses the critical gap between land‑use planning and wildlife
 
 ### The Problem
 
-Seka Kama bridges human development and ecological stability. Without the ability to simulate future outcomes, land‑use decisions often overlook long‑term biodiversity impacts. Our goal: a predictive environment where different development scenarios can be tested for their direct effect on predator movement and population health.
+Seka Kama bridges human development and ecological stability. Without the ability to simulate future outcomes, land‑use decisions often overlook long‑term biodiversity impacts. Seka Kama provides a predictive environment where different development scenarios can be tested for their direct effect on predator movement and population health.
 
 ## 2. Project Vision
 
-We aim to build a robust spatial model that integrates human activity data with the known biological requirements of lions. By establishing statistical relationships between land fragmentation and habitat use, we can ask the model: *“If human activity increases by X% in this specific corridor, what is the impact on population viability over the next decade?”*
+Seka Kama utilizes a robust spatial model that integrates human activity data with the known biological requirements of lions. By establishing statistical relationships between land fragmentation and habitat use, the system can answer questions such as: *“If human activity increases by X% in this specific corridor, what is the impact on population viability over the next decade?”*
 
 The final output is a simulation tool that visualizes these “what‑if” scenarios, clarifying the trade‑offs involved in regional development.
 
@@ -38,7 +38,7 @@ The diagram below illustrates the logic flow from raw data to predictive simulat
 
 ## 5. Collaboration
 
-Seka Kama is a collaborative effort. Solving these complex spatial problems requires diverse perspectives and technical skills. We invite anyone with an interest in data science, ecology, or spatial modeling to contribute.
+Seka Kama is a collaborative effort. Solving these complex spatial problems requires diverse perspectives and technical skills. Contributions are welcome from anyone with an interest in data science, ecology, or spatial modeling.
 
 ### Who can help
 
@@ -49,4 +49,4 @@ Seka Kama is a collaborative effort. Solving these complex spatial problems requ
 ### Get involved  
 - **Issue tracker**: [[Link](https://github.com/rawscript/Seka_Kama/issues?q=is%3Aissue+is%3Aopen)]
 
-*Together, we can build tools that help protect these critical ecosystems while supporting informed development.*
+*Seka Kama builds tools that help protect these critical ecosystems while supporting informed development.*

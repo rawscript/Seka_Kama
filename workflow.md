@@ -1,6 +1,6 @@
 # Workflow Guide: Contributing to Seka Kama
 
-This document outlines the standard operating procedures for contributing to the spatial analysis and modeling efforts of the Seka Kama project. Our goal is to maintain a high level of data integrity and model transparency.
+This document outlines the standard operating procedures for contributing to the spatial analysis and modeling efforts of the Seka Kama project. Seka Kama aims to maintain a high level of data integrity and model transparency.
 
 ## 1. Getting Started
 
@@ -12,7 +12,7 @@ To ensure a smooth onboarding process, please follow these initial steps:
 
 ## 2. Contribution Pathways
 
-We welcome contributions in three primary areas:
+Contributions are welcome in three primary areas:
 
 ### A. Data Processing and Cleaning
 
@@ -33,7 +33,7 @@ We welcome contributions in three primary areas:
 
 ## 3. The Development Cycle
 
-We follow a structured flow to keep the project organized:
+The development cycle follows a structured flow to keep the project organized:
 
 1. **Select or Propose a Task:** Check the open issues or propose a new analysis path by opening a discussion thread.
 2. **Branching:** Create a new branch for your work. Use descriptive names (such as, `update-fencing-logic` or `clean-narok-2025-data`).
@@ -45,7 +45,7 @@ We follow a structured flow to keep the project organized:
 
 ## 4. Quality Control and Peer Review
 
-Every contribution is reviewed by at least one other member of the research team. We look for:
+Every contribution is reviewed by at least one other member of the research team. Review criteria include:
 
 - **Accuracy:** Does the data reflect the real-world parameters described?
 - **Readability:** Is the code or logic well-commented and easy for others to follow?
@@ -58,4 +58,4 @@ Open communication is the backbone of this project.
 - **Technical Queries:** Use the issue tracker for specific bugs or data discrepancies.
 - **General Ideas:** Use the discussion board for high-level brainstorming on new features or research directions.
 
-Thank you for contributing your expertise to help us better understand and protect these critical ecosystems.
+Thank you for contributing your expertise to help better understand and protect these critical ecosystems.

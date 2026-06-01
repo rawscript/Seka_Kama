@@ -25,7 +25,7 @@ export default function ContactPage() {
               </h1>
               <p className="text-[#4e4639] text-lg leading-relaxed font-light max-w-md">
                 Have questions about the SekaNet model or want to integrate your conservancy data?
-                Our team of spatial analysts and researchers are here to help.
+                Seka Kama spatial analysts and researchers are here to help.
               </p>
             </div>
 
@@ -59,7 +59,7 @@ export default function ContactPage() {
                 <label className="text-[10px] font-bold text-[#7f7667] uppercase tracking-widest">Message</label>
                 <textarea 
                   className="w-full bg-[#f3f3f3] border border-[#d1c5b4]/40 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-[#775a19] transition-colors min-h-[140px] placeholder:text-[#d1c5b4]/80" 
-                  placeholder="How can we help?" 
+                  placeholder="How can Seka Kama assist?" 
                 />
               </div>
               <button className="w-full bg-[#1a1c1c] text-white font-bold py-4 text-[11px] tracking-[0.2em] hover:bg-[#775a19] transition-colors uppercase flex items-center justify-center gap-2">

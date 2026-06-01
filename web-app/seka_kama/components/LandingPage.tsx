@@ -82,7 +82,7 @@ export default function LandingPage() {
           setUser(userData);
           setIsAuthenticated(true); // User is verified! Update buttons.
         } else {
-          // If token is expired or invalid, silently remove it so we don't keep hitting the API
+          // If token is expired or invalid, silently remove it to prevent unnecessary API requests
           localStorage.removeItem('access_token');
         }
       } catch (error) {
@@ -236,7 +236,7 @@ export default function LandingPage() {
                 Engineered with Precision
               </h2>
               <p className="text-base text-[#4e4639] mb-10 font-light leading-relaxed">
-                Our underlying framework mirrors the complexity of the natural world. Utilizing XGBoost modeling and PostGIS spatial databases to protect biodiversity vectors.
+                The Seka Kama framework mirrors the complexity of the natural world. Utilizing XGBoost modeling and PostGIS spatial databases to protect biodiversity vectors.
               </p>
 
               <div className="space-y-6">
