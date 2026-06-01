@@ -394,11 +394,31 @@ app.include_router(keys_router, prefix="/api")
 app.include_router(router, prefix="/api")
 
 @app.get("/health")
-async def health_check():
-    """Consolidated health check (Root)"""
-    from api.routes import health_check as api_health
-    from core.database import get_db
-    return await api_health(db=get_db())
+async def health_check(request: Request):
+    """Consolidated health check — returns status, version and DB connectivity."""
+    from datetime import datetime, timezone
+
+    db_status = "connected"
+    try:
+        supabase = request.app.state.supabase
+        result = supabase.table("grid_cells").select("cell_id").limit(1).execute()
+        # Any response (even empty) means the client is healthy
+        db_status = "connected"
+    except Exception as exc:  # noqa: BLE001
+        db_status = f"error: {exc}"
+
+    model_loaded = (
+        getattr(request.app.state, "model", None) is not None
+        and getattr(request.app.state, "feature_names", None) is not None
+    )
+
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "database": db_status,
+        "model_loaded": model_loaded,
+        "version": "2.0.0",
+    }
 
 @app.get("/api/cors-check")
 async def cors_check(request: Request):

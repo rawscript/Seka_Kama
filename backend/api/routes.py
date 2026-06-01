@@ -477,7 +477,7 @@ async def explain_cell_by_id(
 async def export_grid_cells(
     request: Request,
     management_unit: Optional[str] = Query(None),
-    format: str = Query("geojson", regex="^(geojson|json|csv)$"),
+    format: str = Query("geojson", pattern="^(geojson|json|csv)$"),
     db: SupabaseService = Depends(get_db)
 ):
     """
