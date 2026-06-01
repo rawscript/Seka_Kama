@@ -36,17 +36,17 @@ The following documents provide the foundational logic, raw data parameters, and
 The diagram below illustrates the logic flow from raw data to predictive simulations:
 ![logic](https://res.cloudinary.com/dp7vwr0av/image/upload/v1778585612/Seka_Net_o4fvcf.png)
 
-## 5. Collaboration
+## 5. Technical Foundation & Impact
 
-Seka Kama is a collaborative effort. Solving these complex spatial problems requires diverse perspectives and technical skills. Contributions are welcome from anyone with an interest in data science, ecology, or spatial modeling.
+Seka Kama is a high-performance Digital Twin built for ecological resilience. The system integrates advanced spatial analysis with predictive modeling to provide a comprehensive decision-support environment for conservationists, researchers, and government agencies.
 
-### Who can help
+### Scientific Core
 
-- **Spatial Analysts** – refine layers of human activity and habitat maps  
-- **Modelers** – build statistical frameworks that drive simulations  
-- **Researchers** – provide insights into animal behaviour and movement patterns  
+- **Spatial Synthesis** – Precision mapping of human activity layers and habitat fragmentation across the Greater Mara.
+- **Predictive Modeling** – Statistical frameworks built on XGBoost to simulate multi-year population viability.
+- **Ecological Intelligence** – Data-driven insights into predator movement patterns and biological corridors.
 
-### Get involved  
+### Roadmap  
 - **Issue tracker**: [[Link](https://github.com/rawscript/Seka_Kama/issues?q=is%3Aissue+is%3Aopen)]
 
-*Seka Kama builds tools that help protect these critical ecosystems while supporting informed development.*
+*Seka Kama provides the intelligence needed to protect critical ecosystems while supporting informed regional development.*

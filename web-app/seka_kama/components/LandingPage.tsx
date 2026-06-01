@@ -122,14 +122,14 @@ export default function LandingPage() {
         <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 md:px-20 py-20">
           <div className={`max-w-2xl ${mounted ? 'animate-in' : 'opacity-0'}`}>
             <p className="text-[11px] font-bold text-[#775a19] mb-4 tracking-[0.3em] uppercase">
-              CONSERVATION REIMAGINED
+              INTELLIGENCE-DRIVEN CONSERVATION
             </p>
             <h1 className="text-5xl md:text-[68px] md:leading-[76px] text-[#1a1c1c] mb-6 font-normal tracking-tight">
               Seka Kama: <br />
               <span className="italic font-light text-[#4e3700]">The Digital Twin</span>
             </h1>
             <p className="text-base md:text-lg leading-relaxed text-[#f7f5f0] mb-10 max-w-lg font-light">
-              Coordinating the future of biodiversity through real-time geospatial intelligence and predictive ecology for the Greater Mara ecosystem.
+              A precision Digital Twin for the Greater Mara ecosystem, leveraging real-time geospatial intelligence and predictive ecology to secure future biodiversity.
             </p>
             <div className="flex flex-wrap gap-4">
               {/* Dynamic Link route based on authentication */}
@@ -177,7 +177,7 @@ export default function LandingPage() {
           </h2>
           <div className="mt-8 flex items-center justify-center gap-4">
             <div className="h-[1px] w-10 bg-[#d1c5b4]" />
-            <span className="text-[10px] font-bold tracking-[0.25em] text-[#7f7667] uppercase">THE SEKA KAMA MANIFESTO</span>
+            <span className="text-[10px] font-bold tracking-[0.25em] text-[#7f7667] uppercase">THE SCIENTIFIC VISION</span>
             <div className="h-[1px] w-10 bg-[#d1c5b4]" />
           </div>
         </div>
