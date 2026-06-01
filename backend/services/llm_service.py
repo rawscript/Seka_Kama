@@ -86,11 +86,21 @@ async def augment_modifications_from_text(
     if baseline_context:
         # Include a subset of key features for grounding
         key_features = [
-            'all_mean_mean', 'longterm_slope_mean', 'pop2018_mean', 
-            'dist_to_protected_km', 'cheetah_abundance'
+            'baseline_lion_density', 'all_mean_mean', 'longterm_slope_mean', 
+            'pop2018_mean', 'dist_to_protected_km', 'cheetah_abundance',
+            'annual_rainfall_mm', 'prey_density', 'hwc_risk_score'
         ]
         context_lines = [f"  - {k}: {baseline_context.get(k, 0):.4f}" for k in key_features if k in baseline_context]
-        grounding_info = "\nACTUAL BASELINE DATA FOR SELECTED AREA:\n" + "\n".join(context_lines) + "\n"
+        
+        # Add spatial context
+        area_km2 = baseline_context.get("affected_area_km2", 0)
+        units = ", ".join(baseline_context.get("management_units", []))
+        
+        grounding_info = (
+            f"\nACTUAL BASELINE DATA FOR SELECTED AREA ({area_km2} km²):\n"
+            f"LOCATION CONTEXT: This area covers the following management units: {units or 'Unmanaged zones'}.\n"
+            + "\n".join(context_lines) + "\n"
+        )
 
     prompt = f"""You are a data mapper for an ecological Digital Twin. 
 STRICT REQUIREMENT: Your output MUST be based EXCLUSIVELY on the User Query below and the provided Baseline Data. 
@@ -357,11 +367,12 @@ Include:
   1. Whether the predicted change is ecologically significant (threshold: ±5%)
   2. Which conservancies are most impacted
   3. One concrete, actionable mitigation or opportunity specific to the predicted {direction}
-  4. A brief disclaimer about model uncertainty (±15%)
+  4. Mention that the analysis is grounded in real-time NASA POWER rainfall data and GBIF prey occurrence records.
+  5. A brief disclaimer about model uncertainty (±15%)
 
 Be professional, concise, and free of unexplained jargon.
 Do NOT invent data not provided above.
-MUST use words like "{'will increase' if delta > 0 else 'will decrease' if delta < 0 else 'remains stable'}" consistently."""
+MUST use words like "{'will increase' if delta > 0 else 'will decrease' if delta < 0 else 'remains stable'}" consistently. Use Markdown for emphasis."""
 
 
 def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:

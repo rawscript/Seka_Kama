@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS protected_areas (
 
 -- Scenario History Table
 CREATE TABLE IF NOT EXISTS scenario_history (
-    scenario_id SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
     user_description TEXT,
     modified_features JSONB,

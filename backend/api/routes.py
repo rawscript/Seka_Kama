@@ -222,11 +222,22 @@ async def run_scenario(
     
     # Calculate baseline averages for grounding the LLM
     baseline_averages = {}
+    management_units = sorted(list(set(c.get("management_unit") for c in affected_cells if c.get("management_unit"))))
+    
     if affected_cells:
-        numeric_keys = [k for k, v in affected_cells[0].items() if isinstance(v, (int, float))]
+        numeric_keys = [
+            'baseline_lion_density', 'all_mean_mean', 'longterm_slope_mean', 
+            'dist_to_protected_km', 'cheetah_abundance', 'pop2018_mean',
+            'annual_rainfall_mm', 'prey_density', 'hwc_risk_score'
+        ]
         for k in numeric_keys:
-            baseline_averages[k] = sum(float(c.get(k, 0) or 0) for c in affected_cells) / len(affected_cells)
+            vals = [float(c.get(k, 0) or 0) for c in affected_cells]
+            baseline_averages[k] = sum(vals) / len(vals) if vals else 0
             
+    # Add spatial descriptive context
+    baseline_averages["affected_area_km2"] = len(affected_cells)
+    baseline_averages["management_units"] = management_units
+
     from services.llm_service import augment_modifications_from_text
     final_modifications = await augment_modifications_from_text(
         scenario.user_query or "",
@@ -270,15 +281,13 @@ async def run_scenario(
     except Exception as e:
         logger.error(f"Failed to save scenario history for user {current_user.user_id}: {str(e)}")
         # We still return the results even if save fails, but with a warning
-        if hasattr(e, 'message'):
-            logger.error(f"PostgREST error message: {e.message}")
-        stored = {"scenario_id": -1, "error": str(e)}
+        stored = {"id": -1, "error": str(e)}
     
     # 5. Log audit action
     await audit_service.log(
         action="Intelligence Scenario Executed",
         resource_type="Intelligence",
-        resource_id=str(stored.get("id") or stored.get("scenario_id")),
+        resource_id=str(stored.get("id")),
         user_id=current_user.user_id,
         details={
             "delta": results["delta_total"],
@@ -288,7 +297,7 @@ async def run_scenario(
     )
     
     return ScenarioResponse(
-        scenario_id=stored.get("scenario_id", -1),
+        scenario_id=stored.get("id", -1),
         baseline_total_lions=results["baseline_total"],
         predicted_total_lions=results["scenario_total"],
         delta_lions=results["delta_total"],
@@ -298,7 +307,7 @@ async def run_scenario(
             for unit, data in results["unit_aggregation"].items()
         },
         llm_narrative=narrative,
-        map_visualization_url=f"/api/maps/scenario/{stored.get('scenario_id', -1)}",
+        map_visualization_url=f"/api/maps/scenario/{stored.get('id', -1)}",
         ecological_context=results.get("ecological_context", {}),
         scenario_geojson={
             "type": "FeatureCollection",
@@ -370,7 +379,7 @@ async def get_scenario_by_id(
     """
     result = db.client.table("scenario_history")\
         .select("*")\
-        .eq("scenario_id", scenario_id)\
+        .eq("id", scenario_id)\
         .eq("user_id", current_user.user_id)\
         .execute()
     

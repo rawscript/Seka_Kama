@@ -229,11 +229,27 @@ async def enrich_cells_with_live_data(
         dist_prot     = float(cell.get("dist_to_protected_km", 5.0) or 5.0)
         hwc           = derive_hwc_risk(nightlight, dist_prot, rainfall_mm)
 
+        # ── 5. Cross-reference with Model Features (Gap Filling) ───────────
+        # If the local database has NULL or 0 for critical features, we use 
+        # the live API data as a valid proxy to avoid "zero-effect" simulations.
+        
+        # Cheetah Abundance proxy (Prey Density)
+        db_prey = float(cell.get("cheetah_abundance", 0.0) or 0.0)
+        final_prey = db_prey if db_prey > 1e-6 else (prey_density * 0.1) # Scale density contextually
+        
+        # Rainfall / Trend fallback
+        db_trend = float(cell.get("longterm_slope_mean", 0.0) or 0.0)
+        # If rainfall is exceptionally low (drought), we dampen the growth trend
+        if rainfall_mm < 400 and db_trend > 0:
+            db_trend *= 0.5
+            
         enriched.append({
             **cell,
             "annual_rainfall_mm": rainfall_mm,
             "prey_density":       prey_density,
             "hwc_risk_score":     hwc,
+            "cheetah_abundance":  final_prey,   # Update the actual model feature
+            "longterm_slope_mean": db_trend     # Potential environmental dampening
         })
 
     logger.info(f"[EcoEnrich] Done — {len(enriched)} cells enriched")
