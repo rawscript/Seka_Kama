@@ -73,7 +73,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd web-app/seka_kama
-          npm install
+          npm install --legacy-peer-deps
 
       - name: Type check
         run: |
