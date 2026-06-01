@@ -24,10 +24,6 @@ export default function ApiKeysPage() {
   const [revoking, setRevoking] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchKeys();
-  }, []);
-
   const fetchKeys = async () => {
     try {
       setLoading(true);
@@ -40,6 +36,10 @@ export default function ApiKeysPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchKeys();
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

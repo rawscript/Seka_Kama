@@ -33,12 +33,6 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchNotifications();
-    }
-  }, [isOpen]);
-
   const fetchNotifications = async () => {
     setLoading(true);
     const token = localStorage.getItem('access_token');
@@ -85,6 +79,12 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
