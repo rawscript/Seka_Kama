@@ -268,9 +268,11 @@ async def run_scenario(
             llm_narrative=narrative
         )
     except Exception as e:
-        logger.error(f"Failed to save scenario history: {str(e)}")
+        logger.error(f"Failed to save scenario history for user {current_user.user_id}: {str(e)}")
         # We still return the results even if save fails, but with a warning
-        stored = {"scenario_id": -1}
+        if hasattr(e, 'message'):
+            logger.error(f"PostgREST error message: {e.message}")
+        stored = {"scenario_id": -1, "error": str(e)}
     
     # 5. Log audit action
     await audit_service.log(

@@ -89,7 +89,9 @@ def build_row(row: gpd.GeoSeries, crs_epsg: int = 4326) -> Dict[str, Any]:
         "licorr_slope_mean", "ann_amp_mean", "ann_cv_mean",
         "ann_peak_month_mean", "all_skew_std",
         "dist_to_protected_km", "pop2018_mean",
-        "pt_lon", "pt_lat",
+        "pt_lon", "pt_lat", "cheetah_abundance",
+        "density_code", "hist_lag1", "hist_lag2",
+        "all_kurtosis_std", "all_variance_mean", "primary_acf_mean"
     ]
 
     for col in scalar_cols:
