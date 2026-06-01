@@ -36,7 +36,7 @@ jobs:
           DEBUG: "true"
           JWT_SECRET_KEY: "ci-test-secret-key-at-least-32-chars!!"
           SUPABASE_URL: "https://placeholder.supabase.co"
-          SUPABASE_SERVICE_KEY: "placeholder-service-key"
+          SUPABASE_SERVICE_ROLE_KEY: "placeholder-service-key"
           NVIDIA_API_KEY: "placeholder-nvidia-key"
         run: |
           cd backend

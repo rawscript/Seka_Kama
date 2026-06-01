@@ -159,7 +159,7 @@ def test_proxy_geojson_rejects_ssrf():
     ]
     for url in private_urls:
         import urllib.parse
-        response = client.get(f"/proxy-geojson?url={urllib.parse.quote(url, safe='')}")
+        response = client.get(f"/api/proxy-geojson?url={urllib.parse.quote(url, safe='')}")
         assert response.status_code in (400, 403, 422), (
             f"SSRF guard failed for {url!r} — got {response.status_code}"
         )
