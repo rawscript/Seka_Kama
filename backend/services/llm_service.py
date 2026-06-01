@@ -13,11 +13,20 @@ FIXES:
 
 import logging
 import os
-from typing import Any, Dict, Optional
+import json
+from typing import Any, Dict, Optional, List
 from openai import OpenAI
 from core.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Known default values from the frontend ScenarioDrawer for merging logic
+# These are treated as 'neutral' unless the user actively moves the slider.
+DEFAULT_SLIDER_VALUES = {
+    "longterm_slope_mean": 0.10,
+    "dist_to_protected_km": 0.0,
+    "all_skew_mean": 0.0,
+}
 
 # ── Client factory ─────────────────────────────────────────────────────────
 
@@ -39,10 +48,14 @@ async def augment_modifications_from_text(
     explicit_mods: Dict[str, float],
     centroid_lon: float = 35.24,
     centroid_lat: float = -1.52,
+    baseline_context: Optional[Dict[str, float]] = None,
 ) -> Dict[str, float]:
     """
     Use LLM to interpret user text and suggest feature modifications.
     Combines with user-specified manual modifications.
+
+    baseline_context: Provides actual average feature values for the drawn area
+    to ground the LLM's interpretation in real data.
 
     If the prompt mentions climate/rainfall keywords, triggers a LIVE NASA
     POWER call and injects the real rainfall value into the LLM context.
@@ -68,9 +81,25 @@ async def augment_modifications_from_text(
     except Exception as e:
         logger.debug(f"[LLM Augment] Rainfall fetch skipped: {e}")
 
-    prompt = f"""You are a data mapper for an ecological model. 
-A user has described a scenario in the Seka Kama landscape (Kenya):
+    # ── Grounding context (Baseline data) ────────────────────────────────────
+    grounding_info = ""
+    if baseline_context:
+        # Include a subset of key features for grounding
+        key_features = [
+            'all_mean_mean', 'longterm_slope_mean', 'pop2018_mean', 
+            'dist_to_protected_km', 'cheetah_abundance'
+        ]
+        context_lines = [f"  - {k}: {baseline_context.get(k, 0):.4f}" for k in key_features if k in baseline_context]
+        grounding_info = "\nACTUAL BASELINE DATA FOR SELECTED AREA:\n" + "\n".join(context_lines) + "\n"
+
+    prompt = f"""You are a data mapper for an ecological Digital Twin. 
+STRICT REQUIREMENT: Your output MUST be based EXCLUSIVELY on the User Query below and the provided Baseline Data. 
+Do NOT use generic or pre-trained assumptions about land use change if they contradict the query.
+
+USER SCENARIO QUERY:
 "{user_query}"
+
+{grounding_info}
 {rainfall_context}
 The model uses these features:
 1. longterm_slope_mean: Nightlight trend (-0.1 to 0.1). Increase for expected growth.
@@ -143,29 +172,41 @@ Example Response: {{"all_mean_mean": 0.2, "longterm_slope_mean": 0.05}}
 
     try:
         client = _get_client()
+        logger.info(f"Firing up LLM (model: {_LLM_MODEL}) for query: '{user_query[:50]}...'")
+        
         response = client.chat.completions.create(
             model=_LLM_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
-            max_tokens=150,
+            max_tokens=250,  # Increased slightly for safety
             stream=False
         )
         content = response.choices[0].message.content.strip()
+        logger.debug(f"LLM Raw response: {content}")
 
-        import json
         if "```" in content:
             content = content.split("```")[1].replace("json", "").strip()
 
         implied_mods = json.loads(content)
 
-        # Merge: Explicit user mods override inferred ones
+        # Merge: Explicit user mods override inferred ones, EXCEPT if they are just the defaults.
+        # This allows the LLM to 'be heard' when the user hasn't touched the sliders.
         merged = implied_mods.copy()
-        merged.update(explicit_mods)
+        for k, v in explicit_mods.items():
+            # If the user-provided value equals our known default, and the LLM suggests something else,
+            # we let the LLM's insight take precedence for that feature.
+            if k in DEFAULT_SLIDER_VALUES and v == DEFAULT_SLIDER_VALUES[k] and k in implied_mods:
+                logger.info(f"Property '{k}' inferred by LLM ({implied_mods[k]}) takes precedence over default slider ({v})")
+                continue
+            merged[k] = v
 
-        logger.info(f"Augmented mods from text: {implied_mods}")
+        logger.info(f"Applied augmented mods: {merged}")
         return merged
     except Exception as e:
-        logger.warning(f"Failed to extract features from text: {e}")
+        logger.error(f"NVIDIA NIM call failed during feature extraction: {type(e).__name__}: {str(e)}")
+        # If it's an AuthenticationError, we should be explicit
+        if "401" in str(e) or "Unauthorized" in str(e):
+            logger.error("CRITICAL: LLM API Key appears invalid or unauthorized.")
         return explicit_mods
 
 
@@ -267,10 +308,12 @@ def _build_narrative_prompt(
     abs_delta = abs(delta)
     abs_delta_pct = abs(delta_pct)
 
-    # Format ecological context lines
+    # Format ecological context lines with more depth
     eco_lines = (
-        f"  - Avg Prey Density (herbivores/km²): {eco_context.get('avg_prey_density', 0):.1f}\n"
+        f"  - Avg Prey Density (herbivores/km²): {eco_context.get('avg_prey_density', 0):.3f}\n"
         f"  - Avg Annual Rainfall (mm):          {eco_context.get('avg_rainfall_mm', 0):.0f}\n"
+        f"  - Nightlight Intensity (baseline):   {eco_context.get('avg_nightlight', 0):.4f}/1.0\n"
+        f"  - Historic Growth Trend (yearly):    {eco_context.get('avg_trend', 0):.4f}\n"
         f"  - Human-Wildlife Conflict Risk:      {eco_context.get('avg_hwc_risk', 0):.2f}/1.0"
     )
 
@@ -379,60 +422,59 @@ def _fallback_narrative(scenario_request: Any, results: Dict) -> str:
     
     FIX: Ensure increase/decrease language matches the actual delta sign.
     """
-    delta     = results.get("delta_total", 0) or 0
-    delta_pct = results.get("delta_percent_total", 0) or 0
-    units     = list((results.get("unit_aggregation") or {}).keys())
+    delta     = results.get("delta_total", 0.0)
+    delta_pct = results.get("delta_percent_total", 0.0)
+    units_map = results.get("unit_aggregation") or {}
+    units     = [u for u in units_map.keys() if u and u != 'Unknown']
+    
+    baseline_total = results.get("baseline_total", 0.0)
 
-    # Handle zero change as neutral, not increase
-    if delta == 0 and delta_pct == 0:
-        direction = "no change"
-        significance = "stable"
+    # Handle zero change or extremely small deltas
+    if abs(delta) < 0.01:
+        direction = "remain stable"
+        significance = "predicted to"
     else:
         direction = "increase" if delta > 0 else "decrease"
-        significance = (
-            "significant" if abs(delta_pct) > 5 else "minor"
-        )
-    # Filter out any None values from the units list to prevent join errors
-    units = [u for u in units if u is not None]
+        significance = "predicted to see a significant" if abs(delta_pct) > 5 else "predicted to see a minor"
+
     unit_str = ", ".join(units[:3]) if units else "the selected area"
+    if not units and 'Unknown' in units_map:
+        unit_str = "unmanaged habitat zones"
 
     # Generate directionally-appropriate mitigation text
-    if delta < 0:
+    if delta < -0.01:
         mitigation_text = (
             "consider mitigating artificial light through shielded fixtures or seasonal "
             "lighting restrictions in the affected area"
         )
-    elif delta > 0:
+    elif delta > 0.01:
         mitigation_text = (
             "capitalize on this opportunity by implementing enhanced protection measures "
-            "and ensuring adequate habitat connectivity for lions in the affected conservancies"
+            "and ensuring adequate habitat connectivity for lions in these zones"
         )
     else:
-        mitigation_text = (
-            "maintain current conservation practices and monitor for any future changes "
-            "in land use patterns that could impact lion habitat"
-        )
+        # Zero or near-zero change
+        if baseline_total < 0.1:
+            mitigation_text = (
+                "monitor these areas for future recolonisation efforts, as the baseline "
+                "lion presence here is currently negligible"
+            )
+        else:
+            mitigation_text = (
+                "maintain current conservation practices and monitor for any future changes "
+                "in land use patterns that could impact existing corridors"
+            )
 
-    if direction == "no change":
-        return (
-            f"The proposed scenario predicts no change in lion abundance "
-            f"({abs(delta):.1f} lions, {abs(delta_pct):.1f}% change) across the Seka Kama landscape. "
-            f"The most affected conservancies are: {unit_str}. "
-            f"Based on SekaNet's sensitivity to nightlight trends (longterm_slope_mean), "
-            f"{mitigation_text}. "
-            f"*Model accuracy is approximately ±15% for large predicted changes — "
-            f"field surveys are advised before acting on this output.*"
-        )
-
-    return (
-        f"The proposed scenario predicts a {significance} {direction} of "
-        f"{abs(delta):.1f} lions ({abs(delta_pct):.1f}%) across the Seka Kama landscape. "
-        f"The most affected conservancies are: {unit_str}. "
-        f"Based on SekaNet's sensitivity to nightlight trends (longterm_slope_mean), "
+    narrative = (
+        f"The proposed scenario expects lion populations to {direction} by "
+        f"{abs(delta):.1f} individuals ({abs(delta_pct):.1f}%) across the landscape. "
+        f"The geographical impact is most pronounced in {unit_str}. "
+        f"Based on SekaNet's sensitivity to nightlight (longterm_slope_mean), practitioners should "
         f"{mitigation_text}. "
-        f"*Model accuracy is approximately ±15% for large predicted changes — "
-        f"field surveys are advised before acting on this output.*"
+        f"*Note: Scientific core accuracy is approximately ±15% for large changes; field verification is advised.*"
     )
+
+    return narrative
 
 
 def _fallback_explanation(features: Dict[str, float], prediction: float) -> str:

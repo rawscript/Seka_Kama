@@ -205,7 +205,20 @@ class PredictionService:
                 raise ValueError(f"Invalid modification value for '{feature_name}': {mod_value}")
             
             if apply_percent:
-                modified_features[:, idx] *= (1 + mod_value)
+                # SPECIAL HANDLING: If the baseline value is 0 (or near zero), 
+                # a percentage-based modification (e.g. +20%) would do nothing.
+                # In these cases, we treat the mod_value as an absolute floor/shift 
+                # for that feature in those specific cells.
+                
+                # Identify where baseline is roughly 0
+                zero_mask = np.abs(modified_features[:, idx]) < 1e-6
+                
+                # Standard percentage apply for non-zero cells
+                modified_features[~zero_mask, idx] *= (1 + mod_value)
+                
+                # Absolute shift (capped at reasonable range) for zero-base cells
+                # This allows 'Build a lodge' to actually add light to a dark cell.
+                modified_features[zero_mask, idx] += mod_value
             else:
                 modified_features[:, idx] += mod_value
         
@@ -254,6 +267,8 @@ class PredictionService:
         total_prey = 0.0
         total_rainfall = 0.0
         total_hwc = 0.0
+        total_light = 0.0
+        total_trend = 0.0
         
         # Aggregate by management unit
         unit_aggregation = {}
@@ -265,6 +280,8 @@ class PredictionService:
             total_prey += float(cell.get('prey_density', 0.0))
             total_rainfall += float(cell.get('annual_rainfall_mm', 0.0))
             total_hwc += float(cell.get('hwc_risk_score', 0.0))
+            total_light += float(cell.get('all_mean_mean', 0.0) or 0.0)
+            total_trend += float(cell.get('longterm_slope_mean', 0.0) or 0.0)
             
             # Handle missing management_unit gracefully
             unit = cell.get('management_unit') or 'Unknown'
@@ -309,7 +326,9 @@ class PredictionService:
             'ecological_context': {
                 'avg_prey_density': total_prey / num_cells if num_cells > 0 else 0,
                 'avg_rainfall_mm': total_rainfall / num_cells if num_cells > 0 else 0,
-                'avg_hwc_risk': total_hwc / num_cells if num_cells > 0 else 0
+                'avg_hwc_risk': total_hwc / num_cells if num_cells > 0 else 0,
+                'avg_nightlight': total_light / num_cells if num_cells > 0 else 0,
+                'avg_trend': total_trend / num_cells if num_cells > 0 else 0
             }
         }
     

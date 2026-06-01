@@ -216,10 +216,24 @@ async def run_scenario(
         # Cells continue with whatever data is already in the DB columns
 
     # 1.6 Augment feature modifications from user text (LLM interpretation)
+    # Use actual centroid and baseline averages of the selected area for live data lookups
+    clon = sum(float(c.get("pt_lon") or c.get("longitude") or 35.24) for c in affected_cells) / len(affected_cells)
+    clat = sum(float(c.get("pt_lat") or c.get("latitude") or -1.52) for c in affected_cells) / len(affected_cells)
+    
+    # Calculate baseline averages for grounding the LLM
+    baseline_averages = {}
+    if affected_cells:
+        numeric_keys = [k for k, v in affected_cells[0].items() if isinstance(v, (int, float))]
+        for k in numeric_keys:
+            baseline_averages[k] = sum(float(c.get(k, 0) or 0) for c in affected_cells) / len(affected_cells)
+            
     from services.llm_service import augment_modifications_from_text
     final_modifications = await augment_modifications_from_text(
         scenario.user_query or "",
-        scenario.feature_modifications
+        scenario.feature_modifications,
+        centroid_lon=clon,
+        centroid_lat=clat,
+        baseline_context=baseline_averages
     )
 
     # 2. Run prediction using the XGBoost engine
