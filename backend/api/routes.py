@@ -150,15 +150,15 @@ async def get_model_metadata(request: Request):
     """
     return {
         "model_type": "XGBoost",
-        "version": "2.0.0",
-        "training_date": "2026-01-15",
+        "version": "2.1.0",
+        "training_date": "2026-05-20",
         "feature_count": len(request.app.state.feature_names),
-        "features": request.app.state.feature_names[:10],  # Return top 10 only
+        "features": request.app.state.feature_names,
         "objective": "reg:squarederror",
         "performance_metrics": {
-            "train_mse": 12.45,
-            "train_mae": 2.87,
-            "r_squared": 0.89
+            "r_squared": 0.892,
+            "test_rmse": 3.42,
+            "validation_score": 0.885
         }
     }
 
@@ -609,7 +609,8 @@ async def get_statistics(
         "protected_area_coverage_km2": round(protected_area_km2, 1),
         "avg_nightlight_trend": round(sum(float(c.get("longterm_slope_mean") or 0) for c in cells) / len(cells), 4),
         "high_risk_cell_count": high_risk_cells,
-        "management_unit_count": len(set(c.get("management_unit") for c in cells if c.get("management_unit")))
+        "management_unit_count": len(set(c.get("management_unit") for c in cells if c.get("management_unit"))),
+        "management_units": sorted(list(set(c.get("management_unit") for c in cells if c.get("management_unit"))))
     }
 
 

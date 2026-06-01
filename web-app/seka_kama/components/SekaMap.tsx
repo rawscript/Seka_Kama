@@ -371,7 +371,7 @@ function SekaMapContent({
               {selectedYear !== sliderToYear(66) ? `Loading ${selectedYear} data…` : 'Initializing Hub'}
             </h2>
             <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">
-              Connecting to SekaNet Oracle v4.2
+              Connecting to SekaNet Gateway v2.1.0
             </p>
           </div>
         </div>

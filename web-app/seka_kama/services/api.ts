@@ -79,6 +79,7 @@ export interface LandscapeStats {
   avg_nightlight_trend: number;
   high_risk_cell_count: number;
   management_unit_count: number;
+  management_units: string[];
 }
 
 export interface HistoricalTrend {

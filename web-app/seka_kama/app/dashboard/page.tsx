@@ -108,14 +108,19 @@ function DashboardContent() {
   const [trends, setTrends]         = useState<HistoricalTrend[]>([]);
   const [trendsLoading, setTrendsLoading] = useState(false);
 
-  const units = ['Mara North', 'Olare-Motorogi', 'Naboisho', 'Ol Kinyei'];
+  const [availableUnits, setAvailableUnits] = useState<string[]>([]);
 
   // ── Fetch landscape stats on mount / unit change / year change ──────────
   useEffect(() => {
     let cancelled = false;
     setStatsLoading(true);
     api.getStatistics(selectedUnit || undefined, selectedYear)
-      .then((s) => { if (!cancelled) setStats(s); })
+      .then((s) => { 
+        if (!cancelled) {
+          setStats(s);
+          if (s.management_units) setAvailableUnits(s.management_units);
+        }
+      })
       .catch(() => { /* non-fatal — stats strip stays hidden */ })
       .finally(() => { if (!cancelled) setStatsLoading(false); });
     return () => { cancelled = true; };
@@ -277,7 +282,7 @@ function DashboardContent() {
                   >
                     Regional Overview
                   </button>
-                  {units.map((u) => (
+                  {availableUnits.map((u) => (
                     <button
                       key={u}
                       onClick={() => { setSelectedUnit(u); setIsZoneMenuOpen(false); }}

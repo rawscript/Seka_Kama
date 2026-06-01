@@ -134,16 +134,24 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
                   <StatItem icon={Users} label="Current Lions" value={safeFixedAbs(result.cells?.reduce((s: any, c: any) => s + (c.properties?.lion_density ?? 0), 0), 1)} />
                </div>
                
-               <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl space-y-2">
-                  <div className="flex items-center gap-2 text-amber-400">
-                    <Info className="w-4 h-4" />
-                    <span className="text-[11px] font-bold uppercase tracking-wider">Predictive Baseline</span>
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Selected cells show a high concentration of ecosystem proxies. Application of typical 
-                    encroachment models suggests a <span className="text-amber-300 font-bold">12-15% pressure increase</span> in this locale.
-                  </p>
-               </div>
+                <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl space-y-2">
+                   <div className="flex items-center gap-2 text-amber-400">
+                     <Info className="w-4 h-4" />
+                     <span className="text-[11px] font-bold uppercase tracking-wider">Spatial Insights</span>
+                   </div>
+                   <p className="text-xs text-slate-400 leading-relaxed">
+                     {(() => {
+                       const cell = result.cells?.[0]?.properties;
+                       if (!cell) return "Analyzing selected coordinates...";
+                       const trend = cell.nightlight_trend || 0;
+                       const dist = cell.distance_to_protected_km || 0;
+                       
+                       if (trend > 0.05) return `High settlement pressure detected (trend: ${trend.toFixed(3)}). Habitat conversion risk is elevated in this locale.`;
+                       if (dist < 2) return `Critical buffer zone identified. High probability of human-wildlife encounters due to reserve proximity (${dist.toFixed(1)} km).`;
+                       return `Stable ecological zone. Low immediate evidence of anthropogenic encroachment based on nightlight longitudinal analysis.`;
+                     })()}
+                   </p>
+                </div>
             </div>
         ) : (
             /* -- Simulation Intelligence -- */
@@ -254,7 +262,7 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
              </span>
            )}
          </button>
-         <span>v4.2.1-Prod</span>
+         <span>v2.1.0-Release</span>
       </div>
     </div>
   );
@@ -362,7 +370,7 @@ function ComparePanel({ scenarios, onClose }: { scenarios: any[]; onClose: () =>
       )}
 
       <div className="p-3 border-t border-white/5 bg-black/40 text-[9px] font-mono text-slate-600 text-center">
-        SekaNet Comparison Engine · Base model XGBoost v2.0
+        SekaNet Comparison Engine · Base model XGBoost v2.1.0
       </div>
     </div>
   );
