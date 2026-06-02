@@ -181,9 +181,21 @@ function SekaMapContent({
   // Conservancy fly-to
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (selectedUnit && CONSERVANCY_COORDS[selectedUnit] && mapMain) {
+    if (!mapMain) return;
+
+    if (selectedUnit && CONSERVANCY_COORDS[selectedUnit]) {
       const { lng, lat, zoom } = CONSERVANCY_COORDS[selectedUnit];
       mapMain.flyTo({ center: [lng, lat], zoom, duration: 3000, essential: true, pitch: 50 });
+    } else if (!selectedUnit) {
+      // Zoom out to Regional Overview
+      mapMain.flyTo({
+        center: [35.1, -1.25],
+        zoom: 9.2,
+        duration: 3000,
+        essential: true,
+        pitch: 45,
+        bearing: -10,
+      });
     }
   }, [selectedUnit, mapMain]);
 

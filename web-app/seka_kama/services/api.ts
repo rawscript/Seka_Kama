@@ -199,6 +199,10 @@ export const api = {
     return this.get(qs ? `/statistics?${qs}` : '/statistics');
   },
 
+  async getManagementUnits(): Promise<string[]> {
+    return this.get('/management-units');
+  },
+
   // ── Scenario engine ─────────────────────────────────────────────────────
 
   async runScenario(request: ScenarioRequest): Promise<ScenarioResponse> {

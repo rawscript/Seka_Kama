@@ -574,6 +574,17 @@ async def export_grid_cells(
         return result.data
 
 
+@router.get("/management-units", response_model=List[str])
+async def get_management_units(
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Get list of all unique management units in the landscape.
+    Used for filtering and region selection in the dashboard.
+    """
+    return db.get_management_units()
+
+
 @router.get("/statistics")
 async def get_statistics(
     management_unit: Optional[str] = Query(None),

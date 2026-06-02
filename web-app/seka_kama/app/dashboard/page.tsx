@@ -110,16 +110,20 @@ function DashboardContent() {
 
   const [availableUnits, setAvailableUnits] = useState<string[]>([]);
 
+  // ── Fetch available units once on mount ──────────────────────────────────
+  useEffect(() => {
+    api.getManagementUnits()
+      .then(setAvailableUnits)
+      .catch(() => { /* non-fatal */ });
+  }, []);
+
   // ── Fetch landscape stats on mount / unit change / year change ──────────
   useEffect(() => {
     let cancelled = false;
     setStatsLoading(true);
     api.getStatistics(selectedUnit || undefined, selectedYear)
       .then((s) => { 
-        if (!cancelled) {
-          setStats(s);
-          if (s.management_units) setAvailableUnits(s.management_units);
-        }
+        if (!cancelled) setStats(s);
       })
       .catch(() => { /* non-fatal — stats strip stays hidden */ })
       .finally(() => { if (!cancelled) setStatsLoading(false); });
