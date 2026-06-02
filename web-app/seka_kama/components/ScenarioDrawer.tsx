@@ -27,6 +27,8 @@ const DEFAULT_MODIFICATIONS = {
   longterm_slope_mean: 0.10,
   dist_to_protected_km: 0.0,
   all_skew_mean: 0.0,
+  cheetah_abundance: 0.0,
+  pop2018_mean: 0.0,
   simulation_years: 0,
 };
 
@@ -326,6 +328,44 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
                     type="range" min="-0.5" max="0.5" step="0.01"
                     value={modifications.all_skew_mean || 0}
                     onChange={(e) => setModifications({ ...modifications, all_skew_mean: parseFloat(e.target.value) })}
+                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                       <Dna className="w-4 h-4 text-pink-500" />
+                       <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Cheetah Abundance</span>
+                    </div>
+                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
+                      {modifications.cheetah_abundance > 0 ? '+' : ''}
+                      {(modifications.cheetah_abundance * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                  <input
+                    type="range" min="-0.5" max="0.5" step="0.01"
+                    value={modifications.cheetah_abundance || 0}
+                    onChange={(e) => setModifications({ ...modifications, cheetah_abundance: parseFloat(e.target.value) })}
+                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                       <MapPin className="w-4 h-4 text-orange-500" />
+                       <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Human Population Density</span>
+                    </div>
+                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
+                      {modifications.pop2018_mean > 0 ? '+' : ''}
+                      {(modifications.pop2018_mean * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                  <input
+                    type="range" min="-0.5" max="0.5" step="0.01"
+                    value={modifications.pop2018_mean || 0}
+                    onChange={(e) => setModifications({ ...modifications, pop2018_mean: parseFloat(e.target.value) })}
                     className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
                   />
                 </div>

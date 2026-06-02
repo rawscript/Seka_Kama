@@ -24,6 +24,7 @@ const SekaMap = dynamic(() => import('@/components/SekaMap'), {
 
 const ScenarioResultPanel = dynamic(() => import('@/components/ScenarioResultPanel'), { ssr: false });
 const TrendChart = dynamic(() => import('@/components/TrendChart'), { ssr: false });
+const NotificationPanel = dynamic(() => import('@/components/NotificationPanel'), { ssr: false });
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MIN_YEAR = 2020;
@@ -93,6 +94,7 @@ function DashboardContent() {
   const [showProtectedAreas, setShowProtectedAreas] = useState(true);
   const [showLandXBoundary, setShowLandXBoundary]   = useState(false);
   const [showTrends, setShowTrends]         = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   // Temporal slider
   const [timeValue, setTimeValue] = useState(66);
@@ -207,10 +209,23 @@ function DashboardContent() {
         </ErrorBoundary>
 
         {/* ── Status pill ── */}
-        <div className="absolute top-8 left-8 flex items-center gap-3 px-4 py-2 bg-[#1a1c1c]/80 backdrop-blur-md rounded-full z-10 pointer-events-none">
-          <div className="w-2 h-2 rounded-full bg-[#1db954]" />
-          <span className="text-[10px] font-bold text-white uppercase tracking-widest">DIGITAL TWIN ACTIVE</span>
-          <span className="text-[10px] font-bold text-[#1db954] ml-2 opacity-80 uppercase tracking-widest">{selectedYear}</span>
+        <div className="absolute top-8 left-8 flex items-center gap-3 z-10">
+          <div className="flex items-center gap-3 px-4 py-2 bg-[#1a1c1c]/80 backdrop-blur-md rounded-full pointer-events-none">
+            <div className="w-2 h-2 rounded-full bg-[#1db954]" />
+            <span className="text-[10px] font-bold text-white uppercase tracking-widest">DIGITAL TWIN ACTIVE</span>
+            <span className="text-[10px] font-bold text-[#1db954] ml-2 opacity-80 uppercase tracking-widest">{selectedYear}</span>
+          </div>
+          
+          <div className="relative">
+            <button 
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isNotificationsOpen ? 'bg-primary text-white' : 'bg-white/80 text-secondary hover:bg-white backdrop-blur-md border border-outline-variant'}`}
+            >
+              <span className="material-symbols-outlined text-[18px]">notifications</span>
+              <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+            </button>
+            <NotificationPanel isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
+          </div>
         </div>
 
         {/* ── Landscape stats strip (Gap 1) ── */}

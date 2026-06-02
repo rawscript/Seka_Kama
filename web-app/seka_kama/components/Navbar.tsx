@@ -52,8 +52,8 @@ export default function Navbar() {
           <NavLink href="/geospatial" active={pathname === '/geospatial'}>
             Geospatial
           </NavLink>
-          <NavLink href="/intelligence" active={pathname === '/intelligence'}>
-            Intelligence
+          <NavLink href="/methodology" active={pathname === '/methodology'}>
+            Methodology
           </NavLink>
           <NavLink href="/about" active={pathname === '/about'}>
             About

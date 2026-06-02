@@ -38,6 +38,8 @@ export interface SekaMapProps {
   showProtectedAreas?: boolean;
   /** Whether the Land-X Admin Boundary layer is visible */
   showLandXBoundary?: boolean;
+  /** Whether to show Prey Density instead of Lion Density */
+  showPreyDensity?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -83,6 +85,7 @@ function SekaMapContent({
   timeValue = 66,
   showProtectedAreas = true,
   showLandXBoundary = false,
+  showPreyDensity = false,
 }: SekaMapProps) {
   const { 'main-map': mapMain } = useMap();
   const [onScenarioRunResult, setOnScenarioRunResult] = useState<any>(null);
@@ -271,7 +274,7 @@ function SekaMapContent({
               </Source>
             )}
 
-            {/* Lion Density Grid — always visible, filtered by year */}
+            {/* Lion Density / Prey Density Grid — always visible, filtered by year */}
             {baselineData && (
               <Source id="lion-density" type="geojson" data={baselineData}>
                 <Layer
@@ -280,15 +283,15 @@ function SekaMapContent({
                   paint={{
                     'circle-radius': [
                       'interpolate', ['linear'], ['zoom'],
-                      8,  ['interpolate', ['linear'], ['coalesce', ['get', 'lion_density'], 0], 0, 1.5, 30, 10],
-                      12, ['interpolate', ['linear'], ['coalesce', ['get', 'lion_density'], 0], 0, 4,   30, 30],
+                      8,  ['interpolate', ['linear'], ['coalesce', ['get', showPreyDensity ? 'prey_density' : 'lion_density'], 0], 0, 1.5, 30, 10],
+                      12, ['interpolate', ['linear'], ['coalesce', ['get', showPreyDensity ? 'prey_density' : 'lion_density'], 0], 0, 4,   30, 30],
                     ],
                     'circle-color': [
-                      'interpolate', ['linear'], ['coalesce', ['get', 'lion_density'], 0],
-                      0,  '#fef3c7',
-                      5,  '#fbbf24',
-                      15, '#f59e0b',
-                      30, '#d97706',
+                      'interpolate', ['linear'], ['coalesce', ['get', showPreyDensity ? 'prey_density' : 'lion_density'], 0],
+                      0,  showPreyDensity ? '#f0fdf4' : '#fef3c7',
+                      5,  showPreyDensity ? '#bbf7d0' : '#fbbf24',
+                      15, showPreyDensity ? '#4ade80' : '#f59e0b',
+                      30, showPreyDensity ? '#16a34a' : '#d97706',
                     ],
                     'circle-opacity': 0.9,
                     'circle-stroke-width': 1,
@@ -390,7 +393,7 @@ function SekaMapContent({
       )}
 
       {/* ── Map Legend ────────────────────────────────────────────── */}
-      <MapLegend hasScenario={!!onScenarioRunResult?.scenario_geojson} />
+      <MapLegend hasScenario={!!onScenarioRunResult?.scenario_geojson} isPrey={showPreyDensity} />
 
       <style dangerouslySetInnerHTML={{
         __html: `
@@ -413,8 +416,16 @@ const DENSITY_RAMP = [
   { color: '#d97706', label: 'High      (30+)' },
 ];
 
-function MapLegend({ hasScenario }: { hasScenario: boolean }) {
+const PREY_RAMP = [
+  { color: '#f0fdf4', label: 'Sparse (0–5)' },
+  { color: '#bbf7d0', label: 'Common (5–15)' },
+  { color: '#4ade80', label: 'Dense  (15–30)' },
+  { color: '#16a34a', label: 'High   (30+)' },
+];
+
+function MapLegend({ hasScenario, isPrey }: { hasScenario: boolean; isPrey: boolean }) {
   const [collapsed, setCollapsed] = useState(false);
+  const RAMP = isPrey ? PREY_RAMP : DENSITY_RAMP;
 
   return (
     <div
@@ -456,12 +467,12 @@ function MapLegend({ hasScenario }: { hasScenario: boolean }) {
 
       {!collapsed && (
         <div style={{ padding: '0 14px 14px' }}>
-          {/* Lion Density Ramp */}
+          {/* Lion/Prey Density Ramp */}
           <p style={{ fontSize: 8, color: '#64748b', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>
-            Lion Density (lions/km²)
+            {isPrey ? 'Prey base (GBIF)' : 'Lion Density (lions/km²)'}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
-            {DENSITY_RAMP.map(({ color, label }) => (
+            {RAMP.map(({ color, label }) => (
               <div key={color} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 12, height: 12, borderRadius: 3, background: color, border: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }} />
                 <span style={{ fontSize: 10, color: '#475569', fontWeight: 500 }}>{label}</span>
