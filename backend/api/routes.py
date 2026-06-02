@@ -663,23 +663,45 @@ async def get_audit_logs(
 
 @router.get("/health")
 async def health_check(
+    request: Request,
     db: SupabaseService = Depends(get_db)
 ):
     """
-    Health check endpoint for monitoring and load balancing.
+    Health check endpoint — returns system status, DB connectivity,
+    model load status, and cell count for the Settings dashboard.
     """
+    db_healthy = False
+    db_error = None
+    cell_count = 0
+
     try:
-        # Test database connection
-        result = db.client.table("grid_cells").select("cell_id").limit(1).execute()
-        db_healthy = len(result.data) >= 0
+        result = db.client.table("grid_cells").select("cell_id", count="exact").limit(1).execute()
+        db_healthy = True
+        cell_count = result.count or 0
     except Exception as e:
-        db_healthy = False
         db_error = str(e)
-    
+
+    # Check model load status
+    model_loaded = False
+    model_version = "unknown"
+    try:
+        pred_service = request.app.state.prediction_service
+        model_loaded = pred_service is not None and pred_service.model is not None
+        model_version = getattr(pred_service, "model_version", "2.1.0")
+    except Exception:
+        pass
+
     return {
-        "status": "healthy",
+        "status": "healthy" if db_healthy else "degraded",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "database": "connected" if db_healthy else f"error: {db_error}",
-        "model_loaded": True,
-        "version": "2.0.0"
+        "cell_count": cell_count,
+        "model_loaded": model_loaded,
+        "model_version": model_version,
+        "api_version": "2.1.0",
+        "services": {
+            "nasa_power": "enabled",
+            "gbif":       "enabled",
+            "llm":        "nvidia_nim",
+        }
     }
