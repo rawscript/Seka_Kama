@@ -274,9 +274,17 @@ async def run_scenario(
             user_id=current_user.user_id,
             user_description=scenario.user_query or "",
             modified_features=scenario.feature_modifications,
-            predicted_lion_delta=results["delta_total"],
+            baseline_total_lions=results["baseline_total"],
+            predicted_total_lions=results["scenario_total"],
+            delta_lions=results["delta_total"],
+            delta_percent=results["delta_percent_total"],
             affected_cells=len(affected_cells),
-            llm_narrative=narrative
+            llm_narrative=narrative,
+            request_data={
+                "geometry": scenario.geometry,
+                "feature_modifications": scenario.feature_modifications,
+                "simulation_years": scenario.simulation_years
+            }
         )
     except Exception as e:
         logger.error(f"Failed to save scenario history for user {current_user.user_id}: {str(e)}")

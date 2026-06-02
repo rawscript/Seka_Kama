@@ -298,11 +298,14 @@ app.add_middleware(DynamicCORSMiddleware)  # ← outermost: added LAST
 _PROXY_ALLOWED_HOSTS = {
     "drive.google.com",
     "docs.google.com",
+    "googleusercontent.com",
+    "dl.google.com",
     "raw.githubusercontent.com",
     "github.com",
     "storage.googleapis.com",
     "opendata.arcgis.com",
     "geojson.io",
+    "github.io",
 }
 
 def _validate_proxy_url(url: str) -> None:

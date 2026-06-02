@@ -130,10 +130,13 @@ CREATE TABLE IF NOT EXISTS public.scenario_history (
     user_id INTEGER REFERENCES public.users(id) ON DELETE CASCADE,
     user_description TEXT,
     modified_features JSONB,
-    predicted_lion_delta FLOAT,
-    affected_cells INTEGER,
-    llm_narrative TEXT,
     request_data JSONB,
+    baseline_total_lions FLOAT,
+    predicted_total_lions FLOAT,
+    delta_lions FLOAT,
+    delta_percent FLOAT,
+    llm_narrative TEXT,
+    affected_cells INTEGER,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

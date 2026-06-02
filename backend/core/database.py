@@ -215,13 +215,16 @@ class SupabaseService:
         user_id: int,
         user_description: str,
         modified_features: Dict[str, float],
-        predicted_lion_delta: float,
+        baseline_total_lions: float,
+        predicted_total_lions: float,
+        delta_lions: float,
+        delta_percent: float,
         affected_cells: int,
         llm_narrative: str,
         request_data: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Save a scenario to history.
+        Save a scenario to history with full metrics.
         """
         from datetime import datetime, timezone
         
@@ -229,7 +232,10 @@ class SupabaseService:
             "user_id": user_id,
             "user_description": user_description,
             "modified_features": modified_features,
-            "predicted_lion_delta": predicted_lion_delta,
+            "baseline_total_lions": baseline_total_lions,
+            "predicted_total_lions": predicted_total_lions,
+            "delta_lions": delta_lions,
+            "delta_percent": delta_percent,
             "affected_cells": affected_cells,
             "llm_narrative": llm_narrative,
             "request_data": request_data,

@@ -64,16 +64,16 @@ CREATE TABLE IF NOT EXISTS protected_areas (
 -- Scenario History Table
 CREATE TABLE IF NOT EXISTS scenario_history (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     user_description TEXT,
     modified_features JSONB,
-    request_data JSONB, -- Stores the full geometry and request params
+    request_data JSONB,
     baseline_total_lions FLOAT,
     predicted_total_lions FLOAT,
     delta_lions FLOAT,
     delta_percent FLOAT,
     llm_narrative TEXT,
-    affected_cells INTEGER[], -- Array of grid cell IDs
+    affected_cells INTEGER,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

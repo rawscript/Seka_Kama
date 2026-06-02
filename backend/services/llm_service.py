@@ -360,19 +360,21 @@ Top model drivers (from XGBoost feature importance):
   10. density_code — habitat classification
 
 ─────────────────────────────────────────
-Write a **3–4 sentence ecological interpretation** aimed at a conservancy manager.
-IMPORTANT: The scenario predicts a {direction} in lion abundance.
+Write a **targeted ecological interpretation** aimed at a conservancy manager.
+
+STRICT MULTI-SPECIES ANALYSIS:
+If the user query or environmental context mentions 'prey', 'herbivores', 'zebras', or 'wildebeest', you MUST provide two distinct scenarios:
+  1. LION IMPACT: Direct impact on lion abundance based on model results ({delta_pct:+.1f}%).
+  2. CHEETAH IMPACT: Inferred impact on cheetahs (Acinonyx jubatus). Note that while cheetahs share habitat, they may face increased competition or displacement if lion density rises significantly.
 
 Include:
-  1. Whether the predicted change is ecologically significant (threshold: ±5%)
-  2. Which conservancies are most impacted
-  3. One concrete, actionable mitigation or opportunity specific to the predicted {direction}
-  4. Mention that the analysis is grounded in real-time NASA POWER rainfall data and GBIF prey occurrence records.
-  5. A brief disclaimer about model uncertainty (±15%)
+  1. Ecological significance (threshold: ±5%).
+  2. Geographical variance: Mention {(', '.join(top_units)) if top_units else 'specific zones'} most affected.
+  3. Actionable mitigation or opportunity based on the {direction} trend.
+  4. SCIENTIFIC GROUNDING: Explicitly cite the provided GBIF occurrence counts ({eco_context.get('avg_prey_density', 0):.3f} records/km²) and NASA POWER rainfall metrics ({eco_context.get('avg_rainfall_mm', 0):.0f} mm) to justify your reasoning.
+  5. Disclaimer: Mention model uncertainty (±15%).
 
-Be professional, concise, and free of unexplained jargon.
-Do NOT invent data not provided above.
-MUST use words like "{'will increase' if delta > 0 else 'will decrease' if delta < 0 else 'remains stable'}" consistently. Use Markdown for emphasis."""
+Be professional, concise, and use Markdown for emphasis. Use phrases like "{'will increase' if delta > 0 else 'will decrease' if delta < 0 else 'remains stable'}" to maintain clarity."""
 
 
 def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:
