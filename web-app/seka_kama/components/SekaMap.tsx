@@ -89,7 +89,7 @@ function SekaMapContent({
   showLandXBoundary = false,
   showPreyDensity = false,
   showCorridors = false,
-}: SekaMapProps) {
+}: SekaMapProps): JSX.Element {
   const { 'main-map': mapMain } = useMap();
   const [onScenarioRunResult, setOnScenarioRunResult] = useState<any>(null);
   const envLandXUrl = process.env.NEXT_PUBLIC_LANDX_TILE_URL || '';
