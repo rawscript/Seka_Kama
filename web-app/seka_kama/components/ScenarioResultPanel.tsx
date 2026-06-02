@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   X, 
   TrendingDown, 
@@ -257,19 +257,14 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
                 `Affected Area: ${affectedCells} cells\n` +
                 `Narrative: ${narrative}`;
               navigator.clipboard.writeText(summary);
-              alert("Summary copied to clipboard!");
             }}
+            title="Copy plain-text summary"
             className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
           >
-            <Copy className="w-3 h-3" /> Copy Summary
+            <Copy className="w-3 h-3" /> Copy
           </button>
 
-          <button 
-            onClick={() => exportScenarioResult(result)}
-            className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
-          >
-            <Download className="w-3 h-3" /> Export
-          </button>
+          <ExportMenu result={result} />
          </div>
 
          <button 
