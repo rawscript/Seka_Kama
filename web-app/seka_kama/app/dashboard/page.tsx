@@ -95,6 +95,7 @@ function DashboardContent() {
   const [showLandXBoundary, setShowLandXBoundary]   = useState(false);
   const [showTrends, setShowTrends]         = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [showPreyDensity, setShowPreyDensity]       = useState(false);
 
   // Temporal slider
   const [timeValue, setTimeValue] = useState(66);
@@ -205,6 +206,7 @@ function DashboardContent() {
             timeValue={timeValue}
             showProtectedAreas={showProtectedAreas}
             showLandXBoundary={showLandXBoundary}
+            showPreyDensity={showPreyDensity}
           />
         </ErrorBoundary>
 
@@ -335,6 +337,19 @@ function DashboardContent() {
                 </div>
               </div>
               <div className="space-y-4">
+                <LayerToggle
+                  enabled={!showPreyDensity}
+                  onToggle={() => setShowPreyDensity(false)}
+                  color="#fbbf24"
+                  label="Lion Abundance (XGB)"
+                />
+                <LayerToggle
+                  enabled={showPreyDensity}
+                  onToggle={() => setShowPreyDensity(true)}
+                  color="#16a34a"
+                  label="Ecological Base (Prey)"
+                />
+                <div className="h-4" />
                 <LayerToggle
                   enabled={showProtectedAreas}
                   onToggle={() => setShowProtectedAreas((v) => !v)}

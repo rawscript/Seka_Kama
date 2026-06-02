@@ -210,8 +210,8 @@ class PredictionService:
                 # In these cases, we treat the mod_value as an absolute floor/shift 
                 # for that feature in those specific cells.
                 
-                # Identify where baseline is roughly 0
-                zero_mask = np.abs(modified_features[:, idx]) < 1e-6
+                # Identify where baseline is roughly 0 or very low (pristine/dark areas)
+                zero_mask = np.abs(modified_features[:, idx]) < 0.01
                 
                 # Standard percentage apply for non-zero cells
                 modified_features[~zero_mask, idx] *= (1 + mod_value)
