@@ -1,6 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import {  Download,
+  GitCompare,
+  ChevronRight,
+  BarChart3,
+  ArrowRight,
+  Search,
+  Crosshair,
+  HelpCircle,
+  Lightbulb,
+} from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import dynamic from 'next/dynamic';
@@ -97,6 +107,10 @@ function DashboardContent() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [showPreyDensity, setShowPreyDensity]       = useState(false);
   const [showCorridors, setShowCorridors]           = useState(false);
+  const [searchQuery, setSearchQuery]               = useState('');
+  const [isSidebarOpen, setIsSidebarOpen]           = useState(true);
+  const [isMobile, setIsMobile]                     = useState(false);
+  const [isWalkthroughOpen, setIsWalkthroughOpen]   = useState(false);
 
   // Temporal slider
   const [timeValue, setTimeValue] = useState(66);
@@ -146,6 +160,18 @@ function DashboardContent() {
     return () => { cancelled = true; };
   }, [showTrends, selectedUnit]);
 
+  // -- Responsive check --
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) setIsSidebarOpen(false);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // ── Playback ──────────────────────────────────────────────────────────────
   const stopPlayback = useCallback(() => {
     if (playRef.current) { clearInterval(playRef.current); playRef.current = null; }
@@ -173,6 +199,34 @@ function DashboardContent() {
   const handleZoomOut = () => mapMain?.zoomOut();
   const handleViewStateChange = (vs: any) =>
     setCurrentCoords({ lat: vs.latitude, lng: vs.longitude });
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery) return;
+
+    // Coordinate search (e.g. "-1.2, 35.1")
+    const coordMatch = searchQuery.match(/(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lng = parseFloat(coordMatch[2]);
+      mapMain?.flyTo({ center: [lng, lat], zoom: 12, duration: 3000 });
+      return;
+    }
+
+    // Landmark search (Mocked for Mara locations)
+    const landmarks: Record<string, [number, number]> = {
+      'narok': [35.86, -1.08],
+      'musiara': [35.03, -1.29],
+      'keekorok': [35.25, -1.58],
+      'talek': [35.21, -1.44],
+      'sekernani': [35.34, -1.52],
+    };
+
+    const target = searchQuery.toLowerCase().trim();
+    if (landmarks[target]) {
+      mapMain?.flyTo({ center: landmarks[target], zoom: 12, duration: 3000 });
+    }
+  };
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -219,6 +273,16 @@ function DashboardContent() {
             <span className="text-[10px] font-bold text-white uppercase tracking-widest">DIGITAL TWIN ACTIVE</span>
             <span className="text-[10px] font-bold text-[#1db954] ml-2 opacity-80 uppercase tracking-widest">{selectedYear}</span>
           </div>
+
+          {!isMobile && (
+            <button 
+              onClick={() => setIsWalkthroughOpen(true)}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/5 backdrop-blur-md rounded-full text-white text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2"
+            >
+               <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
+               How to use
+            </button>
+          )}
           
           <div className="relative">
             <button 
@@ -233,7 +297,7 @@ function DashboardContent() {
         </div>
 
         {/* ── Landscape stats strip (Gap 1) ── */}
-        {!statsLoading && stats && (
+        {!statsLoading && stats && !isMobile && (
           <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 flex gap-2 pointer-events-none">
             <StatCard
               label="Total Lions"
@@ -266,7 +330,7 @@ function DashboardContent() {
 
         {/* ── Scenario result panel ── */}
         {scenarioResult && (
-          <div className="absolute top-24 left-8 z-[100]">
+          <div className="absolute top-24 left-8 z-[100] max-w-[calc(100vw-64px)]">
             <ErrorBoundary label="Scenario Panel">
               <ScenarioResultPanel
                 result={scenarioResult}
@@ -276,8 +340,35 @@ function DashboardContent() {
           </div>
         )}
 
+        {/* -- Mobile Toggle -- */}
+        {isMobile && (
+           <button 
+             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+             className="absolute top-8 right-8 z-50 w-10 h-10 bg-[#1a1c1c] text-white rounded-full flex items-center justify-center shadow-2xl border border-white/10"
+           >
+              <span className="material-symbols-outlined">{isSidebarOpen ? 'close' : 'menu'}</span>
+           </button>
+        )}
+
         {/* ── Right side panels ── */}
-        <div className="absolute top-8 right-8 flex flex-col gap-6 w-[380px] max-h-[calc(100vh-180px)] overflow-y-auto pr-2 pb-8 z-20 custom-scrollbar">
+        <div className={`absolute top-8 right-8 flex flex-col gap-6 w-[380px] max-h-[calc(100vh-180px)] overflow-y-auto pr-2 pb-8 z-20 custom-scrollbar transition-all duration-300 ${isSidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-[420px] opacity-0 pointer-events-none'}`}>
+
+          {/* Search Bar */}
+          <div className="map-overlay-card p-4 shadow-sm rounded-sm z-30">
+            <form onSubmit={handleSearch} className="relative">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+               <input 
+                 type="text"
+                 placeholder="Search coords or landmark..."
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+                 className="w-full bg-white/5 border border-outline-variant rounded p-2 pl-10 text-xs font-medium text-on-surface focus:outline-none focus:border-primary transition-colors"
+               />
+               <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary">
+                 <Crosshair className="w-3.5 h-3.5" />
+               </button>
+            </form>
+          </div>
 
           {/* Zone Selection */}
           <div className={`map-overlay-card p-6 shadow-sm rounded-sm relative ${isZoneMenuOpen ? 'z-50' : 'z-20'}`}>
@@ -414,7 +505,7 @@ function DashboardContent() {
         </div>
 
         {/* ── Temporal Controls ── */}
-        <div className="absolute bottom-8 right-[420px] w-[500px] z-30">
+        <div className={`absolute bottom-8 right-[420px] w-[500px] z-30 transition-all duration-300 ${isSidebarOpen && !isMobile ? 'right-[420px]' : 'right-8'} ${isMobile && !isSidebarOpen ? 'opacity-0 translate-y-10' : ''}`}>
           <div className="map-overlay-card p-4 shadow-lg rounded-sm">
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2 text-primary font-bold">
@@ -508,7 +599,71 @@ function DashboardContent() {
           </div>
         </div>
 
+        {/* ── Walkthrough Modal ── */}
+        {isWalkthroughOpen && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/60 backdrop-blur-lg animate-in fade-in duration-300">
+             <div className="w-[600px] max-w-full bg-[#020617] border border-white/10 shadow-2xl rounded-[2rem] overflow-hidden">
+                <div className="p-10 space-y-8">
+                   <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-amber-400">
+                           <Lightbulb className="w-5 h-5" />
+                           <span className="text-[10px] font-bold uppercase tracking-widest">Platform Guide</span>
+                        </div>
+                        <h2 className="text-3xl font-black text-white tracking-tight">Master the Digital Twin</h2>
+                      </div>
+                      <button onClick={() => setIsWalkthroughOpen(false)} className="text-slate-500 hover:text-white transition-colors">
+                         <span className="material-symbols-outlined text-[32px]">close</span>
+                      </button>
+                   </div>
+
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <WalkthroughStep 
+                        num="01" 
+                        title="Spatial Probing" 
+                        text="Long-press or use the Polygon Tool to select specific areas of interest for detailed baseline analysis." 
+                      />
+                      <WalkthroughStep 
+                        num="02" 
+                        title="Scenario Testing" 
+                        text="Adjust environmental sliders like nightlight trends or cheetah abundance to project future outcomes." 
+                      />
+                      <WalkthroughStep 
+                        num="03" 
+                        title="Intelligence Stream" 
+                        text="Monitor the Bell icon for real-time compute status and ecological trend notifications." 
+                      />
+                      <WalkthroughStep 
+                        num="04" 
+                        title="Temporal Controls" 
+                        text="Use the timeline at the bottom to synchronize spatial data between 2020 and 2026." 
+                      />
+                   </div>
+
+                   <button 
+                     onClick={() => setIsWalkthroughOpen(false)}
+                     className="w-full py-4 bg-primary text-white font-bold uppercase tracking-widest rounded-2xl hover:opacity-90 transition-opacity"
+                   >
+                     Initialize Simulation
+                   </button>
+                </div>
+             </div>
+          </div>
+        )}
+
       </div>
     </ProtectedRoute>
+  );
+}
+
+function WalkthroughStep({ num, title, text }: { num: string; title: string, text: string }) {
+  return (
+    <div className="space-y-2">
+       <div className="flex items-center gap-3">
+          <span className="text-xs font-mono font-bold text-amber-500/60">{num}</span>
+          <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wide">{title}</h4>
+       </div>
+       <p className="text-[11px] text-slate-500 leading-relaxed font-medium capitalize prose italic">"{text}"</p>
+    </div>
   );
 }

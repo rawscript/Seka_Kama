@@ -140,6 +140,7 @@ function SekaMapContent({
     bearing: -10,
   });
   const [filteredBins, setFilteredBins] = useState<string[]>([]);
+  const [hoverInfo, setHoverInfo] = useState<any>(null);
 
   // Notify parent of initial view state once on mount
   useEffect(() => {
@@ -225,12 +226,27 @@ function SekaMapContent({
     }
   };
 
+  const onMouseMove = (event: any) => {
+    const { features, point: { x, y } } = event;
+    const hoveredFeature = features && features.find((f: any) => f.layer.id === 'lions-heatmap');
+    if (hoveredFeature) {
+      setHoverInfo({
+        x,
+        y,
+        properties: hoveredFeature.properties
+      });
+    } else {
+      setHoverInfo(null);
+    }
+  };
+
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative group">
       <Map
         {...viewState}
         onMove={handleMove}
         onLoad={() => setIsStyleLoaded(true)}
+        onMouseMove={onMouseMove}
         style={{ width: '100%', height: '100%' }}
         mapStyle={currentMapStyle}
         id="main-map"
@@ -377,6 +393,39 @@ function SekaMapContent({
           }}
           selectedUnit={selectedUnit}
         />
+
+        {hoverInfo && (
+          <div 
+            className="absolute z-[200] pointer-events-none bg-[#020617]/90 backdrop-blur-md border border-white/10 p-4 rounded-xl shadow-2xl animate-in fade-in duration-200"
+            style={{ left: hoverInfo.x + 10, top: hoverInfo.y + 10 }}
+          >
+             <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                   <span className="text-[10px] font-bold text-white uppercase tracking-widest leading-none">
+                     {hoverInfo.properties.management_unit || 'Wild Zone'}
+                   </span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                   <div>
+                      <p className="text-[8px] font-bold text-slate-500 uppercase mb-0.5">Lion Density</p>
+                      <p className="text-sm font-black text-emerald-400">
+                        {parseFloat(hoverInfo.properties.lion_density || 0).toFixed(3)}
+                      </p>
+                   </div>
+                   <div>
+                      <p className="text-[8px] font-bold text-slate-500 uppercase mb-0.5">Threat Level</p>
+                      <p className={`text-sm font-black ${parseFloat(hoverInfo.properties.pop2018_mean || 0) > 5 ? 'text-rose-400' : 'text-blue-400'}`}>
+                        {parseFloat(hoverInfo.properties.pop2018_mean || 0) > 5 ? 'High' : 'Low'}
+                      </p>
+                   </div>
+                </div>
+                <p className="text-[9px] text-slate-500 italic max-w-[120px] leading-tight">
+                   Located {parseFloat(hoverInfo.properties.dist_to_protected_km || 0).toFixed(1)}km from reserve boundary.
+                </p>
+             </div>
+          </div>
+        )}
       </Map>
 
       {/* Year badge — shown when temporal filtering is active */}
