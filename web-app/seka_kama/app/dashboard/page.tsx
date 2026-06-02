@@ -96,6 +96,7 @@ function DashboardContent() {
   const [showTrends, setShowTrends]         = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [showPreyDensity, setShowPreyDensity]       = useState(false);
+  const [showCorridors, setShowCorridors]           = useState(false);
 
   // Temporal slider
   const [timeValue, setTimeValue] = useState(66);
@@ -207,6 +208,7 @@ function DashboardContent() {
             showProtectedAreas={showProtectedAreas}
             showLandXBoundary={showLandXBoundary}
             showPreyDensity={showPreyDensity}
+            showCorridors={showCorridors}
           />
         </ErrorBoundary>
 
@@ -355,6 +357,12 @@ function DashboardContent() {
                   onToggle={() => setShowProtectedAreas((v) => !v)}
                   color="#1db954"
                   label="Protected Wildlife Zones"
+                />
+                <LayerToggle
+                  enabled={showCorridors}
+                  onToggle={() => setShowCorridors((v) => !v)}
+                  color="#8b5cf6"
+                  label="Biological Corridors"
                 />
                 <LayerToggle
                   enabled={showLandXBoundary}

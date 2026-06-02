@@ -16,6 +16,8 @@ import {
   ChevronRight,
   BarChart3,
   ArrowRight,
+  ClipboardCheck,
+  Copy,
 } from 'lucide-react';
 import { exportScenarioResult } from '../services/exportService';
 
@@ -201,9 +203,9 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
                     <span className="text-[10px] font-bold uppercase tracking-widest">Live Ecological Context</span>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    <EcoStat label="Prey Density" value={eco.avg_prey_density.toFixed(3)} unit="/km²" tooltip="Avg herbivore occurrence density (GBIF)" />
-                    <EcoStat label="Rainfall" value={Math.round(eco.avg_rainfall_mm).toString()} unit="mm/yr" tooltip="Annual precipitation (NASA POWER)" />
-                    <EcoStat label="HWC Risk" value={`${(eco.avg_hwc_risk * 100).toFixed(0)}%`} unit="" tooltip="Human-Wildlife Conflict risk index" />
+                    <EcoStat label="Prey Density" value={eco.avg_prey_density.toFixed(3)} unit="/km²" tooltip="Data Source: GBIF Occurrence API. Normalized herbivore records within study radius." />
+                    <EcoStat label="Rainfall" value={Math.round(eco.avg_rainfall_mm).toString()} unit="mm/yr" tooltip="Data Source: NASA POWER PRECTOTCORR. Real-time annual precipitation." />
+                    <EcoStat label="HWC Risk" value={`${(eco.avg_hwc_risk * 100).toFixed(0)}%`} unit="" tooltip="Model: SekaNet v2.1 Derivative. Calculated from nightlight gradient + edge proximity + rainfall stress." />
                   </div>
                 </div>
               )}
@@ -244,12 +246,32 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
       {/* Footer */}
       <div className="p-4 bg-black/40 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-600 font-mono">
          <span className="flex items-center gap-1.5"><Activity className="w-3 h-3" /> Real-time Compute</span>
-         <button 
-           onClick={() => exportScenarioResult(result)}
-           className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
-         >
-           <Download className="w-3 h-3" /> Export
-         </button>
+         
+         <div className="flex items-center gap-4">
+          <button 
+            onClick={() => {
+              const summary = `SCENARIO REPORT: ${title}\n` +
+                `----------------------------------\n` +
+                `Delta: ${safeFixed(delta, 1)} Lions (${deltaPercent?.toFixed(1)}%)\n` +
+                `Predictive Total: ${safeInt(predictedTotal)} Lions\n` +
+                `Affected Area: ${affectedCells} cells\n` +
+                `Narrative: ${narrative}`;
+              navigator.clipboard.writeText(summary);
+              alert("Summary copied to clipboard!");
+            }}
+            className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+          >
+            <Copy className="w-3 h-3" /> Copy Summary
+          </button>
+
+          <button 
+            onClick={() => exportScenarioResult(result)}
+            className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+          >
+            <Download className="w-3 h-3" /> Export
+          </button>
+         </div>
+
          <button 
            onClick={handleAddToCompare}
            className="flex items-center gap-1.5 hover:text-amber-400 transition-colors cursor-pointer relative"

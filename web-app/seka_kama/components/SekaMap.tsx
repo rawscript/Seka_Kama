@@ -40,6 +40,8 @@ export interface SekaMapProps {
   showLandXBoundary?: boolean;
   /** Whether to show Prey Density instead of Lion Density */
   showPreyDensity?: boolean;
+  /** Whether to show biological corridors */
+  showCorridors?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,6 +88,7 @@ function SekaMapContent({
   showProtectedAreas = true,
   showLandXBoundary = false,
   showPreyDensity = false,
+  showCorridors = false,
 }: SekaMapProps) {
   const { 'main-map': mapMain } = useMap();
   const [onScenarioRunResult, setOnScenarioRunResult] = useState<any>(null);
@@ -136,6 +139,7 @@ function SekaMapContent({
     pitch: 45,
     bearing: -10,
   });
+  const [filteredBins, setFilteredBins] = useState<string[]>([]);
 
   // Notify parent of initial view state once on mount
   useEffect(() => {
@@ -320,9 +324,45 @@ function SekaMapContent({
                       15, '#f59e0b',
                       30, '#d97706',
                     ],
-                    'circle-opacity': 1.0,
+                    'circle-opacity': [
+                      'case',
+                      ['==', ['length', ['literal', filteredBins]], 0], 0.9,
+                      ['any', 
+                        ['all', ['<', ['coalesce', ['get', 'scenario_density'], 0], 5], ['in', 'Very low  (0–5)', ['literal', filteredBins]]],
+                        ['all', ['>=', ['coalesce', ['get', 'scenario_density'], 0], 5], ['<', ['coalesce', ['get', 'scenario_density'], 0], 15], ['in', 'Low       (5–15)', ['literal', filteredBins]]],
+                        ['all', ['>=', ['coalesce', ['get', 'scenario_density'], 0], 15], ['<', ['coalesce', ['get', 'scenario_density'], 0], 30], ['in', 'Moderate  (15–30)', ['literal', filteredBins]]],
+                        ['all', ['>=', ['coalesce', ['get', 'scenario_density'], 0], 30], ['in', 'High      (30+)', ['literal', filteredBins]]]
+                      ], 0.95,
+                      0.05
+                    ],
                     'circle-stroke-width': 2,
                     'circle-stroke-color': '#fff',
+                  }}
+                />
+              </Source>
+            )}
+
+            {/* Biological Corridors pulse layer */}
+            {baselineData && (
+              <Source id="corridors" type="geojson" data={baselineData}>
+                <Layer
+                  id="corridors-pulse"
+                  type="circle"
+                  layout={{ visibility: showCorridors === true ? 'visible' : 'none' }}
+                  paint={{
+                    'circle-radius': [
+                      'interpolate', ['linear'], ['zoom'],
+                      8,  ['case', ['all', ['>', ['get', 'lion_density'], 15], ['<', ['get', 'all_mean_mean'], 0.05]], 3, 0],
+                      12, ['case', ['all', ['>', ['get', 'lion_density'], 15], ['<', ['get', 'all_mean_mean'], 0.05]], 8, 0]
+                    ],
+                    'circle-color': '#8b5cf6',
+                    'circle-opacity': 0.6,
+                    'circle-stroke-width': [
+                        'interpolate', ['linear'], ['zoom'],
+                         8, 1,
+                         12, 4
+                    ],
+                    'circle-stroke-color': 'rgba(139, 92, 246, 0.4)'
                   }}
                 />
               </Source>
@@ -393,7 +433,16 @@ function SekaMapContent({
       )}
 
       {/* ── Map Legend ────────────────────────────────────────────── */}
-      <MapLegend hasScenario={!!onScenarioRunResult?.scenario_geojson} isPrey={showPreyDensity} />
+      <MapLegend 
+        hasScenario={!!onScenarioRunResult?.scenario_geojson} 
+        isPrey={showPreyDensity} 
+        filteredBins={filteredBins}
+        onToggleBin={(bin) => {
+          setFilteredBins(current => 
+            current.includes(bin) ? current.filter(b => b !== bin) : [...current, bin]
+          );
+        }}
+      />
 
       <style dangerouslySetInnerHTML={{
         __html: `
@@ -423,9 +472,21 @@ const PREY_RAMP = [
   { color: '#16a34a', label: 'High   (30+)' },
 ];
 
-function MapLegend({ hasScenario, isPrey }: { hasScenario: boolean; isPrey: boolean }) {
+function MapLegend({ 
+  hasScenario, 
+  isPrey, 
+  filteredBins, 
+  onToggleBin 
+}: { 
+  hasScenario: boolean; 
+  isPrey: boolean;
+  filteredBins: string[];
+  onToggleBin: (bin: string) => void;
+}) {
   const [collapsed, setCollapsed] = useState(false);
-  const RAMP = isPrey ? PREY_RAMP : DENSITY_RAMP;
+  const RAMP = isPrey ? PREY_RAMP.map(r => ({ ...r, label: r.label.replace('Sparse', 'Very low').replace('Common', 'Low').replace('Dense', 'Moderate') })) : DENSITY_RAMP;
+  // Normalized labels for filtering logic (match the Mapbox expression)
+  const normalizedLabels = ['Very low  (0–5)', 'Low       (5–15)', 'Moderate  (15–30)', 'High      (30+)'];
 
   return (
     <div
@@ -472,12 +533,27 @@ function MapLegend({ hasScenario, isPrey }: { hasScenario: boolean; isPrey: bool
             {isPrey ? 'Prey base (GBIF)' : 'Lion Density (lions/km²)'}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
-            {RAMP.map(({ color, label }) => (
-              <div key={color} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 12, height: 12, borderRadius: 3, background: color, border: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }} />
-                <span style={{ fontSize: 10, color: '#475569', fontWeight: 500 }}>{label}</span>
-              </div>
-            ))}
+            {RAMP.map(({ color, label }, idx) => {
+              const filterLabel = normalizedLabels[idx];
+              const isSelected = filteredBins.includes(filterLabel);
+              return (
+                <div 
+                  key={color} 
+                  onClick={() => onToggleBin(filterLabel)}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 10, 
+                    cursor: 'pointer',
+                    opacity: filteredBins.length === 0 || isSelected ? 1 : 0.3,
+                    transition: 'opacity 0.2s'
+                  }}
+                >
+                  <div style={{ width: 12, height: 12, borderRadius: 3, background: color, border: isSelected ? '1px solid #000' : '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, color: '#475569', fontWeight: isSelected ? 700 : 500 }}>{label}</span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Protected Areas */}
