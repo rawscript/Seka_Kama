@@ -420,17 +420,17 @@ function MapLegend({ hasScenario }: { hasScenario: boolean }) {
     <div
       style={{
         position: 'absolute',
-        bottom: 28,
-        right: 14,
+        bottom: 180,
+        left: 32,
         zIndex: 30,
         width: 192,
-        background: 'rgba(2,6,23,0.82)',
-        backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(16,185,129,0.18)',
+        background: 'rgba(255, 255, 255, 0.9)',
+        backdropFilter: 'blur(16px)',
+        border: '0.5px solid rgba(0, 0, 0, 0.1)',
         borderRadius: 8,
         overflow: 'hidden',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-        fontFamily: 'monospace',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+        fontFamily: 'inherit',
       }}
     >
       {/* Header */}
@@ -441,58 +441,58 @@ function MapLegend({ hasScenario }: { hasScenario: boolean }) {
           alignItems: 'center',
           justifyContent: 'space-between',
           width: '100%',
-          padding: '8px 12px',
+          padding: '10px 14px',
           background: 'transparent',
           border: 'none',
           cursor: 'pointer',
-          color: '#10b981',
+          color: '#1a1c1e',
         }}
       >
-        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-          Layer Legend
+        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          Spatial Legend
         </span>
-        <span style={{ fontSize: 10, opacity: 0.6 }}>{collapsed ? '▲' : '▼'}</span>
+        <span style={{ fontSize: 10, opacity: 0.4 }}>{collapsed ? '▲' : '▼'}</span>
       </button>
 
       {!collapsed && (
-        <div style={{ padding: '0 12px 12px' }}>
+        <div style={{ padding: '0 14px 14px' }}>
           {/* Lion Density Ramp */}
-          <p style={{ fontSize: 8, color: '#6ee7b7', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 6 }}>
+          <p style={{ fontSize: 8, color: '#64748b', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>
             Lion Density (lions/km²)
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
             {DENSITY_RAMP.map(({ color, label }) => (
-              <div key={color} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: color, flexShrink: 0 }} />
-                <span style={{ fontSize: 9, color: '#94a3b8' }}>{label}</span>
+              <div key={color} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 12, height: 12, borderRadius: 3, background: color, border: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }} />
+                <span style={{ fontSize: 10, color: '#475569', fontWeight: 500 }}>{label}</span>
               </div>
             ))}
           </div>
 
           {/* Protected Areas */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <div style={{ width: 10, height: 10, borderRadius: 2, background: '#059669', opacity: 0.7, flexShrink: 0 }} />
-            <span style={{ fontSize: 9, color: '#94a3b8' }}>Protected zones</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <div style={{ width: 12, height: 12, borderRadius: 3, background: '#059669', opacity: 0.6, border: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }} />
+            <span style={{ fontSize: 10, color: '#475569', fontWeight: 500 }}>Protected zones</span>
           </div>
 
           {/* Scenario layer — only shown after a run */}
           {hasScenario && (
             <>
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '8px 0' }} />
-              <p style={{ fontSize: 8, color: '#fbbf24', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 6 }}>
+              <div style={{ height: 1, background: 'rgba(0,0,0,0.05)', margin: '10px 0' }} />
+              <p style={{ fontSize: 8, color: '#b45309', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>
                 Scenario Projection
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 2, background: '#f59e0b', border: '2px solid #fff', flexShrink: 0 }} />
-                <span style={{ fontSize: 9, color: '#94a3b8' }}>Predicted future density</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 12, height: 12, borderRadius: 3, background: '#f59e0b', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }} />
+                <span style={{ fontSize: 10, color: '#475569', fontWeight: 500 }}>Predicted future</span>
               </div>
             </>
           )}
 
           {/* Attribution */}
-          <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 8 }}>
-            <span style={{ fontSize: 8, color: '#475569', letterSpacing: '0.1em' }}>
-              SekaNet v2.0 · XGBoost · ESRI Satellite
+          <div style={{ marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 10 }}>
+            <span style={{ fontSize: 8, color: '#94a3b8', letterSpacing: '0.02em', fontStyle: 'italic' }}>
+              SekaNet v2.1 (XGBoost)
             </span>
           </div>
         </div>
