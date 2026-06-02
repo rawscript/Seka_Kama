@@ -487,7 +487,49 @@ function UnitRow({ name, delta, max }: { name: string, delta: number, max: numbe
        </div>
        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
           <div className={`h-full ${color} opacity-60 rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
-       </div>
+        </div>
+     </div>
+  );
+}
+
+// -- Export Dropdown --
+
+function ExportMenu({ result }: { result: any }) {
+  const [open, setOpen] = useState(false);
+
+  const options: { label: string; format: 'csv' | 'json' | 'geojson'; desc: string }[] = [
+    { label: 'CSV',     format: 'csv',     desc: 'Spreadsheet-ready data' },
+    { label: 'JSON',    format: 'json',    desc: 'Full metadata + provenance' },
+    { label: 'GeoJSON', format: 'geojson', desc: 'Spatial features for GIS' },
+  ];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+      >
+        <Download className="w-3 h-3" />
+        Export ▾
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full right-0 mb-2 w-44 bg-[#0b0f1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150 z-50">
+          {options.map(opt => (
+            <button
+              key={opt.format}
+              onClick={() => {
+                exportScenarioResult(result, opt.format);
+                setOpen(false);
+              }}
+              className="w-full text-left px-4 py-3 hover:bg-white/5 transition-colors group"
+            >
+              <p className="text-[11px] font-bold text-slate-200 group-hover:text-white">{opt.label}</p>
+              <p className="text-[9px] text-slate-600 group-hover:text-slate-400">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
