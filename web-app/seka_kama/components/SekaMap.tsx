@@ -42,6 +42,8 @@ export interface SekaMapProps {
   showPreyDensity?: boolean;
   /** Whether to show biological corridors */
   showCorridors?: boolean;
+  /** Whether to show neural landscape prediction heatmap */
+  showPrediction?: boolean;
   /** Whether the Live Twin mode is active */
   isLiveMode?: boolean;
 }
@@ -91,6 +93,7 @@ function SekaMapContent({
   showLandXBoundary = false,
   showPreyDensity = false,
   showCorridors = false,
+  showPrediction = false,
   isLiveMode = false,
 }: SekaMapProps): JSX.Element {
   const { 'main-map': mapMain } = useMap();
@@ -172,7 +175,7 @@ function SekaMapContent({
           ? api.getEnrichedBaseline(selectedUnit || undefined, selectedYear)
           : api.getBaseline(selectedUnit || undefined, selectedYear),
         api.getProtectedAreas(),
-        api.get('/corridors', { management_unit: selectedUnit || undefined }),
+        api.getCorridors(selectedUnit || undefined),
         isLiveMode ? api.getLandscapePrediction(selectedUnit || undefined, selectedYear) : null
       ]);
 
@@ -322,6 +325,7 @@ function SekaMapContent({
                  <Layer
                    id="prediction-heatmap"
                    type="fill"
+                   layout={{ visibility: showPrediction ? 'visible' : 'none' }}
                    paint={{
                       'fill-color': [
                         'interpolate',

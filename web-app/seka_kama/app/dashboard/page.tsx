@@ -266,6 +266,7 @@ function DashboardContent() {
             showLandXBoundary={showLandXBoundary}
             showPreyDensity={showPreyDensity}
             showCorridors={showCorridors}
+            showPrediction={showPrediction}
             isLiveMode={isLiveMode}
           />
         </ErrorBoundary>

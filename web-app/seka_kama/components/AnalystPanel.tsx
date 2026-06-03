@@ -16,52 +16,67 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
   const [isExpanded, setIsExpanded] = useState(true);
 
   useEffect(() => {
-    const fetchHealth = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/health`);
-        if (resp.ok) {
-           const data = await resp.json();
+        const [healthResp, narrativeResp] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/health`),
+          api.getLandscapeSummary(selectedUnit || undefined, year)
+        ]);
+        
+        if (healthResp.ok) {
+           const data = await healthResp.json();
            setHealthStatus(data);
         }
+        
+        if (narrativeResp?.narrative) {
+          setInsight(narrativeResp.narrative);
+        }
       } catch (e) {
-        console.error("Analyst failed to fetch system health", e);
+        console.error("Analyst failed to fetch data", e);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchHealth();
-  }, []);
+    fetchData();
+  }, [selectedUnit, year]);
 
   const getNarrative = () => {
-    if (loading) return "Processing landscape data...";
-    
-    // Fallback if LLM narrative isn't available for the whole landscape yet
-    const unitName = selectedUnit || 'Regional Mara';
-    const rainfall = healthStatus?.live_context?.annual_rainfall_mm;
-    const situation = healthStatus?.live_context?.situation || 'Stable';
+    if (loading) {
+      return (
+        <div className="flex flex-col gap-2 animate-pulse">
+          <div className="h-2 w-full bg-white/10 rounded" />
+          <div className="h-2 w-3/4 bg-white/10 rounded" />
+          <div className="h-2 w-5/6 bg-white/10 rounded" />
+        </div>
+      );
+    }
     
     return (
       <div className="space-y-4">
-        <p className="text-sm leading-relaxed text-slate-300">
-          The <span className="text-primary font-bold">{unitName}</span> digital twin is currently tracking 
-          <span className="text-white font-medium"> {situation} environmental conditions</span> for {year}. 
-          {rainfall && ` Annual precipitation is registered at ${rainfall.toFixed(0)}mm.`}
-        </p>
+        <div 
+          className="text-xs leading-relaxed text-slate-300 narrative-content"
+          dangerouslySetInnerHTML={{ __html: insight.replace(/\n/g, '<br/>') || 'No qualitative data available for this zone.' }}
+        />
         
-        <div className="grid grid-cols-1 gap-2">
-          <div className="flex gap-3 p-3 bg-white/5 rounded-sm items-start">
-             <Shield className="w-4 h-4 text-emerald-400 mt-1 shrink-0" />
-             <div>
-                <p className="text-[10px] font-bold text-white uppercase tracking-wider">Neural Defense</p>
-                <p className="text-[11px] text-slate-400">Habitat suitability is currently optimal in the northern corridors. Human pressure remains below 0.1 trend threshold.</p>
-             </div>
+        {!insight && (
+          <div className="grid grid-cols-1 gap-2">
+            <div className="flex gap-3 p-3 bg-white/5 rounded-sm items-start">
+               <Shield className="w-4 h-4 text-emerald-400 mt-1 shrink-0" />
+               <div>
+                  <p className="text-[10px] font-bold text-white uppercase tracking-wider">Neural Defense</p>
+                  <p className="text-[11px] text-slate-400">Habitat suitability is currently optimal in the northern corridors. Human pressure remains below 0.1 trend threshold.</p>
+               </div>
+            </div>
+            <div className="flex gap-3 p-3 bg-white/5 rounded-sm items-start">
+               <AlertTriangle className="w-4 h-4 text-amber-400 mt-1 shrink-0" />
+               <div>
+                  <p className="text-[10px] font-bold text-white uppercase tracking-wider">Active Threat</p>
+                  <p className="text-[11px] text-slate-400">Nightlight encroachment detected near Talek boundary. Probability of HWC (Human-Wildlife Conflict) is elevated at 12%.</p>
+               </div>
+            </div>
           </div>
-          <div className="flex gap-3 p-3 bg-white/5 rounded-sm items-start">
-             <AlertTriangle className="w-4 h-4 text-amber-400 mt-1 shrink-0" />
-             <div>
-                <p className="text-[10px] font-bold text-white uppercase tracking-wider">Active Threat</p>
-                <p className="text-[11px] text-slate-400">Nightlight encroachment detected near Talek boundary. Probability of HWC (Human-Wildlife Conflict) is elevated at 12%.</p>
-             </div>
-          </div>
-        </div>
+        )}
       </div>
     );
   };

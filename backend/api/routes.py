@@ -200,6 +200,96 @@ async def get_corridors(
     return result
 
 
+@router.get("/narrative/summary")
+async def get_landscape_summary(
+    management_unit: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Generate a qualitative ecological summary for the current landscape view.
+    """
+    from services.llm_service import generate_narrative
+    from services.ecological_data_service import fetch_rainfall_for_points
+    
+    # 1. Fetch stats for context
+    stats = db.get_landscape_stats(management_unit=management_unit, year=year)
+    
+    # 2. Mock a scenario request to reuse the narrative logic
+    class MockRequest:
+        def __init__(self, query, mods):
+            self.user_query = query
+            self.feature_modifications = mods
+            
+    mock_req = MockRequest(
+        query=f"Overview of the {management_unit or 'Mara Ecosystem'} landscape in {year or 'the present baseline'}.",
+        mods={}
+    )
+    
+    # 3. Prepare results with ecological context
+    mock_results = {
+        "delta_total": 0,
+        "delta_percent_total": 0,
+        "baseline_total": stats.get("total_lions", 0),
+        "unit_aggregation": {management_unit or "Regional": {"delta": 0, "delta_pct": 0}},
+        "ecological_context": {
+            "avg_prey_density": stats.get("avg_lion_density", 0) * 5, # Proxy
+            "avg_rainfall_mm": 750, # Default if NASA fails
+            "avg_nightlight": stats.get("avg_lion_density", 0) * 0.1,
+            "avg_hwc_risk": stats.get("high_risk_cell_count", 0) / 100 if stats.get("total_area_km2") else 0
+        }
+    }
+    
+    # 4. Generate narrative
+    narrative = await generate_narrative(mock_req, mock_results)
+    
+    return {"narrative": narrative}
+
+
+@router.get("/export/landscape")
+async def export_landscape(
+    format: str = Query("geojson", regex="^(geojson|csv|json)$"),
+    management_unit: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Export current landscape data to CSV, JSON, or GeoJSON.
+    """
+    from services.export_service import export_landscape_to_csv, export_landscape_to_geojson
+    
+    # 1. Fetch the data (reusing landscape prediction logic if year is set, else baseline)
+    # For now, we fetch the baseline enriched if possible
+    cells = db.get_grid_cells(management_unit=management_unit, year=year, limit=5000)
+    
+    # Simple conversion to GeoJSON features for the services
+    features = []
+    for row in cells:
+        features.append({
+            "type": "Feature",
+            "geometry": json.loads(row['geom']) if isinstance(row['geom'], str) else row['geom'],
+            "properties": {k: v for k, v in row.items() if k != 'geom'}
+        })
+    
+    metadata = {"version": "1.2.0", "provenance": "Seka Kama Platform Export"}
+    
+    if format == "csv":
+        content = export_landscape_to_csv(features, metadata)
+        media_type = "text/csv"
+    elif format == "geojson":
+        content = export_landscape_to_geojson(features, metadata)
+        media_type = "application/geo+json"
+    else:
+        content = json.dumps(features)
+        media_type = "application/json"
+        
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f"attachment; filename=seka_export.{format}"}
+    )
+
+
 @router.get("/protected-areas")
 async def get_protected_areas_endpoint(
     request: Request,

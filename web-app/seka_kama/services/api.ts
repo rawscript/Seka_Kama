@@ -188,6 +188,21 @@ export const api = {
     return this.get(qs ? `/predict/landscape?${qs}` : '/predict/landscape');
   },
 
+  async getCorridors(managementUnit?: string): Promise<any> {
+    const p = new URLSearchParams();
+    if (managementUnit) p.append('management_unit', managementUnit);
+    const qs = p.toString();
+    return this.get(qs ? `/corridors?${qs}` : '/corridors');
+  },
+
+  async getLandscapeSummary(managementUnit?: string, year?: number): Promise<any> {
+    const p = new URLSearchParams();
+    if (managementUnit) p.append('management_unit', managementUnit);
+    if (year) p.append('year', year.toString());
+    const qs = p.toString();
+    return this.get(qs ? `/narrative/summary?${qs}` : '/narrative/summary');
+  },
+
   async getBaselineSummary(managementUnit?: string): Promise<BaselineSummary> {
     const p = new URLSearchParams();
     if (managementUnit) p.append('management_unit', managementUnit);
