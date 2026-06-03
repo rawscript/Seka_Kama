@@ -111,6 +111,7 @@ function DashboardContent() {
   const [isSidebarOpen, setIsSidebarOpen]           = useState(true);
   const [isMobile, setIsMobile]                     = useState(false);
   const [isWalkthroughOpen, setIsWalkthroughOpen]   = useState(false);
+  const [isLiveMode, setIsLiveMode]                 = useState(false);
 
   // Temporal slider
   const [timeValue, setTimeValue] = useState(66);
@@ -263,6 +264,7 @@ function DashboardContent() {
             showLandXBoundary={showLandXBoundary}
             showPreyDensity={showPreyDensity}
             showCorridors={showCorridors}
+            isLiveMode={isLiveMode}
           />
         </ErrorBoundary>
 
@@ -284,17 +286,25 @@ function DashboardContent() {
             </button>
           )}
           
-          <div className="relative">
+            <div className="relative">
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isNotificationsOpen ? 'bg-primary text-white' : 'bg-white/80 text-secondary hover:bg-white backdrop-blur-md border border-outline-variant'}`}
+              >
+                <span className="material-symbols-outlined text-[18px]">notifications</span>
+                <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+              </button>
+              <NotificationPanel isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
+            </div>
+
             <button 
-              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isNotificationsOpen ? 'bg-primary text-white' : 'bg-white/80 text-secondary hover:bg-white backdrop-blur-md border border-outline-variant'}`}
+              onClick={() => setIsLiveMode(!isLiveMode)}
+              className={`px-4 py-2 rounded-full border backdrop-blur-md text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${isLiveMode ? 'bg-emerald-500 text-white border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-white/10 text-white/60 border-white/10 hover:bg-white/20'}`}
             >
-              <span className="material-symbols-outlined text-[18px]">notifications</span>
-              <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+              <div className={`w-1.5 h-1.5 rounded-full ${isLiveMode ? 'bg-white animate-pulse' : 'bg-white/20'}`} />
+              {isLiveMode ? 'Live Twin Active' : 'Enable Live Twin'}
             </button>
-            <NotificationPanel isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
           </div>
-        </div>
 
         {/* ── Landscape stats strip (Gap 1) ── */}
         {!statsLoading && stats && !isMobile && (

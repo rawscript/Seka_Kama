@@ -209,6 +209,12 @@ export default function ScenarioPanel({ onScenarioSelect }: ScenarioPanelProps) 
           <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#475569' }}>
             Review and re-run past ecosystem simulations
           </p>
+          <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></div>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#10b981', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              Digital Twin Active
+            </span>
+          </div>
         </div>
         <button
           onClick={loadScenarios}

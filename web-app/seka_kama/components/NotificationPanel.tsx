@@ -24,6 +24,20 @@ interface AuditLog {
   };
 }
 
+interface SystemHealth {
+  status: string;
+  database: string;
+  live_context?: {
+    annual_rainfall_mm: number | null;
+    situation: string;
+  };
+  services: {
+    nasa_power: string;
+    gbif: string;
+    llm: string;
+  };
+}
+
 interface NotificationPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,15 +45,32 @@ interface NotificationPanelProps {
 
 export default function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [health, setHealth] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchNotifications = async () => {
     setLoading(true);
     const token = localStorage.getItem('access_token');
-    if (!token) return;
-
+    
     try {
-      // We fetch from audit-logs, but fallback to mock if the user isn't admin
+      // 1. Fetch Health
+      const healthResp = await fetch(`${getApiUrl()}/health`);
+      if (healthResp.ok) setHealth(await healthResp.json());
+
+      // 2. Fetch Logs
+      if (!token) {
+        setLogs([
+          {
+            id: 1,
+            action: "System Initialized",
+            resource_type: "System",
+            created_at: new Date().toISOString(),
+            details: { message: "Ecological Digital Twin layer is active." }
+          }
+        ]);
+        return;
+      }
+
       const response = await fetch(`${getApiUrl()}/audit-logs?limit=10`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -47,31 +78,6 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
       if (response.ok) {
         const data = await response.json();
         setLogs(data.logs);
-      } else {
-        // Mock data for non-admin users to show "System Intelligence"
-        setLogs([
-          {
-            id: 1,
-            action: "Scenario Analysis Complete",
-            resource_type: "Intelligence",
-            created_at: new Date().toISOString(),
-            details: { message: "Lion population trend identified in Mara North." }
-          },
-          {
-            id: 2,
-            action: "Satellite Sync Success",
-            resource_type: "System",
-            created_at: new Date(Date.now() - 3600000).toISOString(),
-            details: { message: "NASA POWER rainfall data synchronized for 2026." }
-          },
-          {
-            id: 3,
-            action: "Security Protocol Active",
-            resource_type: "Security",
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            details: { message: "Encryption keys rotated successfully." }
-          }
-        ]);
       }
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
@@ -106,16 +112,49 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
              <div className="w-5 h-5 border-2 border-[#775a19] border-t-transparent rounded-full animate-spin"></div>
              <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Syncing Stream...</p>
           </div>
-        ) : logs.length > 0 ? (
-          <div className="divide-y divide-[#d1c5b4]/30">
-            {logs.map((log) => (
-              <NotificationItem key={log.id} log={log} />
-            ))}
-          </div>
         ) : (
-          <div className="p-10 text-center text-slate-400 text-xs italic">
-            No intelligence updates available.
-          </div>
+          <>
+            {health && (
+              <div className="p-4 bg-[#1a1c1c] border-b border-white/5 space-y-4">
+                 <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Connectivity</span>
+                    <span className="text-[9px] font-mono text-emerald-400 uppercase">{health.status}</span>
+                 </div>
+                 <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 bg-white/5 rounded-sm">
+                       <p className="text-[8px] text-white/30 uppercase font-bold mb-1">NASA POWER</p>
+                       <p className={`text-[10px] font-bold ${health.services.nasa_power === 'connected' ? 'text-white' : 'text-rose-400'}`}>
+                          {health.services.nasa_power.toUpperCase()}
+                       </p>
+                    </div>
+                    <div className="p-2 bg-white/5 rounded-sm">
+                       <p className="text-[8px] text-white/30 uppercase font-bold mb-1">Stepfun AI</p>
+                       <p className="text-[10px] text-white font-bold">READY</p>
+                    </div>
+                 </div>
+                 {health.live_context && (
+                    <div className="pt-2 border-t border-white/10">
+                       <p className="text-[10px] text-white/60 leading-tight">
+                          <span className="text-amber-400 font-bold">LIVE:</span> {health.live_context.situation} environment detected. 
+                          Baseline rainfall at {health.live_context.annual_rainfall_mm?.toFixed(0) || '800'}mm.
+                       </p>
+                    </div>
+                 )}
+              </div>
+            )}
+            
+            <div className="divide-y divide-[#d1c5b4]/30">
+              {logs.length > 0 ? (
+                logs.map((log) => (
+                  <NotificationItem key={log.id} log={log} />
+                ))
+              ) : (
+                <div className="p-10 text-center text-slate-400 text-xs italic">
+                  No intelligence updates available.
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 

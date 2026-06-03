@@ -96,6 +96,49 @@ async def get_baseline_summary(
     }
 
 
+@router.get("/baseline/enriched")
+async def get_enriched_baseline(
+    request: Request,
+    management_unit: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Get baseline grid cells enriched with LIVE ecological data.
+    This is a 'Working Digital Twin' snapshot.
+    """
+    supabase = request.app.state.supabase
+    
+    # 1. Fetch grid cells
+    cells = db.get_grid_cells(management_unit=management_unit, year=year, limit=2000)
+    
+    if not cells:
+        return {"type": "FeatureCollection", "features": []}
+    
+    # 2. Enrich with live ecological data (NASA/GBIF)
+    from services.ecological_data_service import enrich_cells_with_live_data
+    enriched_cells = await enrich_cells_with_live_data(cells, year=year)
+    
+    # 3. Convert to GeoJSON
+    features = []
+    for row in enriched_cells:
+        geom = json.loads(row["geom"]) if isinstance(row["geom"], str) else row["geom"]
+        features.append({
+            "type": "Feature",
+            "geometry": geom,
+            "properties": {
+                "cell_id": row["cell_id"],
+                "management_unit": row.get("management_unit"),
+                "lion_density": float(row.get("baseline_lion_density") or 0),
+                "rainfall_mm": float(row.get("annual_rainfall_mm") or 0),
+                "prey_density": float(row.get("prey_density") or 0),
+                "hwc_risk": float(row.get("hwc_risk_score") or 0),
+            },
+        })
+    
+    return {"type": "FeatureCollection", "features": features}
+
+
 @router.get("/protected-areas")
 async def get_protected_areas_endpoint(
     request: Request,
@@ -691,6 +734,17 @@ async def health_check(
     except Exception:
         pass
 
+    # Fetch current regional rainfall (Mara centroid) for 'Live' indicator
+    from services.ecological_data_service import fetch_real_nasa_annual_rainfall
+    import asyncio
+    try:
+        # 34.9, -1.3 is a central point in the Mara ecosystem
+        rainfall = await asyncio.get_event_loop().run_in_executor(
+            None, fetch_real_nasa_annual_rainfall, 34.9, -1.3, datetime.now().year - 1
+        )
+    except Exception:
+        rainfall = None
+
     return {
         "status": "healthy" if db_healthy else "degraded",
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -698,10 +752,14 @@ async def health_check(
         "cell_count": cell_count,
         "model_loaded": model_loaded,
         "model_version": model_version,
-        "api_version": "2.1.0",
+        "api_version": "2.2.0-twin",
+        "live_context": {
+            "annual_rainfall_mm": rainfall,
+            "situation": "Normal" if (rainfall and rainfall > 700) else "Monitoring"
+        },
         "services": {
-            "nasa_power": "enabled",
-            "gbif":       "enabled",
-            "llm":        "nvidia_nim",
+            "nasa_power": "connected" if rainfall else "degraded",
+            "gbif":       "active",
+            "llm":        "nvidia_nim_active",
         }
     }

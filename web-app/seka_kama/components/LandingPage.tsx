@@ -13,12 +13,19 @@ interface Statistic {
   changeType: 'negative' | 'positive' | 'neutral';
 }
 
-const statistics: Statistic[] = [
-  { label: 'Lion Population', value: '465', change: '-3.1%', changeType: 'negative' },
-  { label: 'Protected Area', value: '1,511 km²', change: '+2.4%', changeType: 'positive' },
-  { label: 'Active Conservancies', value: '17', change: 'Stable', changeType: 'neutral' },
-  { label: 'Nightlight Trend', value: '+4.2%', change: '+0.8% YoY', changeType: 'positive' },
-];
+  const [stats, setStats] = useState<any>(null);
+
+  const statsList: Statistic[] = stats ? [
+    { label: 'Estimated Lions', value: stats.total_lions?.toString() || '—', change: `${stats.avg_lion_density?.toFixed(2)}/km²`, changeType: 'positive' },
+    { label: 'Protected Area', value: `${stats.protected_area_coverage_km2?.toLocaleString()} km²`, change: 'Verified', changeType: 'neutral' },
+    { label: 'Management Units', value: stats.management_unit_count?.toString() || '—', change: 'Operational', changeType: 'neutral' },
+    { label: 'Threatened Cells', value: stats.high_risk_cell_count?.toString() || '—', change: 'High Risk', changeType: 'negative' },
+  ] : [
+    { label: 'Lion Population', value: '...', change: '...', changeType: 'neutral' },
+    { label: 'Protected Area', value: '...', change: '...', changeType: 'neutral' },
+    { label: 'Active Conservancies', value: '...', change: '...', changeType: 'neutral' },
+    { label: 'Nightlight Trend', value: '...', change: '...', changeType: 'neutral' },
+  ];
 
 const capabilities = [
   {
@@ -90,7 +97,20 @@ export default function LandingPage() {
       }
     };
 
+    const loadInitialData = async () => {
+      try {
+        const response = await fetch(`${getApiUrl()}/statistics`);
+        if (response.ok) {
+           const data = await response.json();
+           setStats(data);
+        }
+      } catch (error) {
+        console.error("Failed to load initial stats:", error);
+      }
+    };
+
     checkSession();
+    loadInitialData();
   }, []);
 
   // 3. Set the dynamic routing path depending on state
@@ -147,7 +167,7 @@ export default function LandingPage() {
       {/* Metrics Section */}
       <section className="bg-white py-16 border-y border-[#d1c5b4]/60">
         <div className="max-w-[1440px] mx-auto px-6 md:px-20 grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6">
-          {statistics.map((stat, idx) => (
+          {statsList.map((stat, idx) => (
             <div
               key={stat.label}
               className={`flex flex-col items-center text-center p-4 md:border-r border-[#d1c5b4]/50 last:border-0 ${mounted ? 'animate-in' : 'opacity-0'}`}

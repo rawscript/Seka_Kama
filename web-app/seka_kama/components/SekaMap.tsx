@@ -42,6 +42,8 @@ export interface SekaMapProps {
   showPreyDensity?: boolean;
   /** Whether to show biological corridors */
   showCorridors?: boolean;
+  /** Whether the Live Twin mode is active */
+  isLiveMode?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,6 +91,7 @@ function SekaMapContent({
   showLandXBoundary = false,
   showPreyDensity = false,
   showCorridors = false,
+  isLiveMode = false,
 }: SekaMapProps): JSX.Element {
   const { 'main-map': mapMain } = useMap();
   const [onScenarioRunResult, setOnScenarioRunResult] = useState<any>(null);
@@ -163,14 +166,15 @@ function SekaMapContent({
     setLoading(true);
     try {
       const [baseline, protected_areas] = await Promise.all([
-        api.getBaseline(selectedUnit || undefined, selectedYear),
+        isLiveMode 
+          ? api.getEnrichedBaseline(selectedUnit || undefined, selectedYear)
+          : api.getBaseline(selectedUnit || undefined, selectedYear),
         api.getProtectedAreas(),
       ]);
 
-      // Filter baseline features to the selected year when the data carries a
-      // `year` property (historical snapshots). If no year property exists the
-      // full dataset is shown unchanged so the map still works without temporal data.
-      const filtered = filterByYear(baseline, selectedYear);
+      // Filter baseline features to the selected year when raw data is used.
+      // Enriched data is already year-specific.
+      const filtered = isLiveMode ? baseline : filterByYear(baseline, selectedYear);
 
       setBaselineData(filtered);
       setProtectedData(protected_areas);
@@ -179,7 +183,7 @@ function SekaMapContent({
     } finally {
       setLoading(false);
     }
-  }, [selectedUnit, selectedYear]);
+  }, [selectedUnit, selectedYear, isLiveMode]);
 
   useEffect(() => {
     loadData();
@@ -406,23 +410,39 @@ function SekaMapContent({
                      {hoverInfo.properties.management_unit || 'Wild Zone'}
                    </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                   <div>
-                      <p className="text-[8px] font-bold text-slate-500 uppercase mb-0.5">Lion Density</p>
-                      <p className="text-sm font-black text-emerald-400">
-                        {parseFloat(hoverInfo.properties.lion_density || 0).toFixed(3)}
-                      </p>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                       <p className="text-[8px] font-bold text-slate-500 uppercase mb-0.5">
+                         {isLiveMode ? 'Enriched Density' : 'Lion Density'}
+                       </p>
+                       <p className="text-sm font-black text-emerald-400">
+                         {parseFloat(hoverInfo.properties.lion_density || 0).toFixed(3)}
+                       </p>
+                    </div>
+                    <div>
+                       <p className="text-[8px] font-bold text-slate-500 uppercase mb-0.5">
+                         {isLiveMode ? 'HWC Risk' : 'Threat Level'}
+                       </p>
+                       <p className={`text-sm font-black ${
+                         isLiveMode 
+                           ? (parseFloat(hoverInfo.properties.hwc_risk || 0) > 0.6 ? 'text-rose-400' : 'text-blue-400')
+                           : (parseFloat(hoverInfo.properties.pop2018_mean || 0) > 5 ? 'text-rose-400' : 'text-blue-400')
+                       }`}>
+                         {isLiveMode 
+                           ? (parseFloat(hoverInfo.properties.hwc_risk || 0) * 100).toFixed(0) + '%'
+                           : (parseFloat(hoverInfo.properties.pop2018_mean || 0) > 5 ? 'High' : 'Low')}
+                       </p>
+                    </div>
+                 </div>
+                 {isLiveMode && hoverInfo.properties.rainfall_mm && (
+                   <div className="pt-2 border-t border-white/5">
+                      <p className="text-[8px] font-bold text-slate-500 uppercase mb-0.5">Annu. Rainfall</p>
+                      <p className="text-xs font-bold text-white">{hoverInfo.properties.rainfall_mm.toFixed(0)}mm</p>
                    </div>
-                   <div>
-                      <p className="text-[8px] font-bold text-slate-500 uppercase mb-0.5">Threat Level</p>
-                      <p className={`text-sm font-black ${parseFloat(hoverInfo.properties.pop2018_mean || 0) > 5 ? 'text-rose-400' : 'text-blue-400'}`}>
-                        {parseFloat(hoverInfo.properties.pop2018_mean || 0) > 5 ? 'High' : 'Low'}
-                      </p>
-                   </div>
-                </div>
-                <p className="text-[9px] text-slate-500 italic max-w-[120px] leading-tight">
-                   Located {parseFloat(hoverInfo.properties.dist_to_protected_km || 0).toFixed(1)}km from reserve boundary.
-                </p>
+                 )}
+                 <p className="text-[9px] text-slate-500 italic max-w-[120px] leading-tight">
+                    Located {parseFloat(hoverInfo.properties.dist_to_protected_km || 0).toFixed(1)}km from reserve boundary.
+                 </p>
              </div>
           </div>
         )}

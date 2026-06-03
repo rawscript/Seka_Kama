@@ -172,6 +172,14 @@ export const api = {
     return this.get(qs ? `/baseline?${qs}` : '/baseline');
   },
 
+  async getEnrichedBaseline(managementUnit?: string, year?: number): Promise<any> {
+    const p = new URLSearchParams();
+    if (managementUnit) p.append('management_unit', managementUnit);
+    if (year) p.append('year', year.toString());
+    const qs = p.toString();
+    return this.get(qs ? `/baseline/enriched?${qs}` : '/baseline/enriched');
+  },
+
   async getBaselineSummary(managementUnit?: string): Promise<BaselineSummary> {
     const p = new URLSearchParams();
     if (managementUnit) p.append('management_unit', managementUnit);
