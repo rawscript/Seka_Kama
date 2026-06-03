@@ -132,8 +132,11 @@ function SekaMapContent({
         };
 
   const [loading, setLoading] = useState(true);
-  const [baselineData, setBaselineData] = useState<any>(null);
+  const [baselineData, setBaselineData]   = useState<any>(null);
   const [protectedData, setProtectedData] = useState<any>(null);
+  const [corridorData, setCorridorData]   = useState<any>(null);
+  const [predictionData, setPredictionData] = useState<any>(null);
+  const [hoverInfo, setHoverInfo]         = useState<any>(null);
   const [isStyleLoaded, setIsStyleLoaded] = useState(false);
   const [viewState, setViewState] = useState({
     longitude: 35.1,
@@ -143,7 +146,6 @@ function SekaMapContent({
     bearing: -10,
   });
   const [filteredBins, setFilteredBins] = useState<string[]>([]);
-  const [hoverInfo, setHoverInfo] = useState<any>(null);
 
   // Notify parent of initial view state once on mount
   useEffect(() => {
@@ -165,11 +167,13 @@ function SekaMapContent({
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [baseline, protected_areas] = await Promise.all([
+      const [baseline, protected_areas, corridors, prediction] = await Promise.all([
         isLiveMode 
           ? api.getEnrichedBaseline(selectedUnit || undefined, selectedYear)
           : api.getBaseline(selectedUnit || undefined, selectedYear),
         api.getProtectedAreas(),
+        api.get('/corridors', { management_unit: selectedUnit || undefined }),
+        isLiveMode ? api.getLandscapePrediction(selectedUnit || undefined, selectedYear) : null
       ]);
 
       // Filter baseline features to the selected year when raw data is used.
@@ -178,6 +182,8 @@ function SekaMapContent({
 
       setBaselineData(filtered);
       setProtectedData(protected_areas);
+      setCorridorData(corridors);
+      if (prediction) setPredictionData(prediction);
     } catch (error) {
       console.error('Failed to load map data:', error);
     } finally {
@@ -282,7 +288,54 @@ function SekaMapContent({
               </Source>
             )}
 
-            {/* Protected Areas — visibility controlled by prop */}
+            {/* Corridors — dynamic ecological analysis */}
+            {corridorData && (
+              <Source id="biological-corridors" type="geojson" data={corridorData}>
+                <Layer
+                  id="corridor-lines"
+                  type="line"
+                  layout={{ visibility: showCorridors ? 'visible' : 'none' }}
+                  paint={{
+                    'line-color': '#8b5cf6',
+                    'line-width': 2,
+                    'line-opacity': 0.6,
+                    'line-dasharray': [3, 2],
+                  }}
+                />
+                <Layer
+                  id="corridor-glow"
+                  type="line"
+                  layout={{ visibility: showCorridors ? 'visible' : 'none' }}
+                  paint={{
+                    'line-color': '#8b5cf6',
+                    'line-width': 8,
+                    'line-opacity': 0.15,
+                    'line-blur': 4,
+                  }}
+                />
+              </Source>
+            )}
+
+            {/* Landscape Prediction Layer (Targeting the whole map) */}
+            {predictionData && isLiveMode && (
+               <Source id="landscape-prediction" type="geojson" data={predictionData}>
+                 <Layer
+                   id="prediction-heatmap"
+                   type="fill"
+                   paint={{
+                      'fill-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'predicted_density'],
+                        0, 'transparent',
+                        2, '#3f2b96',
+                        10, '#f87171'
+                      ],
+                      'fill-opacity': 0.4
+                   }}
+                 />
+               </Source>
+            )}
             {protectedData && (
               <Source id="protected-areas" type="geojson" data={protectedData}>
                 <Layer

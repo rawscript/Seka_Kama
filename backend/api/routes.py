@@ -139,6 +139,67 @@ async def get_enriched_baseline(
     return {"type": "FeatureCollection", "features": features}
 
 
+@router.get("/predict/landscape")
+async def predict_landscape(
+    request: Request,
+    management_unit: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Run predictive modeling over the entire landscape (or a unit).
+    This generates a 'Predicted Density' layer for the digital twin.
+    """
+    # 1. Fetch grid cells
+    cells = db.get_grid_cells(management_unit=management_unit, year=year, limit=2000)
+    
+    if not cells:
+        return {"type": "FeatureCollection", "features": []}
+    
+    # 2. Enrich with live ecological data
+    from services.ecological_data_service import enrich_cells_with_live_data
+    enriched_cells = await enrich_cells_with_live_data(cells, year=year)
+    
+    # 3. Model Inference
+    # Note: We use the PredictionService from app.state
+    pred_service = request.app.state.prediction_service
+    predictions = pred_service.predict_grid_cells(enriched_cells)
+    
+    # 4. Convert to GeoJSON with Predicted Properties
+    features = []
+    for i, row in enumerate(enriched_cells):
+        geom = json.loads(row["geom"]) if isinstance(row["geom"], str) else row["geom"]
+        features.append({
+            "type": "Feature",
+            "geometry": geom,
+            "properties": {
+                "cell_id": row["cell_id"],
+                "management_unit": row.get("management_unit"),
+                "baseline_density": float(row.get("baseline_lion_density") or 0),
+                "predicted_density": float(predictions[i]),
+                "delta": float(predictions[i]) - float(row.get("baseline_lion_density") or 0),
+                "hwc_risk": float(row.get("hwc_risk_score") or 0),
+                "rainfall_mm": float(row.get("annual_rainfall_mm") or 0)
+            },
+        })
+    
+    return {"type": "FeatureCollection", "features": features}
+
+
+@router.get("/corridors")
+async def get_corridors(
+    management_unit: Optional[str] = Query(None),
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Fetch biological corridors identified by the ecological model.
+    """
+    from services.corridor_service import identify_ecological_corridors
+    
+    result = await identify_ecological_corridors(db.client, management_unit=management_unit)
+    return result
+
+
 @router.get("/protected-areas")
 async def get_protected_areas_endpoint(
     request: Request,

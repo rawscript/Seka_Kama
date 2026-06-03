@@ -35,6 +35,7 @@ const SekaMap = dynamic(() => import('@/components/SekaMap'), {
 const ScenarioResultPanel = dynamic(() => import('@/components/ScenarioResultPanel'), { ssr: false });
 const TrendChart = dynamic(() => import('@/components/TrendChart'), { ssr: false });
 const NotificationPanel = dynamic(() => import('@/components/NotificationPanel'), { ssr: false });
+const AnalystPanel = dynamic(() => import('@/components/AnalystPanel'), { ssr: false });
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MIN_YEAR = 2020;
@@ -107,6 +108,7 @@ function DashboardContent() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [showPreyDensity, setShowPreyDensity]       = useState(false);
   const [showCorridors, setShowCorridors]           = useState(false);
+  const [showPrediction, setShowPrediction]         = useState(false);
   const [searchQuery, setSearchQuery]               = useState('');
   const [isSidebarOpen, setIsSidebarOpen]           = useState(true);
   const [isMobile, setIsMobile]                     = useState(false);
@@ -420,6 +422,13 @@ function DashboardContent() {
             </div>
           </div>
 
+
+          {/* AI Situation Report */}
+          <AnalystPanel 
+            selectedUnit={selectedUnit} 
+            year={selectedYear} 
+          />
+
           {/* Ecosystem Indicators */}
           <div className="map-overlay-card p-6 shadow-sm rounded-sm relative z-10">
             <div className="flex items-center gap-2 mb-8 text-primary font-bold">
@@ -451,6 +460,12 @@ function DashboardContent() {
                   onToggle={() => setShowPreyDensity(true)}
                   color="#16a34a"
                   label="Ecological Base (Prey)"
+                />
+                <LayerToggle
+                  enabled={showPrediction}
+                  onToggle={() => setShowPrediction((v) => !v)}
+                  color="#f87171"
+                  label="Neural Landscape Projection"
                 />
                 <div className="h-4" />
                 <LayerToggle
