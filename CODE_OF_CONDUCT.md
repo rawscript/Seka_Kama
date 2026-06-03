@@ -8,7 +8,7 @@ In the interest of fostering an open and welcoming environment, we as contributo
 
 ### Examples of behaviour that contribute to creating a positive environment include:
 
-- **Scientific Integrity**: Prioritise data accuracy and transparency, especially when handling WDPA/OECM datasets.
+- **Scientific Integrity**: Prioritise data accuracy and transparency, especially when handling datasets.
 - **Respectful Collaboration**: Using welcoming and inclusive language.
 - **Empathy**: Being respectful of differing viewpoints and experiences, particularly when discussing sensitive ecological trade-offs.
 - **Constructive Feedback**: Gracefully accepting and providing constructive criticism on code, models, and research methodologies.
