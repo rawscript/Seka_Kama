@@ -44,6 +44,8 @@ export interface SekaMapProps {
   showCorridors?: boolean;
   /** Whether to show neural landscape prediction heatmap */
   showPrediction?: boolean;
+  /** Whether to show human encroachment (nightlight) heatmap */
+  showEncroachment?: boolean;
   /** Whether the Live Twin mode is active */
   isLiveMode?: boolean;
 }
@@ -94,6 +96,7 @@ function SekaMapContent({
   showPreyDensity = false,
   showCorridors = false,
   showPrediction = false,
+  showEncroachment = false,
   isLiveMode = false,
 }: SekaMapProps): JSX.Element {
   const { 'main-map': mapMain } = useMap();

@@ -46,16 +46,19 @@ const nextConfig: NextConfig = {
   // Bypasses Next.js 16's strict Turbopack enforcement out of the box
   turbopack: {},
 
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     // Disable minification to prevent SWC WorkerError crashes with massive deck.gl chunks
     config.optimization.minimize = false;
 
-    // Alias react-dom to our shim to fix findDOMNode missing in React 19
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'react-dom-lib': path.resolve(process.cwd(), 'node_modules/react-dom'),
-      'react-dom$': path.resolve(process.cwd(), 'react-dom-shim.js'),
-    };
+    // Alias react-dom to our shim ONLY on the client to fix findDOMNode missing in React 19.
+    // On the server we must keep the real react-dom to avoid a null React instance during SSR.
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'react-dom-lib': path.resolve(process.cwd(), 'node_modules/react-dom'),
+        'react-dom$': path.resolve(process.cwd(), 'react-dom-shim.js'),
+      };
+    }
 
     config.resolve.fallback = {
       ...config.resolve.fallback,

@@ -13,19 +13,7 @@ interface Statistic {
   changeType: 'negative' | 'positive' | 'neutral';
 }
 
-  const [stats, setStats] = useState<any>(null);
 
-  const statsList: Statistic[] = stats ? [
-    { label: 'Estimated Lions', value: stats.total_lions?.toString() || '—', change: `${stats.avg_lion_density?.toFixed(2)}/km²`, changeType: 'positive' },
-    { label: 'Protected Area', value: `${stats.protected_area_coverage_km2?.toLocaleString()} km²`, change: 'Verified', changeType: 'neutral' },
-    { label: 'Management Units', value: stats.management_unit_count?.toString() || '—', change: 'Operational', changeType: 'neutral' },
-    { label: 'Threatened Cells', value: stats.high_risk_cell_count?.toString() || '—', change: 'High Risk', changeType: 'negative' },
-  ] : [
-    { label: 'Lion Population', value: '...', change: '...', changeType: 'neutral' },
-    { label: 'Protected Area', value: '...', change: '...', changeType: 'neutral' },
-    { label: 'Active Conservancies', value: '...', change: '...', changeType: 'neutral' },
-    { label: 'Nightlight Trend', value: '...', change: '...', changeType: 'neutral' },
-  ];
 
 const capabilities = [
   {
@@ -71,6 +59,19 @@ export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
+
+  const statsList: Statistic[] = stats ? [
+    { label: 'Estimated Lions', value: stats.total_lions?.toString() || '—', change: `${stats.avg_lion_density?.toFixed(2)}/km²`, changeType: 'positive' },
+    { label: 'Protected Area', value: `${stats.protected_area_coverage_km2?.toLocaleString()} km²`, change: 'Verified', changeType: 'neutral' },
+    { label: 'Management Units', value: stats.management_unit_count?.toString() || '—', change: 'Operational', changeType: 'neutral' },
+    { label: 'Threatened Cells', value: stats.high_risk_cell_count?.toString() || '—', change: 'High Risk', changeType: 'negative' },
+  ] : [
+    { label: 'Lion Population', value: '...', change: '...', changeType: 'neutral' },
+    { label: 'Protected Area', value: '...', change: '...', changeType: 'neutral' },
+    { label: 'Active Conservancies', value: '...', change: '...', changeType: 'neutral' },
+    { label: 'Nightlight Trend', value: '...', change: '...', changeType: 'neutral' },
+  ];
 
   useEffect(() => {
     setMounted(true);
