@@ -7,6 +7,7 @@ import { ShieldCheck, Info, Target, Layers } from 'lucide-react';
 import { api } from '@/services/api';
 import { getApiUrl } from '@/services/config';
 import ScenarioDrawer from './ScenarioDrawer';
+import DraggablePanel from './DraggablePanel';
 
 // ---------------------------------------------------------------------------
 // Helpers

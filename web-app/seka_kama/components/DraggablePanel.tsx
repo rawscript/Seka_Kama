@@ -266,19 +266,31 @@ export default function DraggablePanel({
         )}
         
         {/* Drag Handle */}
-        <div className={`drag-handle w-full h-8 bg-[#1a1c1c]/90 hover:bg-[#2a2c2c]/95 cursor-move flex items-center justify-between px-3 rounded-t-md transition-colors relative border-b border-white/10 backdrop-blur-sm shadow-sm z-20 ${isColliding ? 'border-rose-500/30' : ''}`}>
+        <div className={`drag-handle w-full h-9 bg-[#1a1c1c]/95 hover:bg-[#2a2c2c]/95 cursor-move flex items-center justify-between px-3 rounded-t-md transition-all relative border-b border-white/10 backdrop-blur-sm shadow-sm z-20 group-header ${isColliding ? 'border-rose-500/30' : ''}`}>
+          {/* Drag handle visual indicator - shows when hovering over header */}
+          <div className="drag-handle flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
+            <div className="w-4 h-0.5 bg-white/20 rounded-full" />
+            <div className="w-4 h-0.5 bg-white/20 rounded-full" />
+            <div className="w-4 h-0.5 bg-white/20 rounded-full" />
+          </div>
+          
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/30" />
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/30" />
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/30" />
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/30 group-hover/header:bg-red-500/40" />
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/30 group-hover/header:bg-amber-500/40" />
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 group-hover/header:bg-emerald-500/40" />
             </div>
-            <span className="text-[9px] font-bold text-white/50 uppercase tracking-wider ml-2">Panel</span>
+            <span className="text-[9px] font-bold text-white/50 uppercase tracking-wider ml-1">Panel</span>
           </div>
+          
           <div className="flex items-center gap-1">
             <button 
               onClick={togglePin} 
-              className="p-1 text-white/50 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+              className={`p-1 rounded-md transition-all ${
+                isPinned 
+                  ? 'text-emerald-400 bg-emerald-500/10' 
+                  : 'text-white/50 hover:text-white hover:bg-white/10'
+              }`}
               title={isPinned ? "Pin panel back" : "Unpin panel to float"}
             >
               {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
