@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bot, Info, Shield, Zap, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bot, Info, Shield, Zap, AlertTriangle, ChevronDown, ChevronUp, Pin, PinOff } from 'lucide-react';
 import { api } from '@/services/api';
+import DraggablePanel from './DraggablePanel';
 
 interface AnalystPanelProps {
   selectedUnit?: string;
@@ -14,6 +15,8 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
   const [insight, setInsight] = useState<string>('');
   const [healthStatus, setHealthStatus] = useState<any>(null);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isPinned, setIsPinned] = useState(false);
+  const [position, setPosition] = useState({ x: 16, y: 16 });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,33 +85,39 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
   };
 
   return (
-    <div className="flex flex-col bg-[#0b0f1a]/80 backdrop-blur-md border border-white/10 rounded-sm overflow-hidden transition-all duration-300">
-      <div 
-        className="flex items-center justify-between px-4 py-3 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-2">
-          <Bot className="w-4 h-4 text-primary" />
-          <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">SekaNet Analyst</h3>
+    <DraggablePanel 
+      id="analyst-panel"
+      defaultPosition={{ x: 16, y: 16 }}
+      defaultSize={{ width: 320, height: 400 }}
+    >
+      <div className="flex flex-col bg-[#0b0f1a]/80 backdrop-blur-md border border-white/10 rounded-sm overflow-hidden transition-all duration-300 w-full h-full">
+        <div 
+          className="drag-handle flex items-center justify-between px-4 py-3 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <div className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-primary" />
+            <h3 className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">SekaNet Analyst</h3>
+          </div>
+          {isExpanded ? <ChevronUp className="w-3 h-3 text-slate-500" /> : <ChevronDown className="w-3 h-3 text-slate-500" />}
         </div>
-        {isExpanded ? <ChevronUp className="w-3 h-3 text-slate-500" /> : <ChevronDown className="w-3 h-3 text-slate-500" />}
-      </div>
 
-      {isExpanded && (
-        <div className="p-4 bg-transparent border-t border-white/5">
-           {getNarrative()}
-           
-           <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                 <Zap className="w-3 h-3 text-emerald-400" />
-                 <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">Model Confidence: 94.2%</span>
-              </div>
-              <button className="text-[9px] font-bold text-primary uppercase tracking-widest hover:underline">
-                Generate Full Report
-              </button>
-           </div>
-        </div>
-      )}
-    </div>
+        {isExpanded && (
+          <div className="p-4 bg-transparent border-t border-white/5 flex-1 overflow-auto">
+             {getNarrative()}
+             
+             <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                   <Zap className="w-3 h-3 text-emerald-400" />
+                   <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">Model Confidence: 94.2%</span>
+                </div>
+                <button className="text-[9px] font-bold text-primary uppercase tracking-widest hover:underline">
+                  Generate Full Report
+                </button>
+             </div>
+          </div>
+        )}
+      </div>
+    </DraggablePanel>
   );
 }

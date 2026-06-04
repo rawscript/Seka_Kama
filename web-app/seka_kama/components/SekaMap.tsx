@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Map, { Source, Layer, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { ShieldCheck, Info } from 'lucide-react';
+import { ShieldCheck, Info, Target, Layers } from 'lucide-react';
 import { api } from '@/services/api';
 import { getApiUrl } from '@/services/config';
 import ScenarioDrawer from './ScenarioDrawer';
@@ -222,6 +222,21 @@ function SekaMapContent({
       });
     }
   }, [selectedUnit, mapMain]);
+
+  // ---------------------------------------------------------------------------
+  // Overview control
+  // ---------------------------------------------------------------------------
+  const handleOverviewClick = useCallback(() => {
+    if (!mapMain) return;
+    mapMain.flyTo({
+      center: [35.1, -1.25],
+      zoom: 9.2,
+      duration: 2000,
+      essential: true,
+      pitch: 45,
+      bearing: -10,
+    });
+  }, [mapMain]);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -583,6 +598,45 @@ function SekaMapContent({
         </div>
       )}
 
+      {/* Overview / Regional Navigation Control */}
+      <div 
+        className="absolute top-16 right-4 z-30 flex flex-col gap-2"
+        style={{ pointerEvents: 'auto' }}
+      >
+        <button
+          onClick={handleOverviewClick}
+          className="p-2 bg-[#0b0f1a]/90 hover:bg-[#1a1c1c]/95 text-white rounded-lg shadow-lg border border-white/10 backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 group"
+          title="Reset to Regional Overview"
+        >
+          <Target className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
+        </button>
+        
+        <div className="p-2 bg-[#0b0f1a]/90 rounded-lg shadow-lg border border-white/10 backdrop-blur-md min-w-[140px]">
+          <span className="text-[9px] text-slate-400 font-medium tracking-wider uppercase block mb-2">Conservancy Selection</span>
+          <button
+            onClick={() => {
+              if (selectedUnit) {
+                onUnitChange?.('');
+              }
+            }}
+            className="w-full px-2 py-1.5 bg-[#16a34a]/20 hover:bg-[#16a34a]/30 text-[9px] font-bold text-emerald-400 rounded transition-colors mb-2"
+          >
+            Reset Selection
+          </button>
+          <div className="grid grid-cols-2 gap-1">
+            {Object.entries(CONSERVANCY_COORDS).map(([unit]) => (
+              <button
+                key={unit}
+                onClick={() => onUnitChange?.(unit)}
+                className="px-1.5 py-1 text-[8px] bg-[#1a1c1c]/50 hover:bg-[#1a1c1c]/80 text-white/80 rounded border border-white/5 hover:border-emerald-500/50 transition-all"
+              >
+                {unit}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* ── Map Legend ────────────────────────────────────────────── */}
       <MapLegend 
         hasScenario={!!onScenarioRunResult?.scenario_geojson} 
@@ -606,7 +660,7 @@ function SekaMapContent({
 }
 
 // ---------------------------------------------------------------------------
-// MapLegend — collapsible legend overlay, rendered inside the map canvas
+// MapLegend — collapsible legend overlay with drag support
 // ---------------------------------------------------------------------------
 
 const DENSITY_RAMP = [
@@ -635,107 +689,128 @@ function MapLegend({
   onToggleBin: (bin: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [overlapping, setOverlapping] = useState<string[]>([]);
   const RAMP = isPrey ? PREY_RAMP.map(r => ({ ...r, label: r.label.replace('Sparse', 'Very low').replace('Common', 'Low').replace('Dense', 'Moderate') })) : DENSITY_RAMP;
-  // Normalized labels for filtering logic (match the Mapbox expression)
   const normalizedLabels = ['Very low  (0–5)', 'Low       (5–15)', 'Moderate  (15–30)', 'High      (30+)'];
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        bottom: 180,
-        left: 32,
-        zIndex: 30,
-        width: 192,
-        background: 'rgba(255, 255, 255, 0.9)',
-        backdropFilter: 'blur(16px)',
-        border: '0.5px solid rgba(0, 0, 0, 0.1)',
-        borderRadius: 8,
-        overflow: 'hidden',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-        fontFamily: 'inherit',
-      }}
+    <DraggablePanel 
+      id="map-legend" 
+      defaultPosition={{ x: 32, y: 200 }}
+      defaultSize={{ width: 240, height: 320 }}
+      onCollision={(overlappingIds) => setOverlapping(overlappingIds)}
     >
-      {/* Header */}
-      <button
-        onClick={() => setCollapsed(c => !c)}
+      <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
           width: '100%',
-          padding: '10px 14px',
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          color: '#1a1c1e',
+          height: '100%',
+          background: 'rgba(255, 255, 255, 0.96)',
+          backdropFilter: 'blur(16px)',
+          border: '0.5px solid rgba(0, 0, 0, 0.1)',
+          borderRadius: '8px 8px 0 0',
+          overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          fontFamily: 'inherit',
         }}
       >
-        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-          Spatial Legend
-        </span>
-        <span style={{ fontSize: 10, opacity: 0.4 }}>{collapsed ? '▲' : '▼'}</span>
-      </button>
+        {/* Header */}
+        <button
+          onClick={() => setCollapsed(c => !c)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            padding: '10px 14px',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: '#1a1c1e',
+          }}
+          className="no-drag"
+        >
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            Spatial Legend
+          </span>
+          <span style={{ fontSize: 10, opacity: 0.4 }}>{collapsed ? '▲' : '▼'}</span>
+        </button>
 
-      {!collapsed && (
-        <div style={{ padding: '0 14px 14px' }}>
-          {/* Lion/Prey Density Ramp */}
-          <p style={{ fontSize: 8, color: '#64748b', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>
-            {isPrey ? 'Prey base (GBIF)' : 'Lion Density (lions/km²)'}
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
-            {RAMP.map(({ color, label }, idx) => {
-              const filterLabel = normalizedLabels[idx];
-              const isSelected = filteredBins.includes(filterLabel);
-              return (
-                <div 
-                  key={color} 
-                  onClick={() => onToggleBin(filterLabel)}
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 10, 
-                    cursor: 'pointer',
-                    opacity: filteredBins.length === 0 || isSelected ? 1 : 0.3,
-                    transition: 'opacity 0.2s'
-                  }}
-                >
-                  <div style={{ width: 12, height: 12, borderRadius: 3, background: color, border: isSelected ? '1px solid #000' : '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 10, color: '#475569', fontWeight: isSelected ? 700 : 500 }}>{label}</span>
+        {!collapsed && (
+          <div style={{ padding: '0 14px 14px' }}>
+            {/* Lion/Prey Density Ramp */}
+            <p style={{ fontSize: 8, color: '#64748b', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>
+              {isPrey ? 'Prey base (GBIF)' : 'Lion Density (lions/km²)'}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+              {RAMP.map(({ color, label }, idx) => {
+                const filterLabel = normalizedLabels[idx];
+                const isSelected = filteredBins.includes(filterLabel);
+                return (
+                  <div 
+                    key={color} 
+                    onClick={() => onToggleBin(filterLabel)}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 10, 
+                      cursor: 'pointer',
+                      opacity: filteredBins.length === 0 || isSelected ? 1 : 0.3,
+                      transition: 'opacity 0.2s'
+                    }}
+                    className="no-drag"
+                  >
+                    <div style={{ width: 12, height: 12, borderRadius: 3, background: color, border: isSelected ? '1px solid #000' : '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }} />
+                    <span style={{ fontSize: 10, color: '#475569', fontWeight: isSelected ? 700 : 500 }}>{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Protected Areas */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ width: 12, height: 12, borderRadius: 3, background: '#059669', opacity: 0.6, border: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }} />
+              <span style={{ fontSize: 10, color: '#475569', fontWeight: 500 }}>Protected zones</span>
+            </div>
+
+            {/* Scenario layer — only shown after a run */}
+            {hasScenario && (
+              <>
+                <div style={{ height: 1, background: 'rgba(0,0,0,0.05)', margin: '10px 0' }} />
+                <p style={{ fontSize: 8, color: '#b45309', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>
+                  Scenario Projection
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 12, height: 12, borderRadius: 3, background: '#f59e0b', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, color: '#475569', fontWeight: 500 }}>Predicted future</span>
                 </div>
-              );
-            })}
-          </div>
+              </>
+            )}
 
-          {/* Protected Areas */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <div style={{ width: 12, height: 12, borderRadius: 3, background: '#059669', opacity: 0.6, border: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }} />
-            <span style={{ fontSize: 10, color: '#475569', fontWeight: 500 }}>Protected zones</span>
-          </div>
-
-          {/* Scenario layer — only shown after a run */}
-          {hasScenario && (
-            <>
-              <div style={{ height: 1, background: 'rgba(0,0,0,0.05)', margin: '10px 0' }} />
-              <p style={{ fontSize: 8, color: '#b45309', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>
-                Scenario Projection
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 12, height: 12, borderRadius: 3, background: '#f59e0b', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', flexShrink: 0 }} />
-                <span style={{ fontSize: 10, color: '#475569', fontWeight: 500 }}>Predicted future</span>
+            {/* Overlap warning */}
+            {overlapping.length > 0 && (
+              <div style={{ 
+                marginTop: 12, 
+                padding: 8, 
+                background: 'rgba(251, 191, 36, 0.1)', 
+                borderRadius: 4,
+                border: '1px solid rgba(251, 191, 36, 0.2)'
+              }}>
+                <p style={{ fontSize: 7, color: '#d97706', margin: 0, textAlign: 'center' }}>
+                  {overlapping.length} panel{overlapping.length === 1 ? '' : 's'} overlapping — drag to reposition
+                </p>
               </div>
-            </>
-          )}
+            )}
 
-          {/* Attribution */}
-          <div style={{ marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 10 }}>
-            <span style={{ fontSize: 8, color: '#94a3b8', letterSpacing: '0.02em', fontStyle: 'italic' }}>
-              SekaNet v2.1 (XGBoost)
-            </span>
+            {/* Attribution */}
+            <div style={{ marginTop: 12, borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 10 }}>
+              <span style={{ fontSize: 8, color: '#94a3b8', letterSpacing: '0.02em', fontStyle: 'italic' }}>
+                SekaNet v2.1 (XGBoost)
+              </span>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </DraggablePanel>
   );
 }
 
