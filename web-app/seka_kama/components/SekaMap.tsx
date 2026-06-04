@@ -343,6 +343,28 @@ function SekaMapContent({
                  />
                </Source>
             )}
+
+            {/* ── Human Encroachment (Nightlight) Layer ── */}
+            {baselineData && (
+              <Source id="encroachment-source" type="geojson" data={baselineData}>
+                <Layer
+                  id="encroachment-heat"
+                  type="fill"
+                  layout={{ visibility: showEncroachment ? 'visible' : 'none' }}
+                  paint={{
+                    'fill-color': [
+                      'interpolate', ['linear'], ['get', 'all_mean_mean'],
+                      0,   'rgba(0,0,0,0)',
+                      0.1, 'rgba(255,235,59,0.2)',
+                      0.5, 'rgba(255,152,0,0.5)',
+                      1.0, 'rgba(244,67,54,0.8)'
+                    ],
+                    'fill-opacity': 0.6,
+                  }}
+                />
+              </Source>
+            )}
+
             {protectedData && (
               <Source id="protected-areas" type="geojson" data={protectedData}>
                 <Layer

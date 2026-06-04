@@ -109,6 +109,7 @@ function DashboardContent() {
   const [showPreyDensity, setShowPreyDensity]       = useState(false);
   const [showCorridors, setShowCorridors]           = useState(false);
   const [showPrediction, setShowPrediction]         = useState(false);
+  const [showEncroachment, setShowEncroachment]     = useState(false);
   const [searchQuery, setSearchQuery]               = useState('');
   const [isSidebarOpen, setIsSidebarOpen]           = useState(true);
   const [isMobile, setIsMobile]                     = useState(false);
@@ -267,6 +268,7 @@ function DashboardContent() {
             showPreyDensity={showPreyDensity}
             showCorridors={showCorridors}
             showPrediction={showPrediction}
+            showEncroachment={showEncroachment}
             isLiveMode={isLiveMode}
           />
         </ErrorBoundary>
@@ -467,6 +469,12 @@ function DashboardContent() {
                   onToggle={() => setShowPrediction((v) => !v)}
                   color="#f87171"
                   label="Neural Landscape Projection"
+                />
+                <LayerToggle
+                  enabled={showEncroachment}
+                  onToggle={() => setShowEncroachment((v) => !v)}
+                  color="#f59e0b"
+                  label="Human Encroachment (Nightlight)"
                 />
                 <div className="h-4" />
                 <LayerToggle
