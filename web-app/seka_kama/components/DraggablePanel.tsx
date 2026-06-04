@@ -99,19 +99,27 @@ export default function DraggablePanel({
     }
   }, [position, size, allPanels, isPinned, id, onCollision]);
 
-  // Collision detection
+  // Collision detection - checks if two rectangles overlap
   function checkCollision(
     pos1: { x: number; y: number },
     size1: { width: number; height: number },
     panel2: PanelState
   ): boolean {
+    // Add a small padding to make collision detection more lenient (10px buffer)
+    const padding = 10;
     return !(
-      pos1.x + size1.width <= panel2.x ||
-      pos1.x >= panel2.x + panel2.width ||
-      pos1.y + size1.height <= panel2.y ||
-      pos1.y >= panel2.y + panel2.height
+      pos1.x + size1.width + padding <= panel2.x ||
+      pos1.x - padding >= panel2.x + panel2.width ||
+      pos1.y + size1.height + padding <= panel2.y ||
+      pos1.y - padding >= panel2.y + panel2.height
     );
   }
+
+  // Check if we're currently colliding with any other panel
+  const isColliding = useMemo(() => {
+    if (isPinned) return false;
+    return allPanels.some(panel => checkCollision(position, size, panel));
+  }, [position, size, allPanels, isPinned]);
 
   const handleStart = () => {
     setIsDragging(true);
@@ -244,7 +252,7 @@ export default function DraggablePanel({
       scale={1}
     >
       <div 
-        className={`absolute z-[100] shadow-2xl pointer-events-auto ${className}`}
+        className={`absolute z-[100] shadow-2xl pointer-events-auto transition-shadow duration-200 ${className}`}
         style={{ 
           position: 'absolute',
           width: size.width,
@@ -252,8 +260,13 @@ export default function DraggablePanel({
         }}
         data-draggable-panel={id}
       >
+        {/* Collision warning indicator */}
+        {isColliding && (
+          <div className="absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-bl-lg z-30 animate-pulse" title="Panel overlap detected - dragging to resolve" />
+        )}
+        
         {/* Drag Handle */}
-        <div className="drag-handle w-full h-8 bg-[#1a1c1c]/90 hover:bg-[#2a2c2c]/95 cursor-move flex items-center justify-between px-3 rounded-t-md transition-colors relative border-b border-white/10 backdrop-blur-sm shadow-sm z-20">
+        <div className={`drag-handle w-full h-8 bg-[#1a1c1c]/90 hover:bg-[#2a2c2c]/95 cursor-move flex items-center justify-between px-3 rounded-t-md transition-colors relative border-b border-white/10 backdrop-blur-sm shadow-sm z-20 ${isColliding ? 'border-rose-500/30' : ''}`}>
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
               <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/30" />

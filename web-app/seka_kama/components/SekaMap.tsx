@@ -603,36 +603,65 @@ function SekaMapContent({
         className="absolute top-16 right-4 z-30 flex flex-col gap-2"
         style={{ pointerEvents: 'auto' }}
       >
+        {/* Overview / Reset Button */}
         <button
           onClick={handleOverviewClick}
-          className="p-2 bg-[#0b0f1a]/90 hover:bg-[#1a1c1c]/95 text-white rounded-lg shadow-lg border border-white/10 backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 group"
-          title="Reset to Regional Overview"
+          className="p-2.5 bg-[#0b0f1a]/90 hover:bg-[#1a1c1c]/95 text-white rounded-xl shadow-lg border border-emerald-500/20 hover:border-emerald-500/50 backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 group"
+          title="Reset Map to Regional Overview"
         >
           <Target className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
+          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 text-[9px] text-white rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Reset Overview
+          </div>
         </button>
         
-        <div className="p-2 bg-[#0b0f1a]/90 rounded-lg shadow-lg border border-white/10 backdrop-blur-md min-w-[140px]">
-          <span className="text-[9px] text-slate-400 font-medium tracking-wider uppercase block mb-2">Conservancy Selection</span>
-          <button
-            onClick={() => {
-              if (selectedUnit) {
-                onUnitChange?.('');
-              }
-            }}
-            className="w-full px-2 py-1.5 bg-[#16a34a]/20 hover:bg-[#16a34a]/30 text-[9px] font-bold text-emerald-400 rounded transition-colors mb-2"
-          >
-            Reset Selection
-          </button>
-          <div className="grid grid-cols-2 gap-1">
+        <div className="p-2 bg-[#0b0f1a]/90 rounded-xl shadow-lg border border-white/10 backdrop-blur-md min-w-[140px]">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[9px] text-slate-400 font-medium tracking-wider uppercase">Conservancy Selection</span>
+            <button
+              onClick={() => {
+                if (selectedUnit) {
+                  onUnitChange?.('');
+                }
+              }}
+              disabled={!selectedUnit}
+              className={`px-2 py-0.5 text-[7px] font-bold uppercase tracking-widest rounded border transition-all ${
+                selectedUnit 
+                  ? 'bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500/20' 
+                  : 'bg-slate-800/50 border-slate-700 text-slate-600 cursor-not-allowed'
+              }`}
+            >
+              Clear
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
             {Object.entries(CONSERVANCY_COORDS).map(([unit]) => (
               <button
                 key={unit}
                 onClick={() => onUnitChange?.(unit)}
-                className="px-1.5 py-1 text-[8px] bg-[#1a1c1c]/50 hover:bg-[#1a1c1c]/80 text-white/80 rounded border border-white/5 hover:border-emerald-500/50 transition-all"
+                className={`px-1.5 py-1.5 text-[8px] rounded border transition-all relative overflow-hidden ${
+                  selectedUnit === unit
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                    : 'bg-[#1a1c1c]/50 border-white/5 text-white/80 hover:bg-[#1a1c1c]/80 hover:border-emerald-500/30'
+                }`}
               >
+                {selectedUnit === unit && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent animate-pulse" />
+                )}
                 {unit}
               </button>
             ))}
+          </div>
+          {/* Quick navigation hints */}
+          <div className="mt-3 flex items-center justify-between gap-2 text-[7px] text-slate-600">
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
+              <span>Click to select</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-rose-500/50" />
+              <span>Clear selection</span>
+            </div>
           </div>
         </div>
       </div>
