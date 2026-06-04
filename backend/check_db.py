@@ -1,4 +1,4 @@
-import os
+bkeimport os
 import sys
 # Add current directory to path so it can find core
 sys.path.append(os.getcwd())

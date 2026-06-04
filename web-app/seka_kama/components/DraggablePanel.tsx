@@ -82,17 +82,20 @@ export default function DraggablePanel({
         });
       }
     });
-    return panels;
-  }, [isDragging, position, size]);
+    // Filter out the current panel
+    return panels.filter(p => p.id !== id);
+  }, [isDragging, position, size, id]);
 
   // Check for collisions and notify parent
   useEffect(() => {
     if (!isPinned) {
       const overlapping = allPanels.filter((panel) => {
-        if (panel.id === id) return false;
         return checkCollision(position, size, panel);
       });
-      onCollision?.(overlapping.map((p) => p.id));
+      // Only notify if there's actual overlap
+      if (overlapping.length > 0) {
+        onCollision?.(overlapping.map((p) => p.id));
+      }
     }
   }, [position, size, allPanels, isPinned, id, onCollision]);
 
@@ -131,6 +134,63 @@ export default function DraggablePanel({
     if (newY + size.height > viewportHeight - 16) newY = viewportHeight - size.height - 16;
     
     const newPos = { x: newX, y: newY };
+    
+    // Check if the new position would still cause collision
+    // Get current panel bounds for the check
+    const currentPanel = {
+      x: newPos.x,
+      y: newPos.y,
+      width: size.width,
+      height: size.height
+    };
+    
+    const wouldCollide = allPanels.some(panel => checkCollision(newPos, size, panel));
+    
+    // If we would still collide, try to find a better position
+    if (wouldCollide) {
+      // Try moving the panel vertically to find space
+      let foundPosition = false;
+      let tryY = newPos.y;
+      
+      while (tryY > 16 && !foundPosition) {
+        tryY -= 40; // Move up in 40px increments
+        const tryPos = { x: newPos.x, y: tryY };
+        if (!allPanels.some(panel => checkCollision(tryPos, size, panel))) {
+          newPos.y = tryY;
+          foundPosition = true;
+          break;
+        }
+      }
+      
+      // If still colliding, try moving horizontally
+      if (!foundPosition) {
+        let tryX = newPos.x;
+        while (tryX < viewportWidth - size.width - 16 && !foundPosition) {
+          tryX += 40; // Move right in 40px increments
+          const tryPos = { x: tryX, y: newPos.y };
+          if (!allPanels.some(panel => checkCollision(tryPos, size, panel))) {
+            newPos.x = tryX;
+            foundPosition = true;
+            break;
+          }
+        }
+      }
+      
+      // If still colliding, keep the original position
+      if (!foundPosition) {
+        // Snap back to last known good position
+        const savedPos = localStorage.getItem(`draggable_pos_${id}`);
+        if (savedPos) {
+          try {
+            newPos.x = JSON.parse(savedPos).x;
+            newPos.y = JSON.parse(savedPos).y;
+          } catch {
+            // Keep the clamped position
+          }
+        }
+      }
+    }
+    
     setPosition(newPos);
     localStorage.setItem(`draggable_pos_${id}`, JSON.stringify(newPos));
     setIsDragging(false);
