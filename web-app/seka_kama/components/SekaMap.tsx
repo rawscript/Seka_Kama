@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Map, { Source, Layer, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { ShieldCheck, Info, Target, Layers } from 'lucide-react';
+import { ShieldCheck, Info, Target } from 'lucide-react';
 import { api } from '@/services/api';
 import { getApiUrl } from '@/services/config';
 import ScenarioDrawer from './ScenarioDrawer';
