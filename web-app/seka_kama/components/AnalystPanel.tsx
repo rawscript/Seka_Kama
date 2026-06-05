@@ -58,14 +58,10 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       );
     }
     
-    return (
-      <div className="space-y-4">
-        <div 
-          className="text-xs leading-relaxed text-slate-700 narrative-content"
-          dangerouslySetInnerHTML={{ __html: insight.replace(/\n/g, '<br/>') || 'No qualitative data available for this zone.' }}
-        />
-        
-        {!insight && (
+    // Return fallback content if no insight is available
+    if (!insight) {
+      return (
+        <div className="space-y-4">
           <div className="grid grid-cols-1 gap-2">
             <div className="flex gap-3 p-3 bg-emerald-50 rounded-sm items-start">
                <Shield className="w-4 h-4 text-emerald-600 mt-1 shrink-0" />
@@ -82,7 +78,17 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
                </div>
             </div>
           </div>
-        )}
+        </div>
+      );
+    }
+    
+    // Render the insight with safe HTML handling
+    return (
+      <div className="space-y-4">
+        <div 
+          className="text-xs leading-relaxed text-slate-700 narrative-content"
+          dangerouslySetInnerHTML={{ __html: insight.replace(/\n/g, '<br/>') }}
+        />
       </div>
     );
   };
