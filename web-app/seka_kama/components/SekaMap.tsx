@@ -498,33 +498,33 @@ function SekaMapContent({
 
         {hoverInfo && (
           <div 
-            className="absolute z-[200] pointer-events-none bg-[#020617]/90 backdrop-blur-md border border-white/10 p-4 rounded-xl shadow-2xl animate-in fade-in duration-200"
+            className="absolute z-[200] pointer-events-none bg-white/95 backdrop-blur-sm border border-slate-200 p-4 rounded-xl shadow-2xl animate-in fade-in duration-200"
             style={{ left: hoverInfo.x + 10, top: hoverInfo.y + 10 }}
           >
              <div className="space-y-3">
                 <div className="flex items-center gap-2">
                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                   <span className="text-[10px] font-bold text-white uppercase tracking-widest leading-none">
+                   <span className="text-[10px] font-bold text-slate-800 uppercase tracking-widest leading-none">
                      {hoverInfo.properties.management_unit || 'Wild Zone'}
                    </span>
                 </div>
                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                       <p className="text-[8px] font-bold text-slate-500 uppercase mb-0.5">
+                       <p className="text-[8px] font-bold text-slate-600 uppercase mb-0.5">
                          {isLiveMode ? 'Enriched Density' : 'Lion Density'}
                        </p>
-                       <p className="text-sm font-black text-emerald-400">
+                       <p className="text-sm font-black text-emerald-700">
                          {parseFloat(hoverInfo.properties.lion_density || 0).toFixed(3)}
                        </p>
                     </div>
                     <div>
-                       <p className="text-[8px] font-bold text-slate-500 uppercase mb-0.5">
+                       <p className="text-[8px] font-bold text-slate-600 uppercase mb-0.5">
                          {isLiveMode ? 'HWC Risk' : 'Threat Level'}
                        </p>
                        <p className={`text-sm font-black ${
                          isLiveMode 
-                           ? (parseFloat(hoverInfo.properties.hwc_risk || 0) > 0.6 ? 'text-rose-400' : 'text-blue-400')
-                           : (parseFloat(hoverInfo.properties.pop2018_mean || 0) > 5 ? 'text-rose-400' : 'text-blue-400')
+                           ? (parseFloat(hoverInfo.properties.hwc_risk || 0) > 0.6 ? 'text-rose-700' : 'text-blue-700')
+                           : (parseFloat(hoverInfo.properties.pop2018_mean || 0) > 5 ? 'text-rose-700' : 'text-blue-700')
                        }`}>
                          {isLiveMode 
                            ? (parseFloat(hoverInfo.properties.hwc_risk || 0) * 100).toFixed(0) + '%'
@@ -533,12 +533,12 @@ function SekaMapContent({
                     </div>
                  </div>
                  {isLiveMode && hoverInfo.properties.rainfall_mm && (
-                   <div className="pt-2 border-t border-white/5">
-                      <p className="text-[8px] font-bold text-slate-500 uppercase mb-0.5">Annu. Rainfall</p>
-                      <p className="text-xs font-bold text-white">{hoverInfo.properties.rainfall_mm.toFixed(0)}mm</p>
+                   <div className="pt-2 border-t border-slate-100">
+                      <p className="text-[8px] font-bold text-slate-600 uppercase mb-0.5">Annu. Rainfall</p>
+                      <p className="text-xs font-bold text-slate-800">{hoverInfo.properties.rainfall_mm.toFixed(0)}mm</p>
                    </div>
                  )}
-                 <p className="text-[9px] text-slate-500 italic max-w-[120px] leading-tight">
+                 <p className="text-[9px] text-slate-600 italic max-w-[120px] leading-tight">
                     Located {parseFloat(hoverInfo.properties.dist_to_protected_km || 0).toFixed(1)}km from reserve boundary.
                  </p>
              </div>
@@ -560,79 +560,62 @@ function SekaMapContent({
         >
           <div
             style={{
-              padding: '4px 14px',
-              background: 'rgba(17,24,39,0.85)',
-              border: '1px solid rgba(16,185,129,0.3)',
-              borderRadius: '20px',
+              padding: '6px 16px',
+              background: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid rgba(16,185,129,0.4)',
+              borderRadius: '24px',
               fontSize: '11px',
               fontWeight: 700,
               color: '#10b981',
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
               backdropFilter: 'blur(8px)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
             }}
           >
-            {selectedYear} snapshot
+            {selectedYear} Ecological Snapshot
           </div>
         </div>
       )}
 
       {/* Loading overlay */}
       {loading && (
-        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617]/90 backdrop-blur-xl animate-in fade-in duration-500">
+        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-white/95 backdrop-blur-lg animate-in fade-in duration-500">
           <div className="relative w-24 h-24 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-4 border-emerald-500/10 border-t-emerald-500 animate-spin" />
+            <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
             <div
-              className="absolute inset-4 rounded-full border-4 border-emerald-500/5 border-b-teal-500 animate-spin"
+              className="absolute inset-4 rounded-full border-4 border-emerald-500/10 border-b-emerald-400 animate-spin"
               style={{ animationDirection: 'reverse' }}
             />
-            <ShieldCheck className="w-8 h-8 text-emerald-500 animate-pulse" />
+            <ShieldCheck className="w-8 h-8 text-emerald-600 animate-pulse" />
           </div>
           <div className="mt-8 text-center space-y-2">
-            <h2 className="text-sm font-bold text-white uppercase tracking-[0.3em] leading-none">
+            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-[0.3em] leading-none">
               {selectedYear !== sliderToYear(66) ? `Loading ${selectedYear} data…` : 'Initializing Hub'}
             </h2>
-            <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">
+            <p className="text-[10px] text-slate-600 font-mono tracking-widest uppercase">
               Connecting to SekaNet Gateway v2.1.0
             </p>
           </div>
         </div>
       )}
 
-      {/* Overview / Regional Navigation Control */}
+      {/* Regional Overview Control */}
       <div 
         className="absolute top-16 right-4 z-30 flex flex-col gap-2"
         style={{ pointerEvents: 'auto' }}
       >
-        {/* Overview / Reset Button */}
-        <button
-          onClick={handleOverviewClick}
-          className="p-2.5 bg-[#0b0f1a]/90 hover:bg-[#1a1c1c]/95 text-white rounded-xl shadow-lg border border-emerald-500/20 hover:border-emerald-500/50 backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 group"
-          title="Reset Map to Regional Overview"
-        >
-          <Target className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
-          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 text-[9px] text-white rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            Reset Overview
-          </div>
-        </button>
-        
-        <div className="p-2 bg-[#0b0f1a]/90 rounded-xl shadow-lg border border-white/10 backdrop-blur-md min-w-[140px]">
+        {/* Regional Overview Button */}
+        <div className="p-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 min-w-[160px]">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[9px] text-slate-400 font-medium tracking-wider uppercase">Conservancy Selection</span>
+            <span className="text-[9px] text-slate-700 font-medium tracking-wider uppercase">Regional Overview</span>
             <button
-              onClick={() => {
-                if (selectedUnit) {
-                  onUnitChange?.('');
-                }
-              }}
-              disabled={!selectedUnit}
-              className={`px-2 py-0.5 text-[7px] font-bold uppercase tracking-widest rounded border transition-all ${
-                selectedUnit 
-                  ? 'bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500/20' 
-                  : 'bg-slate-800/50 border-slate-700 text-slate-600 cursor-not-allowed'
-              }`}
+              onClick={handleOverviewClick}
+              className="px-2 py-0.5 text-[7px] font-bold uppercase tracking-widest rounded border bg-emerald-100 border-emerald-300 text-emerald-700 hover:bg-emerald-200 transition-all"
+              title="Reset to regional overview"
             >
-              Clear
+              <Target className="w-2.5 h-2.5 inline mr-1" />
+              Reset View
             </button>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
@@ -642,26 +625,25 @@ function SekaMapContent({
                 onClick={() => onUnitChange?.(unit)}
                 className={`px-1.5 py-1.5 text-[8px] rounded border transition-all relative overflow-hidden ${
                   selectedUnit === unit
-                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-                    : 'bg-[#1a1c1c]/50 border-white/5 text-white/80 hover:bg-[#1a1c1c]/80 hover:border-emerald-500/30'
+                    ? 'bg-emerald-100 border-emerald-400 text-emerald-800 shadow-[0_0_8px_rgba(16,185,129,0.15)]'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-emerald-300'
                 }`}
               >
                 {selectedUnit === unit && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent animate-pulse" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-100/50 to-transparent animate-pulse" />
                 )}
                 {unit}
               </button>
             ))}
           </div>
-          {/* Quick navigation hints */}
+          {/* Status indicator */}
           <div className="mt-3 flex items-center justify-between gap-2 text-[7px] text-slate-600">
             <div className="flex items-center gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
-              <span>Click to select</span>
+              <div className={`w-1.5 h-1.5 rounded-full ${selectedUnit ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+              <span>{selectedUnit ? `${selectedUnit} selected` : 'Regional view'}</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-rose-500/50" />
-              <span>Clear selection</span>
+              <span className="text-slate-500">Click to view</span>
             </div>
           </div>
         </div>
