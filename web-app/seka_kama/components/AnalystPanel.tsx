@@ -22,13 +22,15 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       setError(null);
       try {
         const [healthResp, narrativeResp] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/health`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/health`)
+            .catch(() => null), // Catch network errors gracefully
           api.getLandscapeSummary(selectedUnit || undefined, year)
+            .catch(() => null) // Catch network errors gracefully
         ]);
         
-        if (healthResp.ok) {
+        if (healthResp?.ok) {
            // Health check successful - data available for future use
-        } else {
+        } else if (healthResp) {
           console.warn('Health check failed:', healthResp.status);
         }
         
@@ -36,8 +38,8 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
           setInsight(narrativeResp.narrative);
         }
       } catch (e) {
-        console.error("Analyst failed to fetch data", e);
-        setError('API unavailable. Please check your connection.');
+        // Only log, don't show error to user for transient issues
+        console.warn("Analyst data fetch failed (likely CORS/network):", e);
       } finally {
         setLoading(false);
       }
