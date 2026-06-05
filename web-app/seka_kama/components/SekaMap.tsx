@@ -75,7 +75,7 @@ function sliderToYear(value: number): number {
 
 export default function SekaMap(props: SekaMapProps) {
   return (
-    <div className="relative w-full h-full bg-[#020617]">
+    <div className="relative w-full h-full bg-white">
       <SekaMapContent {...props} />
     </div>
   );
