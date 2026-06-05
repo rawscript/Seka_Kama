@@ -5,6 +5,7 @@ Enhanced with security, monitoring, and production features.
 
 from typing import Optional, Dict, Any, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -77,8 +78,19 @@ class Settings(BaseSettings):
     PROMETHEUS_ENABLED: bool = os.getenv("PROMETHEUS_ENABLED", "true").lower() in ("true", "1", "yes", "on")
     
     # CORS Configuration (Production-ready)
-    ALLOWED_ORIGINS: List[str] = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://seka-kama.vercel.app").split(",")
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "https://seka-kama.vercel.app"]
     ALLOW_ALL_ORIGINS: bool = os.getenv("ALLOW_ALL_ORIGINS", "false").lower() in ("true", "1", "yes", "on")
+    
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_allowed_origins(cls, v):
+        """Parse ALLOWED_ORIGINS from comma-separated string or list."""
+        if isinstance(v, str):
+            # Remove whitespace and split by comma
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        elif isinstance(v, list):
+            return v
+        return v
     
     # API settings
     API_HOST: str = "0.0.0.0"
