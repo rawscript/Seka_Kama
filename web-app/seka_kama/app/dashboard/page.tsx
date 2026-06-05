@@ -255,7 +255,7 @@ function DashboardContent() {
       `}} />
 
       {/* Floating layer for draggable panels to escape flex wrappers */}
-      <div id="floating-layer" className="absolute inset-0 pointer-events-none z-[500]" />
+      <div id="floating-layer" className="fixed inset-0 pointer-events-none z-[9999]" />
 
       <div className="relative w-full h-full bg-[#dadada]">
 
@@ -434,7 +434,7 @@ function DashboardContent() {
 
 
           {/* AI Situation Report */}
-          <DraggablePanel id="analyst_panel" defaultPinned={true} defaultPosition={{x: 400, y: 100}} className="map-overlay-card rounded-sm shadow-sm">
+          <DraggablePanel id="analyst_panel" defaultPinned={false} defaultPosition={{x: 16, y: 16}} className="map-overlay-card rounded-sm shadow-sm">
             <AnalystPanel 
               selectedUnit={selectedUnit} 
               year={selectedYear} 
@@ -442,7 +442,7 @@ function DashboardContent() {
           </DraggablePanel>
 
           {/* Ecosystem Indicators */}
-          <DraggablePanel id="ecosystem_indicators" defaultPinned={true} defaultPosition={{x: 400, y: 300}} className="map-overlay-card shadow-sm rounded-sm z-10 w-[380px]">
+          <DraggablePanel id="ecosystem_indicators" defaultPinned={false} defaultPosition={{x: 360, y: 16}} className="map-overlay-card shadow-sm rounded-sm z-10 w-[380px]">
             <div className="p-6">
               <div className="flex items-center gap-2 mb-8 text-primary font-bold">
                 <span className="material-symbols-outlined text-[20px]">eco</span>
