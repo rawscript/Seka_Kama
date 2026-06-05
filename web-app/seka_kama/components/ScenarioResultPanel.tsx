@@ -353,33 +353,33 @@ function ComparePanel({ scenarios, onClose }: { scenarios: any[]; onClose: () =>
           />
 
           {/* Narratives */}
-          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200">
             {[a, b].map((s, i) => s.narrative && (
-              <div key={i} className="p-3 bg-white/2 border border-white/5 rounded-xl">
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+              <div key={i} className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <p className="text-[9px] font-bold text-slate-700 uppercase tracking-widest mb-2">
                   Scenario {i === 0 ? 'A' : 'B'} — AI Narrative
                 </p>
-                <p className="text-[10px] text-slate-400 italic leading-relaxed line-clamp-5">"{s.narrative}"</p>
+                <p className="text-[10px] text-slate-600 italic leading-relaxed line-clamp-5">"{s.narrative}"</p>
               </div>
             ))}
           </div>
         </div>
       ) : (
         /* Waiting for second scenario */
-        <div className="p-10 flex flex-col items-center justify-center gap-4 text-center">
-          <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-            <GitCompare className="w-5 h-5 text-amber-400" />
+        <div className="p-10 flex flex-col items-center justify-center gap-4 text-center bg-white">
+          <div className="w-12 h-12 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center">
+            <GitCompare className="w-5 h-5 text-amber-600" />
           </div>
           <div>
-            <p className="text-sm font-bold text-white mb-1">Scenario A Queued</p>
-            <p className="text-xs text-slate-500 leading-relaxed max-w-[200px]">
-              Close this panel, run another scenario, then click <strong className="text-amber-400">Compare</strong> to see a side-by-side analysis.
+            <p className="text-sm font-bold text-slate-800 mb-1">Scenario A Queued</p>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-[200px]">
+              Close this panel, run another scenario, then click <strong className="text-amber-600">Compare</strong> to see a side-by-side analysis.
             </p>
           </div>
-          <div className="mt-2 p-3 bg-white/3 border border-white/5 rounded-xl w-full">
-            <p className="text-[9px] font-mono text-amber-400 uppercase tracking-widest mb-1">Queued: Scenario A</p>
-            <p className="text-xs text-slate-400 truncate">{a.title}</p>
-            <p className="text-[10px] font-mono text-emerald-400 mt-1">
+          <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl w-full">
+            <p className="text-[9px] font-mono text-amber-700 uppercase tracking-widest mb-1">Queued: Scenario A</p>
+            <p className="text-xs text-slate-700 truncate">{a.title}</p>
+            <p className="text-[10px] font-mono text-emerald-600 mt-1">
               Δ {a.delta != null ? safeFixed(a.delta, 1) : '—'} Lions
             </p>
           </div>
