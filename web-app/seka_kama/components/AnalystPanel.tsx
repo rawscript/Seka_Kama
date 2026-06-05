@@ -99,9 +99,9 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       defaultPosition={{ x: 16, y: 16 }}
       defaultSize={{ width: 320, height: 400 }}
     >
-      <div className="flex flex-col bg-white backdrop-blur-md border border-slate-200 rounded-lg overflow-hidden transition-all duration-300 w-full h-full shadow-lg">
+      <div className="flex flex-col h-full">
         <div 
-          className="drag-handle flex items-center justify-between px-4 py-3 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-200"
+          className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors"
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         </div>
 
         {isExpanded && (
-          <div className="p-4 bg-white border-t border-slate-200 flex-1 overflow-auto">
+          <div className="p-4 flex-1 overflow-auto">
             {error && (
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-md mb-3">
                 <p className="text-[10px] text-rose-600 font-medium">{error}</p>

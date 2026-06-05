@@ -442,7 +442,7 @@ function DashboardContent() {
           </DraggablePanel>
 
           {/* Ecosystem Indicators */}
-          <DraggablePanel id="ecosystem_indicators" defaultPinned={false} defaultPosition={{x: 360, y: 16}} className="map-overlay-card shadow-sm rounded-sm z-10 w-[380px]">
+          <DraggablePanel id="ecosystem_indicators" defaultPinned={false} defaultPosition={{x: 360, y: 16}} className="shadow-lg rounded-xl">
             <div className="p-6">
               <div className="flex items-center gap-2 mb-8 text-primary font-bold">
                 <span className="material-symbols-outlined text-[20px]">eco</span>

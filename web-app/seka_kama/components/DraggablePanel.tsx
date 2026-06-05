@@ -222,17 +222,17 @@ export default function DraggablePanel({
   if (isPinned) {
     return (
       <div 
-        className={`relative ${className} group`} 
+        className={`relative ${className} group shadow-lg`} 
         style={defaultSize}
         data-draggable-panel={id}
       >
         <div className="absolute top-2 right-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
           <button 
             onClick={togglePin} 
-            className="p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors shadow-lg border border-white/20 backdrop-blur-sm"
+            className="p-2 bg-white/90 hover:bg-white text-slate-700 rounded-full transition-colors shadow-lg border border-slate-200 backdrop-blur-sm"
             title="Unpin panel to float"
           >
-            <Pin className="w-3.5 h-3.5" />
+            <Pin className="w-4 h-4" />
           </button>
         </div>
         {children}
@@ -252,7 +252,7 @@ export default function DraggablePanel({
       scale={1}
     >
       <div 
-        className={`absolute z-[100] shadow-2xl pointer-events-auto transition-shadow duration-200 ${className}`}
+        className={`absolute shadow-2xl pointer-events-auto transition-all duration-200 ${className}`}
         style={{ 
           position: 'absolute',
           width: size.width,
@@ -262,53 +262,47 @@ export default function DraggablePanel({
       >
         {/* Collision warning indicator */}
         {isColliding && (
-          <div className="absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-bl-lg z-30 animate-pulse" title="Panel overlap detected - dragging to resolve" />
+          <div className="absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-bl-lg z-50 animate-pulse shadow-md" title="Panel overlap detected - dragging to resolve" />
         )}
         
         {/* Drag Handle */}
-        <div className={`drag-handle w-full h-9 bg-[#1a1c1c]/95 hover:bg-[#2a2c2c]/95 cursor-move flex items-center justify-between px-3 rounded-t-md transition-all relative border-b border-white/10 backdrop-blur-sm shadow-sm z-20 group-header ${isColliding ? 'border-rose-500/30' : ''}`}>
-          {/* Drag handle visual indicator - shows when hovering over header */}
-          <div className="drag-handle flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
-            <div className="w-4 h-0.5 bg-white/20 rounded-full" />
-            <div className="w-4 h-0.5 bg-white/20 rounded-full" />
-            <div className="w-4 h-0.5 bg-white/20 rounded-full" />
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/30 group-hover/header:bg-red-500/40" />
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/30 group-hover/header:bg-amber-500/40" />
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 group-hover/header:bg-emerald-500/40" />
+        <div className={`drag-handle w-full h-10 bg-white/95 hover:bg-white/100 cursor-move flex items-center justify-between px-4 rounded-t-xl transition-all relative border-b border-slate-200 shadow-sm z-20 group-header backdrop-blur-sm ${isColliding ? 'border-rose-500/50' : 'border-slate-200/50'}`}>
+          {/* Drag handle visual indicator */}
+          <div className="flex items-center gap-3 drag-handle opacity-60 hover:opacity-100 transition-opacity">
+            <div className="flex gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-slate-300/80" />
+              <div className="w-2 h-2 rounded-full bg-slate-300/80" />
+              <div className="w-2 h-2 rounded-full bg-slate-300/80" />
             </div>
-            <span className="text-[9px] font-bold text-white/50 uppercase tracking-wider ml-1">Panel</span>
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider ml-1">Draggable</span>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button 
               onClick={togglePin} 
-              className={`p-1 rounded-md transition-all ${
+              className={`p-1.5 rounded-md transition-all ${
                 isPinned 
-                  ? 'text-emerald-400 bg-emerald-500/10' 
-                  : 'text-white/50 hover:text-white hover:bg-white/10'
+                  ? 'bg-emerald-500/10 text-emerald-600' 
+                  : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
               }`}
               title={isPinned ? "Pin panel back" : "Unpin panel to float"}
             >
-              {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+              {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
             </button>
           </div>
         </div>
         
         {/* Content */}
         <div 
-          className="bg-[#0b0f1a] overflow-auto"
-          style={{ height: `calc(100% - 32px)` }}
+          className="bg-white overflow-auto"
+          style={{ height: `calc(100% - 40px)` }}
         >
           {children}
         </div>
         
         {/* Visual indicator when dragging */}
         {isDragging && (
-          <div className="absolute inset-0 border-2 border-emerald-500/50 rounded-t-md pointer-events-none z-50" />
+          <div className="absolute inset-0 border-2 border-emerald-500/30 rounded-xl pointer-events-none z-50 bg-emerald-500/5 shadow-lg" />
         )}
       </div>
     </Draggable>

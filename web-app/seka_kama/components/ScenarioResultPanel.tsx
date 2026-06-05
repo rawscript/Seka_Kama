@@ -105,9 +105,9 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
   }
 
   return (
-    <div className="w-[400px] enterprise-card overflow-hidden flex flex-col p-0 animate-in fade-in slide-in-from-right-8 duration-500">
+    <div className="w-[400px] shadow-xl rounded-xl overflow-hidden flex flex-col p-0 animate-in fade-in slide-in-from-right-8 duration-500 bg-white">
       {/* Header Section */}
-      <div className="p-5 border-b border-white/5 flex justify-between items-start bg-white/2">
+      <div className="p-5 border-b border-slate-200 flex justify-between items-start bg-slate-50">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <div className={`enterprise-badge ${accentColor} ${accentBg} ${accentBorder} border`}>
@@ -115,19 +115,19 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
             </div>
             <span className="text-[10px] font-mono text-slate-500 uppercase tracking-tighter">SEC_ID: {result.scenario_id || 'TEMP'}</span>
           </div>
-          <h3 className="text-lg font-bold text-white truncate leading-tight">
+          <h3 className="text-lg font-bold text-slate-800 truncate leading-tight">
             {isSelection ? `${result.cells?.length ?? 0} Grid Cells Selected` : title}
           </h3>
         </div>
         <button 
           onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-all ml-4"
+          className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-all ml-4"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="p-5 space-y-4 overflow-y-auto custom-scrollbar max-h-[60vh]">
+      <div className="p-5 space-y-4 overflow-y-auto custom-scrollbar max-h-[60vh] bg-white">
         {isSelection ? (
             /* -- Spatial Selection Info -- */
             <div className="space-y-4">
@@ -136,12 +136,12 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
                   <StatItem icon={Users} label="Current Lions" value={safeFixedAbs(result.cells?.reduce((s: any, c: any) => s + (c.properties?.lion_density ?? 0), 0), 1)} />
                </div>
                
-                <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl space-y-2">
-                   <div className="flex items-center gap-2 text-amber-400">
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+                   <div className="flex items-center gap-2 text-amber-700">
                      <Info className="w-4 h-4" />
                      <span className="text-[11px] font-bold uppercase tracking-wider">Spatial Insights</span>
                    </div>
-                   <p className="text-xs text-slate-400 leading-relaxed">
+                   <p className="text-xs text-slate-600 leading-relaxed">
                      {(() => {
                        const cell = result.cells?.[0]?.properties;
                        if (!cell) return "Analyzing selected coordinates...";
@@ -160,16 +160,16 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
             <div className="space-y-5">
               {/* Massive Impact Indicator */}
               {delta != null && (
-                <div className={`p-6 rounded-2xl ${accentBg} border ${accentBorder} flex items-center justify-between shadow-inner`}>
+                <div className={`p-6 rounded-2xl ${accentBg.replace('500/10', '200/20')} border ${accentBorder.replace('500/20', '200/30')} flex items-center justify-between shadow-sm`}>
                   <div className="space-y-1">
-                    <p className={`text-[10px] font-bold uppercase tracking-[0.2em] opacity-80 ${accentColor}`}>Population Delta</p>
+                    <p className={`text-[10px] font-bold uppercase tracking-[0.2em] opacity-80 ${accentColor.replace('400', '600')}`}>Population Delta</p>
                     <div className="flex items-baseline gap-2">
-                       <span className={`text-4xl font-extrabold tracking-tighter ${accentColor}`}>{safeFixed(delta, 1)}</span>
+                       <span className={`text-4xl font-extrabold tracking-tighter ${accentColor.replace('400', '600')}`}>{safeFixed(delta, 1)}</span>
                        <span className="text-sm font-medium opacity-60">Lions</span>
                     </div>
                   </div>
-                  <div className={`p-4 rounded-xl ${accentBg} border ${accentBorder}`}>
-                     {isNegative ? <TrendingDown className={`w-8 h-8 ${accentColor}`} /> : <TrendingUp className={`w-8 h-8 ${accentColor}`} />}
+                  <div className={`p-4 rounded-xl ${accentBg.replace('500/10', '200/20')} border ${accentBorder.replace('500/20', '200/30')}`}>
+                     {isNegative ? <TrendingDown className={`w-8 h-8 ${accentColor.replace('400', '600')}`} /> : <TrendingUp className={`w-8 h-8 ${accentColor.replace('400', '600')}`} />}
                   </div>
                 </div>
               )}
@@ -197,8 +197,8 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
 
               {/* Ecological context */}
               {eco && (
-                <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl space-y-3">
-                  <div className="flex items-center gap-2 text-emerald-400 mb-1">
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3">
+                  <div className="flex items-center gap-2 text-emerald-700 mb-1">
                     <Activity className="w-3 h-3" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">Live Ecological Context</span>
                   </div>
@@ -213,7 +213,7 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
               {/* Geographic Breakdown */}
               {Object.keys(affectedUnits).length > 0 && (
                 <div className="space-y-3">
-                   <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1 flex items-center gap-2">
+                   <h4 className="text-[10px] font-bold text-slate-700 uppercase tracking-widest pl-1 flex items-center gap-2">
                      <Activity className="w-3 h-3" /> Area Variance
                    </h4>
                    <div className="space-y-2">
@@ -230,13 +230,13 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
 
               {/* Intelligence Narrative */}
               {narrative && (
-                <div className="p-4 bg-white/2 border border-white/5 rounded-xl space-y-3 relative overflow-hidden group">
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3 relative overflow-hidden group">
                   <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/20 group-hover:bg-emerald-500 transition-colors" />
                   <div className="flex items-center gap-2">
-                    <Brain className="w-3 h-3 text-emerald-500 animate-pulse" />
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">AI Insight Engine</p>
+                    <Brain className="w-3 h-3 text-emerald-600 animate-pulse" />
+                    <p className="text-[10px] font-bold text-slate-700 uppercase tracking-widest leading-none">AI Insight Engine</p>
                   </div>
-                  <p className="text-xs text-slate-400 italic leading-relaxed">"{narrative}"</p>
+                  <p className="text-xs text-slate-600 italic leading-relaxed">"{narrative}"</p>
                 </div>
               )}
             </div>
@@ -244,7 +244,7 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
       </div>
 
       {/* Footer */}
-      <div className="p-4 bg-black/40 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-600 font-mono">
+      <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-600 font-mono">
          <span className="flex items-center gap-1.5"><Activity className="w-3 h-3" /> Real-time Compute</span>
          
          <div className="flex items-center gap-4">
@@ -259,7 +259,7 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
               navigator.clipboard.writeText(summary);
             }}
             title="Copy plain-text summary"
-            className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 hover:text-emerald-600 transition-colors cursor-pointer"
           >
             <Copy className="w-3 h-3" /> Copy
           </button>
@@ -269,12 +269,12 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
 
          <button 
            onClick={handleAddToCompare}
-           className="flex items-center gap-1.5 hover:text-amber-400 transition-colors cursor-pointer relative"
+           className="flex items-center gap-1.5 hover:text-amber-600 transition-colors cursor-pointer relative"
          >
            <GitCompare className="w-3 h-3" />
            Compare
            {queueSize > 0 && (
-             <span className="absolute -top-2 -right-2 w-3.5 h-3.5 bg-amber-500 rounded-full text-[8px] text-black font-bold flex items-center justify-center">
+             <span className="absolute -top-2 -right-2 w-3.5 h-3.5 bg-amber-500 rounded-full text-[8px] text-white font-bold flex items-center justify-center">
                {queueSize}
              </span>
            )}
@@ -294,22 +294,22 @@ function ComparePanel({ scenarios, onClose }: { scenarios: any[]; onClose: () =>
   const b = scenarios[1] ? normalize(scenarios[1]) : null;
 
   return (
-    <div className="w-[520px] enterprise-card overflow-hidden flex flex-col p-0 animate-in fade-in slide-in-from-right-8 duration-500">
-      <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/2">
+    <div className="w-[520px] shadow-xl rounded-xl overflow-hidden flex flex-col p-0 animate-in fade-in slide-in-from-right-8 duration-500 bg-white">
+      <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
         <div className="flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-bold text-white uppercase tracking-widest">Scenario Comparison</h3>
-          <span className="text-[9px] font-mono text-slate-500 bg-white/5 px-2 py-0.5 rounded">
+          <BarChart3 className="w-4 h-4 text-amber-600" />
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Scenario Comparison</h3>
+          <span className="text-[9px] font-mono text-slate-600 bg-slate-200 px-2 py-0.5 rounded">
             {scenarios.length} scenario{scenarios.length !== 1 ? 's' : ''} queued
           </span>
         </div>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-all">
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all">
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {b ? (
-        <div className="p-5 space-y-5 overflow-y-auto custom-scrollbar max-h-[70vh]">
+        <div className="p-5 space-y-5 overflow-y-auto custom-scrollbar max-h-[70vh] bg-white">
           {/* Header row */}
           <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
             <ScenarioLabel result={scenarios[0]} index="A" />
@@ -530,6 +530,4 @@ function ExportMenu({ result }: { result: any }) {
           ))}
         </div>
       )}
-    </div>
-  );
-}
+    </di
