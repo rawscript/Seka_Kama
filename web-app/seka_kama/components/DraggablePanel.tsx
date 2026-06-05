@@ -9,6 +9,10 @@ interface DraggablePanelProps {
   id: string;
   defaultPosition?: { x: number; y: number };
   defaultSize?: { width: number; height: number };
+  minWidth?: number;
+  minHeight?: number;
+  maxWidth?: number;
+  maxHeight?: number;
   children: React.ReactNode;
   className?: string;
   defaultPinned?: boolean;
@@ -27,6 +31,10 @@ export default function DraggablePanel({
   id,
   defaultPosition = { x: 16, y: 16 },
   defaultSize = { width: 320, height: 240 },
+  minWidth = 200,
+  minHeight = 160,
+  maxWidth = 800,
+  maxHeight = 600,
   children,
   className = '',
   defaultPinned = false,
@@ -135,24 +143,37 @@ export default function DraggablePanel({
     let newX = data.x;
     let newY = data.y;
     
-    // Clamp to viewport (with 16px padding)
+    // Clamp to viewport (with 16px padding) and size constraints
+    const clampedWidth = Math.min(Math.max(size.width, minWidth), maxWidth);
+    const clampedHeight = Math.min(Math.max(size.height, minHeight), maxHeight);
+    
+    // Update size if it was outside constraints
+    if (clampedWidth !== size.width || clampedHeight !== size.height) {
+      setSize({ width: clampedWidth, height: clampedHeight });
+      localStorage.setItem(`draggable_size_${id}`, JSON.stringify({ width: clampedWidth, height: clampedHeight }));
+    }
+    
+    // Clamp position to viewport with new clamped size
+    const effectiveWidth = clampedWidth;
+    const effectiveHeight = clampedHeight;
+    
     if (newX < 16) newX = 16;
     if (newY < 16) newY = 16;
-    if (newX + size.width > viewportWidth - 16) newX = viewportWidth - size.width - 16;
-    if (newY + size.height > viewportHeight - 16) newY = viewportHeight - size.height - 16;
+    if (newX + effectiveWidth > viewportWidth - 16) newX = viewportWidth - effectiveWidth - 16;
+    if (newY + effectiveHeight > viewportHeight - 16) newY = viewportHeight - effectiveHeight - 16;
     
     const newPos = { x: newX, y: newY };
     
     // Check if the new position would still cause collision
-    // Get current panel bounds for the check
+    // Get current panel bounds for the check using clamped size
     const currentPanel = {
       x: newPos.x,
       y: newPos.y,
-      width: size.width,
-      height: size.height
+      width: clampedWidth,
+      height: clampedHeight
     };
     
-    const wouldCollide = allPanels.some(panel => checkCollision(newPos, size, panel));
+    const wouldCollide = allPanels.some(panel => checkCollision(newPos, { width: clampedWidth, height: clampedHeight }, panel));
     
     // If we would still collide, try to find a better position
     if (wouldCollide) {
@@ -163,7 +184,7 @@ export default function DraggablePanel({
       while (tryY > 16 && !foundPosition) {
         tryY -= 40; // Move up in 40px increments
         const tryPos = { x: newPos.x, y: tryY };
-        if (!allPanels.some(panel => checkCollision(tryPos, size, panel))) {
+        if (!allPanels.some(panel => checkCollision(tryPos, { width: clampedWidth, height: clampedHeight }, panel))) {
           newPos.y = tryY;
           foundPosition = true;
           break;
@@ -176,7 +197,7 @@ export default function DraggablePanel({
         while (tryX < viewportWidth - size.width - 16 && !foundPosition) {
           tryX += 40; // Move right in 40px increments
           const tryPos = { x: tryX, y: newPos.y };
-          if (!allPanels.some(panel => checkCollision(tryPos, size, panel))) {
+          if (!allPanels.some(panel => checkCollision(tryPos, { width: clampedWidth, height: clampedHeight }, panel))) {
             newPos.x = tryX;
             foundPosition = true;
             break;
