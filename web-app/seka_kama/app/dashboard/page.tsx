@@ -239,9 +239,9 @@ function DashboardContent() {
     <ProtectedRoute>
       <style dangerouslySetInnerHTML={{ __html: `
         .map-overlay-card {
-          background: rgba(255,255,255,0.85);
+          background: rgba(255,255,255,0.92);
           backdrop-filter: blur(16px);
-          border: 0.5px solid var(--outline-variant);
+          border: 0.5px solid #d1c5b4;
         }
         .premium-gradient-bar {
           background: linear-gradient(to right, #775a19 0%, #ffdea5 50%, #ba1a1a 100%);
@@ -251,7 +251,7 @@ function DashboardContent() {
         }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1c5b4; border-radius: 4px; }
       `}} />
 
       {/* Floating layer for draggable panels to escape flex wrappers */}
@@ -444,21 +444,21 @@ function DashboardContent() {
           {/* Ecosystem Indicators */}
           <DraggablePanel id="ecosystem_indicators" defaultPinned={false} defaultPosition={{x: 360, y: 16}} className="shadow-lg rounded-xl">
             <div className="p-6">
-              <div className="flex items-center gap-2 mb-8 text-primary font-bold">
+              <div className="flex items-center gap-2 mb-8 text-emerald-600 font-bold">
                 <span className="material-symbols-outlined text-[20px]">eco</span>
-                <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">ECOSYSTEM INDICATORS</h4>
+                <h4 className="text-[12px] uppercase tracking-[0.15em] text-slate-800 font-bold">ECOSYSTEM INDICATORS</h4>
               </div>
               <div className="space-y-10">
                 <div>
                   <div className="flex justify-between items-end mb-3">
-                    <span className="text-[11px] font-bold text-secondary tracking-wider">
+                    <span className="text-[11px] font-bold text-slate-700 tracking-wider">
                       LION DENSITY GRID (XGB) — {selectedYear}
                     </span>
                   </div>
-                  <div className="h-1.5 w-full premium-gradient-bar rounded-full" />
+                  <div className="h-1.5 w-full rounded-full" style={{background: 'linear-gradient(to right, #775a19 0%, #ffdea5 50%, #ba1a1a 100%)'}} />
                   <div className="flex justify-between mt-2">
-                    <span className="text-[9px] font-bold text-outline uppercase tracking-widest">Baseline</span>
-                    <span className="text-[9px] font-bold text-outline uppercase tracking-widest">High</span>
+                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Baseline</span>
+                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">High</span>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -511,7 +511,8 @@ function DashboardContent() {
           </DraggablePanel>
 
           {/* Historical Trends panel (Gap 2) */}
-          <div className="map-overlay-card shadow-sm rounded-sm overflow-hidden">
+          <DraggablePanel id="historical_trends" defaultPinned={false} defaultPosition={{x: 700, y: 16}} className="shadow-lg rounded-xl">
+            <div className="map-overlay-card shadow-sm rounded-sm overflow-hidden">
             <button
               onClick={() => setShowTrends((v) => !v)}
               className="w-full flex items-center justify-between p-5 text-left hover:bg-black/5 transition-colors"
@@ -547,6 +548,7 @@ function DashboardContent() {
               </div>
             )}
           </div>
+          </DraggablePanel>
         </div>
 
         {/* ── Temporal Controls ── */}
