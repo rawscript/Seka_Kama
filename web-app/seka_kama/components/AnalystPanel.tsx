@@ -45,6 +45,14 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
     setLoading(true);
     setError(null);
     
+    // Track data fetch start
+    if (hasConsent()) {
+      trackAnalystInteraction('analyst-panel-fetch-start', 'click', {
+        panelAction: 'fetch_insights',
+        insightType: 'initial_load'
+      });
+    }
+    
     try {
       const [healthResp, narrativeResp] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/health`)
@@ -68,6 +76,15 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
           ecological_metrics: narrativeResp.ecological_metrics
         };
         setInsight(insightData);
+        
+        // Track successful data fetch
+        if (hasConsent()) {
+          trackAnalystInteraction('analyst-panel-fetch-success', 'click', {
+            panelAction: 'insights_loaded',
+            insightType: 'api_success',
+            recommendationId: `insight_count_${insightData.key_insights?.length || 0}`
+          });
+        }
       } else {
         // Set fallback insight with current metrics
         setInsight({
@@ -94,16 +111,32 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
             vegetation_cover: selectedUnit ? 65 : 72
           }
         });
+        
+        // Track fallback data usage
+        if (hasConsent()) {
+          trackAnalystInteraction('analyst-panel-fallback', 'click', {
+            panelAction: 'fallback_insights',
+            insightType: 'fallback_data'
+          });
+        }
       }
       
       setLastUpdated(new Date());
     } catch (e) {
       console.error('Analyst data fetch failed:', e);
       setError('Unable to load ecological insights. Please try again.');
+      
+      // Track data fetch failure
+      if (hasConsent()) {
+        trackAnalystInteraction('analyst-panel-fetch-failed', 'click', {
+          panelAction: 'fetch_failed',
+          insightType: 'error'
+        });
+      }
     } finally {
       setLoading(false);
     }
-  }, [selectedUnit, year]);
+  }, [selectedUnit, year, hasConsent, trackAnalystInteraction]);
 
   useEffect(() => {
     fetchAnalystData();
@@ -114,20 +147,52 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
   }, [fetchAnalystData]);
 
   const handleGenerateReport = async () => {
+    // Track report generation
+    if (hasConsent()) {
+      trackAnalystInteraction('analyst-panel-report-button', 'click', {
+        panelAction: 'generate_report',
+        insightType: insight?.key_insights?.length ? 'multi_insight' : 'fallback'
+      });
+    }
+    
     setGeneratingReport(true);
     try {
       // Simulate report generation
       await new Promise(resolve => setTimeout(resolve, 1500));
       alert('Report generation started. You will receive a notification when it\'s ready.');
+      
+      // Track successful report generation
+      if (hasConsent()) {
+        trackAnalystInteraction('analyst-panel-report-success', 'click', {
+          panelAction: 'report_generated',
+          recommendationId: 'full_report'
+        });
+      }
     } catch (error) {
       console.error('Report generation failed:', error);
       setError('Failed to generate report. Please try again.');
+      
+      // Track report generation failure
+      if (hasConsent()) {
+        trackAnalystInteraction('analyst-panel-report-failed', 'click', {
+          panelAction: 'report_failed',
+          insightType: 'error'
+        });
+      }
     } finally {
       setGeneratingReport(false);
     }
   };
 
   const handleRefresh = () => {
+    // Track refresh action
+    if (hasConsent()) {
+      trackAnalystInteraction('analyst-panel-refresh-button', 'click', {
+        panelAction: 'refresh_insights',
+        insightType: insight ? 'existing' : 'initial'
+      });
+    }
+    
     fetchAnalystData();
   };
 
@@ -207,7 +272,16 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         {/* Header */}
         <div 
           className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-slate-50/50 transition-colors border-b border-slate-200"
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => {
+            setIsExpanded(!isExpanded);
+            // Track panel expansion/collapse
+            if (hasConsent()) {
+              trackAnalystInteraction('analyst-panel-header', 'click', {
+                panelAction: isExpanded ? 'collapse_panel' : 'expand_panel',
+                insightType: insight ? 'loaded' : 'loading'
+              });
+            }
+          }}
         >
           <div className="flex items-center gap-2">
             <div className="relative">
