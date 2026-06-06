@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Bot, Shield, Zap, AlertTriangle, ChevronDown, ChevronUp, Download, RefreshCw, Info, BarChart3, TrendingUp, Clock, MapPin } from 'lucide-react';
 import { api } from '@/services/api';
+import { useUsabilityTracking } from '@/services/usabilityService';
 import DraggablePanel from './DraggablePanel';
 
 interface AnalystPanelProps {
@@ -32,6 +33,13 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [generatingReport, setGeneratingReport] = useState(false);
+  
+  // Usability tracking
+  const {
+    trackAnalystInteraction,
+    trackNavigation,
+    hasConsent
+  } = useUsabilityTracking();
 
   const fetchAnalystData = useCallback(async () => {
     setLoading(true);
