@@ -38,6 +38,7 @@ const ScenarioResultPanel = dynamic(() => import('@/components/ScenarioResultPan
 const TrendChart = dynamic(() => import('@/components/TrendChart'), { ssr: false });
 const NotificationPanel = dynamic(() => import('@/components/NotificationPanel'), { ssr: false });
 const AnalystPanel = dynamic(() => import('@/components/AnalystPanel'), { ssr: false });
+const EcosystemIndicatorsPanel = dynamic(() => import('@/components/EcosystemIndicatorsPanel'), { ssr: false });
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MIN_YEAR = 2020;
@@ -441,71 +442,66 @@ function DashboardContent() {
             />
           </DraggablePanel>
 
-          {/* Ecosystem Indicators */}
+          {/* Ecosystem Indicators Panel */}
           <DraggablePanel id="ecosystem_indicators" defaultPinned={false} defaultPosition={{x: 360, y: 16}} className="shadow-lg rounded-xl">
+            <EcosystemIndicatorsPanel
+              selectedUnit={selectedUnit}
+              year={selectedYear}
+              isLiveMode={isLiveMode}
+            />
+          </DraggablePanel>
+
+          {/* Layer Controls Panel */}
+          <DraggablePanel id="layer_controls" defaultPinned={false} defaultPosition={{x: 360, y: 530}} className="shadow-lg rounded-xl">
             <div className="p-6">
-              <div className="flex items-center gap-2 mb-8 text-emerald-600 font-bold">
-                <span className="material-symbols-outlined text-[20px]">eco</span>
-                <h4 className="text-[12px] uppercase tracking-[0.15em] text-slate-800 font-bold">ECOSYSTEM INDICATORS</h4>
+              <div className="flex items-center gap-2 mb-6 text-slate-800 font-bold">
+                <span className="material-symbols-outlined text-[20px]">layers</span>
+                <h4 className="text-[12px] uppercase tracking-[0.15em] text-slate-800 font-bold">LAYER CONTROLS</h4>
               </div>
-              <div className="space-y-10">
-                <div>
-                  <div className="flex justify-between items-end mb-3">
-                    <span className="text-[11px] font-bold text-slate-700 tracking-wider">
-                      LION DENSITY GRID (XGB) — {selectedYear}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full" style={{background: 'linear-gradient(to right, #775a19 0%, #ffdea5 50%, #ba1a1a 100%)'}} />
-                  <div className="flex justify-between mt-2">
-                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">Baseline</span>
-                    <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">High</span>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <LayerToggle
-                    enabled={!showPreyDensity}
-                    onToggle={() => setShowPreyDensity(false)}
-                    color="#fbbf24"
-                    label="Lion Abundance (XGB)"
-                  />
-                  <LayerToggle
-                    enabled={showPreyDensity}
-                    onToggle={() => setShowPreyDensity(true)}
-                    color="#16a34a"
-                    label="Ecological Base (Prey)"
-                  />
-                  <LayerToggle
-                    enabled={showPrediction}
-                    onToggle={() => setShowPrediction((v) => !v)}
-                    color="#f87171"
-                    label="Neural Landscape Projection"
-                  />
-                  <LayerToggle
-                    enabled={showEncroachment}
-                    onToggle={() => setShowEncroachment((v) => !v)}
-                    color="#f59e0b"
-                    label="Human Encroachment (Nightlight)"
-                  />
-                  <div className="h-4" />
-                  <LayerToggle
-                    enabled={showProtectedAreas}
-                    onToggle={() => setShowProtectedAreas((v) => !v)}
-                    color="#1db954"
-                    label="Protected Wildlife Zones"
-                  />
-                  <LayerToggle
-                    enabled={showCorridors}
-                    onToggle={() => setShowCorridors((v) => !v)}
-                    color="#8b5cf6"
-                    label="Biological Corridors"
-                  />
-                  <LayerToggle
-                    enabled={showLandXBoundary}
-                    onToggle={() => setShowLandXBoundary((v) => !v)}
-                    color="#e9c176"
-                    label="Land-X Admin Boundary"
-                  />
-                </div>
+              <div className="space-y-4">
+                <LayerToggle
+                  enabled={!showPreyDensity}
+                  onToggle={() => setShowPreyDensity(false)}
+                  color="#fbbf24"
+                  label="Lion Abundance (XGB)"
+                />
+                <LayerToggle
+                  enabled={showPreyDensity}
+                  onToggle={() => setShowPreyDensity(true)}
+                  color="#16a34a"
+                  label="Ecological Base (Prey)"
+                />
+                <LayerToggle
+                  enabled={showPrediction}
+                  onToggle={() => setShowPrediction((v) => !v)}
+                  color="#f87171"
+                  label="Neural Landscape Projection"
+                />
+                <LayerToggle
+                  enabled={showEncroachment}
+                  onToggle={() => setShowEncroachment((v) => !v)}
+                  color="#f59e0b"
+                  label="Human Encroachment (Nightlight)"
+                />
+                <div className="h-2" />
+                <LayerToggle
+                  enabled={showProtectedAreas}
+                  onToggle={() => setShowProtectedAreas((v) => !v)}
+                  color="#1db954"
+                  label="Protected Wildlife Zones"
+                />
+                <LayerToggle
+                  enabled={showCorridors}
+                  onToggle={() => setShowCorridors((v) => !v)}
+                  color="#8b5cf6"
+                  label="Biological Corridors"
+                />
+                <LayerToggle
+                  enabled={showLandXBoundary}
+                  onToggle={() => setShowLandXBoundary((v) => !v)}
+                  color="#e9c176"
+                  label="Land-X Admin Boundary"
+                />
               </div>
             </div>
           </DraggablePanel>

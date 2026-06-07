@@ -211,49 +211,65 @@ export default function EcosystemIndicatorsPanel({
     }
 
     try {
-      // Fetch ecosystem indicators from API
-      const indicatorsData = await api.getEcosystemIndicators(selectedUnit || undefined, year);
-      
-      if (indicatorsData && indicatorsData.indicators) {
-        // Transform API data to indicator format
-        const transformedIndicators: EcosystemIndicator[] = indicatorsData.indicators.map((indicator: any) => ({
-          id: indicator.id,
-          name: indicator.name,
-          value: indicator.value,
-          unit: indicator.unit,
-          trend: indicator.trend,
-          changePercentage: indicator.change_percentage,
-          status: indicator.status,
-          description: indicator.description,
-          icon: this.getIconForIndicator(indicator.id),
-          color: indicator.color,
-          dataSource: indicator.data_source,
-          lastUpdated: indicator.last_updated
-        }));
+      // Try to fetch ecosystem indicators from API
+      try {
+        const indicatorsData = await api.getEcosystemIndicators(selectedUnit || undefined, year);
         
-        setIndicators(transformedIndicators);
-        
+        if (indicatorsData && indicatorsData.indicators) {
+          // Transform API data to indicator format
+          const transformedIndicators: EcosystemIndicator[] = indicatorsData.indicators.map((indicator: any) => ({
+            id: indicator.id,
+            name: indicator.name,
+            value: indicator.value,
+            unit: indicator.unit,
+            trend: indicator.trend,
+            changePercentage: indicator.change_percentage,
+            status: indicator.status,
+            description: indicator.description,
+            icon: getIconForIndicator(indicator.id),
+            color: indicator.color,
+            dataSource: indicator.data_source,
+            lastUpdated: indicator.last_updated
+          }));
+          
+          setIndicators(transformedIndicators);
+          
+          if (hasConsent()) {
+            trackAnalystInteraction('ecosystem-panel-fetch-success', 'click', {
+              panelAction: 'indicators_loaded',
+              insightType: 'api_success'
+            });
+          }
+        }
+      } catch (apiError) {
+        console.warn('Ecosystem indicators API not available, using default data:', apiError);
+        // Use default indicators - API will be implemented later
         if (hasConsent()) {
-          trackAnalystInteraction('ecosystem-panel-fetch-success', 'click', {
-            panelAction: 'indicators_loaded',
-            insightType: 'api_success'
+          trackAnalystInteraction('ecosystem-panel-fallback', 'click', {
+            panelAction: 'fallback_indicators',
+            insightType: 'default_data'
           });
         }
       }
       
       // Fetch environmental conditions
-      const envData = await api.getEnvironmentalConditions(selectedUnit || undefined);
-      if (envData) {
-        setEnvironmentalConditions({
-          temperature: envData.temperature || 24.5,
-          humidity: envData.humidity || 65,
-          windSpeed: envData.wind_speed || 3.2,
-          precipitation: envData.precipitation || 2.4,
-          cloudCover: envData.cloud_cover || 45,
-          uvIndex: envData.uv_index || 6,
-          daylightHours: envData.daylight_hours || 12.2,
-          soilMoisture: envData.soil_moisture || 0.65
-        });
+      try {
+        const envData = await api.getEnvironmentalConditions(selectedUnit || undefined);
+        if (envData) {
+          setEnvironmentalConditions({
+            temperature: envData.temperature || 24.5,
+            humidity: envData.humidity || 65,
+            windSpeed: envData.wind_speed || 3.2,
+            precipitation: envData.precipitation || 2.4,
+            cloudCover: envData.cloud_cover || 45,
+            uvIndex: envData.uv_index || 6,
+            daylightHours: envData.daylight_hours || 12.2,
+            soilMoisture: envData.soil_moisture || 0.65
+          });
+        }
+      } catch (error) {
+        console.warn('Could not fetch environmental conditions, using defaults:', error);
+        // Use default environmental conditions
       }
       
       setLastUpdated(new Date());
@@ -276,6 +292,20 @@ export default function EcosystemIndicatorsPanel({
     if (value >= 0.6) return 'good';
     if (value >= 0.4) return 'warning';
     return 'critical';
+  };
+
+  const getIconForIndicator = (indicatorId: string): React.ReactNode => {
+    switch (indicatorId) {
+      case 'habitat_suitability': return <TreePine className="w-4 h-4" />;
+      case 'threat_level': return <AlertTriangle className="w-4 h-4" />;
+      case 'connectivity': return <Network className="w-4 h-4" />;
+      case 'rainfall': return <Droplets className="w-4 h-4" />;
+      case 'vegetation': return <Shield className="w-4 h-4" />;
+      case 'hwc_risk': return <Zap className="w-4 h-4" />;
+      case 'corridor_health': return <MapPin className="w-4 h-4" />;
+      case 'soil_moisture': return <CloudRain className="w-4 h-4" />;
+      default: return <Activity className="w-4 h-4" />;
+    }
   };
 
   const getStatusColor = (status: string): string => {
@@ -321,8 +351,7 @@ export default function EcosystemIndicatorsPanel({
     if (hasConsent()) {
       trackAnalystInteraction(`ecosystem-indicator-${indicator.id}`, 'click', {
         panelAction: 'select_indicator',
-        insightType: indicator.name,
-        indicatorValue: indicator.value
+        insightType: indicator.name
       });
     }
   };
