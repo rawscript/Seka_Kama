@@ -298,25 +298,25 @@ function DashboardContent() {
             </button>
           )}
           
-            <div className="relative">
-              <button 
-                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isNotificationsOpen ? 'bg-primary text-white' : 'bg-white/80 text-secondary hover:bg-white backdrop-blur-md border border-outline-variant'}`}
-              >
-                <span className="material-symbols-outlined text-[18px]">notifications</span>
-                <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
-              </button>
-              <NotificationPanel isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
-            </div>
-
+          <div className="relative">
             <button 
-              onClick={() => setIsLiveMode(!isLiveMode)}
-              className={`px-4 py-2 rounded-full border backdrop-blur-md text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${isLiveMode ? 'bg-emerald-500 text-white border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-white/10 text-white/60 border-white/10 hover:bg-white/20'}`}
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isNotificationsOpen ? 'bg-primary text-white' : 'bg-white/80 text-secondary hover:bg-white backdrop-blur-md border border-outline-variant'}`}
             >
-              <div className={`w-1.5 h-1.5 rounded-full ${isLiveMode ? 'bg-white animate-pulse' : 'bg-white/20'}`} />
-              {isLiveMode ? 'Live Twin Active' : 'Enable Live Twin'}
+              <span className="material-symbols-outlined text-[18px]">notifications</span>
+              <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
             </button>
+            <NotificationPanel isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
           </div>
+
+          <button 
+            onClick={() => setIsLiveMode(!isLiveMode)}
+            className={`px-4 py-2 rounded-full border backdrop-blur-md text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${isLiveMode ? 'bg-emerald-500 text-white border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-white/10 text-white/60 border-white/10 hover:bg-white/20'}`}
+          >
+            <div className={`w-1.5 h-1.5 rounded-full ${isLiveMode ? 'bg-white animate-pulse' : 'bg-white/20'}`} />
+            {isLiveMode ? 'Live Twin Active' : 'Enable Live Twin'}
+          </button>
+        </div>
 
         {/* ── Landscape stats strip (Gap 1) ── */}
         {!statsLoading && stats && !isMobile && (
@@ -467,7 +467,7 @@ function DashboardContent() {
                   <span className="material-symbols-outlined text-[18px] text-emerald-600">eco</span>
                   <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">ECOSYSTEM INDICATORS</h4>
                 </div>
-                <span className="text-[10px] text-slate-600">{year}</span>
+                <span className="text-[10px] text-slate-600">{selectedYear}</span>
               </div>
               <div className="p-4">
                 <EcosystemIndicatorsPanel
@@ -487,75 +487,116 @@ function DashboardContent() {
                 </div>
               </div>
               <div className="p-4">
-                <div className="space-y-4">
-                  <LayerToggle
-                    enabled={!showPreyDensity}
-                    onToggle={() => setShowPreyDensity(false)}
-                    color="#fbbf24"
-                    label="Lion Abundance (XGB)"
-                  />
-                  <LayerToggle
-                    enabled={showPreyDensity}
-                    onToggle={() => setShowPreyDensity(true)}
-                    color="#16a34a"
-                    label="Ecological Base (Prey)"
-                  />
-                  <LayerToggle
-                    enabled={showPrediction}
-                    onToggle={() => setShowPrediction((v) => !v)}
-                    color="#f87171"
-                    label="Neural Landscape Projection"
-                  />
-                  <LayerToggle
-                    enabled={showEncroachment}
-                    onToggle={() => setShowEncroachment((v) => !v)}
-                    color="#f59e0b"
-                    label="Human Encroachment (Nightlight)"
-                  />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-amber-400" />
+                      <span className="text-sm text-slate-700 font-medium">Lion Abundance (XGB)</span>
+                    </div>
+                    <button 
+                      onClick={() => setShowPreyDensity(false)}
+                      className={`w-10 h-5 rounded-full relative transition-colors ${!showPreyDensity ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${!showPreyDensity ? 'left-6' : 'left-1'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                      <span className="text-sm text-slate-700 font-medium">Ecological Base (Prey)</span>
+                    </div>
+                    <button 
+                      onClick={() => setShowPreyDensity(true)}
+                      className={`w-10 h-5 rounded-full relative transition-colors ${showPreyDensity ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showPreyDensity ? 'left-6' : 'left-1'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-400" />
+                      <span className="text-sm text-slate-700 font-medium">Neural Landscape Projection</span>
+                    </div>
+                    <button 
+                      onClick={() => setShowPrediction((v) => !v)}
+                      className={`w-10 h-5 rounded-full relative transition-colors ${showPrediction ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showPrediction ? 'left-6' : 'left-1'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-amber-500" />
+                      <span className="text-sm text-slate-700 font-medium">Human Encroachment (Nightlight)</span>
+                    </div>
+                    <button 
+                      onClick={() => setShowEncroachment((v) => !v)}
+                      className={`w-10 h-5 rounded-full relative transition-colors ${showEncroachment ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showEncroachment ? 'left-6' : 'left-1'}`} />
+                    </button>
+                  </div>
                   <div className="h-2" />
-                  <LayerToggle
-                    enabled={showProtectedAreas}
-                    onToggle={() => setShowProtectedAreas((v) => !v)}
-                    color="#1db954"
-                    label="Protected Wildlife Zones"
-                  />
-                  <LayerToggle
-                    enabled={showCorridors}
-                    onToggle={() => setShowCorridors((v) => !v)}
-                    color="#8b5cf6"
-                    label="Biological Corridors"
-                  />
-                  <LayerToggle
-                    enabled={showLandXBoundary}
-                    onToggle={() => setShowLandXBoundary((v) => !v)}
-                    color="#e9c176"
-                    label="Land-X Admin Boundary"
-                  />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                      <span className="text-sm text-slate-700 font-medium">Protected Wildlife Zones</span>
+                    </div>
+                    <button 
+                      onClick={() => setShowProtectedAreas((v) => !v)}
+                      className={`w-10 h-5 rounded-full relative transition-colors ${showProtectedAreas ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showProtectedAreas ? 'left-6' : 'left-1'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-500" />
+                      <span className="text-sm text-slate-700 font-medium">Biological Corridors</span>
+                    </div>
+                    <button 
+                      onClick={() => setShowCorridors((v) => !v)}
+                      className={`w-10 h-5 rounded-full relative transition-colors ${showCorridors ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showCorridors ? 'left-6' : 'left-1'}`} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-amber-300" />
+                      <span className="text-sm text-slate-700 font-medium">Land-X Admin Boundary</span>
+                    </div>
+                    <button 
+                      onClick={() => setShowLandXBoundary((v) => !v)}
+                      className={`w-10 h-5 rounded-full relative transition-colors ${showLandXBoundary ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                    >
+                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showLandXBoundary ? 'left-6' : 'left-1'}`} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+          </div>
 
           {/* Historical Trends panel (Gap 2) */}
-          <DraggablePanel id="historical_trends" defaultPinned={false} defaultPosition={{x: 700, y: 16}} className="shadow-lg rounded-xl">
-            <div className="map-overlay-card shadow-sm rounded-sm overflow-hidden">
+          <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg overflow-hidden">
             <button
               onClick={() => setShowTrends((v) => !v)}
-              className="w-full flex items-center justify-between p-5 text-left hover:bg-black/5 transition-colors"
+              className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-50 transition-colors"
             >
-              <div className="flex items-center gap-2 text-primary font-bold">
-                <span className="material-symbols-outlined text-[20px]">show_chart</span>
-                <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">HISTORICAL TRENDS</h4>
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px] text-purple-600">show_chart</span>
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">HISTORICAL TRENDS</h4>
               </div>
-              <span className={`material-symbols-outlined text-outline transition-transform duration-200 ${showTrends ? 'rotate-180' : ''}`}>
+              <span className={`material-symbols-outlined text-slate-600 transition-transform duration-200 ${showTrends ? 'rotate-180' : ''}`}>
                 keyboard_arrow_down
               </span>
             </button>
 
             {showTrends && (
-              <div className="px-4 pb-5 bg-[#0b0f1a]">
+              <div className="px-4 pb-5">
                 {trendsLoading ? (
                   <div className="flex items-center justify-center py-10 gap-3">
-                    <div className="w-4 h-4 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
                     <span className="text-[11px] text-slate-500 uppercase tracking-widest">Loading trends…</span>
                   </div>
                 ) : trends.length === 0 ? (
@@ -573,7 +614,6 @@ function DashboardContent() {
               </div>
             )}
           </div>
-          </DraggablePanel>
         </div>
 
         {/* ── Temporal Controls ── */}
@@ -723,6 +763,7 @@ function DashboardContent() {
           </div>
         )}
 
+      </div>
       </div>
     </ProtectedRoute>
   );
