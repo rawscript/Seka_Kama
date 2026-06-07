@@ -368,7 +368,7 @@ class PerformanceMonitor {
     
     if (effectiveType === '4g' || effectiveType === '3g') {
       loadingMethod = 'eager';
-    } else if (effectiveType === '2g' || saveData) {
+    } else if (effectiveType === '2g' || saveData === true) {
       loadingMethod = 'lazy';
       placeholderType = 'none';
     }
