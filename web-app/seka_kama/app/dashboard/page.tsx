@@ -39,6 +39,7 @@ const TrendChart = dynamic(() => import('@/components/TrendChart'), { ssr: false
 const NotificationPanel = dynamic(() => import('@/components/NotificationPanel'), { ssr: false });
 const AnalystPanel = dynamic(() => import('@/components/AnalystPanel'), { ssr: false });
 const EcosystemIndicatorsPanel = dynamic(() => import('@/components/EcosystemIndicatorsPanel'), { ssr: false });
+const StaticPanelLayout = dynamic(() => import('@/components/StaticPanelLayout'), { ssr: false });
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MIN_YEAR = 2020;
@@ -373,138 +374,166 @@ function DashboardContent() {
            </button>
         )}
 
-        {/* ── Right side panels ── */}
-        <div className={`absolute top-8 right-8 flex flex-col gap-6 w-[380px] max-h-[calc(100vh-180px)] overflow-y-auto pr-2 pb-8 z-20 custom-scrollbar transition-all duration-300 ${isSidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-[420px] opacity-0 pointer-events-none'}`}>
-
-          {/* Search Bar */}
-          <div className="map-overlay-card p-4 shadow-sm rounded-sm z-30">
-            <form onSubmit={handleSearch} className="relative">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-               <input 
-                 type="text"
-                 placeholder="Search coords or landmark..."
-                 value={searchQuery}
-                 onChange={(e) => setSearchQuery(e.target.value)}
-                 className="w-full bg-white/5 border border-outline-variant rounded p-2 pl-10 text-xs font-medium text-on-surface focus:outline-none focus:border-primary transition-colors"
-               />
-               <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary">
-                 <Crosshair className="w-3.5 h-3.5" />
-               </button>
-            </form>
-          </div>
-
-          {/* Zone Selection */}
-          <div className={`map-overlay-card p-6 shadow-sm rounded-sm relative ${isZoneMenuOpen ? 'z-50' : 'z-20'}`}>
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-2 text-primary font-bold">
-                <span className="material-symbols-outlined text-[20px]">location_on</span>
-                <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">ZONE SELECTION</h4>
-              </div>
+        {/* ── Clean Panel Layout (Non-draggable, organized) ── */}
+        <div className={`absolute top-8 right-8 w-[380px] max-h-[calc(100vh-180px)] z-20 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-[420px] opacity-0 pointer-events-none'}`}>
+          
+          {/* Search and Zone Selection */}
+          <div className="space-y-4 mb-6">
+            {/* Search Bar */}
+            <div className="map-overlay-card p-4 shadow-sm rounded-sm">
+              <form onSubmit={handleSearch} className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input 
+                  type="text"
+                  placeholder="Search coords or landmark..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white/5 border border-outline-variant rounded p-2 pl-10 text-xs font-medium text-on-surface focus:outline-none focus:border-primary transition-colors"
+                />
+                <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary">
+                  <Crosshair className="w-3.5 h-3.5" />
+                </button>
+              </form>
             </div>
-            <div className="relative">
-              <button
-                onClick={() => setIsZoneMenuOpen(!isZoneMenuOpen)}
-                className="w-full text-left flex justify-between items-center border-b border-outline-variant pb-2 text-[24px] headline-font font-medium text-on-surface hover:text-primary transition-colors"
-              >
-                {selectedUnit || 'Regional Overview'}
-                <span className={`material-symbols-outlined text-outline transition-transform ${isZoneMenuOpen ? 'rotate-180' : ''}`}>
-                  keyboard_arrow_down
-                </span>
-              </button>
-              {isZoneMenuOpen && (
-                <div className="absolute top-full left-0 w-full mt-2 bg-white/95 backdrop-blur-md border border-outline-variant shadow-xl z-50 py-2 rounded-sm animate-in fade-in slide-in-from-top-2">
-                  <button
-                    onClick={() => { setSelectedUnit(''); setIsZoneMenuOpen(false); }}
-                    className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium border-b border-outline-variant/30"
-                  >
-                    Regional Overview
-                  </button>
-                  {availableUnits.map((u) => (
-                    <button
-                      key={u}
-                      onClick={() => { setSelectedUnit(u); setIsZoneMenuOpen(false); }}
-                      className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium"
-                    >
-                      {u}
-                    </button>
-                  ))}
+
+            {/* Zone Selection */}
+            <div className={`map-overlay-card p-6 shadow-sm rounded-sm relative ${isZoneMenuOpen ? 'z-50' : 'z-20'}`}>
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-2 text-primary font-bold">
+                  <span className="material-symbols-outlined text-[20px]">location_on</span>
+                  <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">ZONE SELECTION</h4>
                 </div>
-              )}
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setIsZoneMenuOpen(!isZoneMenuOpen)}
+                  className="w-full text-left flex justify-between items-center border-b border-outline-variant pb-2 text-[24px] headline-font font-medium text-on-surface hover:text-primary transition-colors"
+                >
+                  {selectedUnit || 'Regional Overview'}
+                  <span className={`material-symbols-outlined text-outline transition-transform ${isZoneMenuOpen ? 'rotate-180' : ''}`}>
+                    keyboard_arrow_down
+                  </span>
+                </button>
+                {isZoneMenuOpen && (
+                  <div className="absolute top-full left-0 w-full mt-2 bg-white/95 backdrop-blur-md border border-outline-variant shadow-xl z-50 py-2 rounded-sm animate-in fade-in slide-in-from-top-2">
+                    <button
+                      onClick={() => { setSelectedUnit(''); setIsZoneMenuOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium border-b border-outline-variant/30"
+                    >
+                      Regional Overview
+                    </button>
+                    {availableUnits.map((u) => (
+                      <button
+                        key={u}
+                        onClick={() => { setSelectedUnit(u); setIsZoneMenuOpen(false); }}
+                        className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium"
+                      >
+                        {u}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-
-          {/* AI Situation Report */}
-          <DraggablePanel id="analyst_panel" defaultPinned={false} defaultPosition={{x: 16, y: 16}} className="map-overlay-card rounded-sm shadow-sm">
-            <AnalystPanel 
-              selectedUnit={selectedUnit} 
-              year={selectedYear} 
-            />
-          </DraggablePanel>
-
-          {/* Ecosystem Indicators Panel */}
-          <DraggablePanel id="ecosystem_indicators" defaultPinned={false} defaultPosition={{x: 360, y: 16}} className="shadow-lg rounded-xl">
-            <EcosystemIndicatorsPanel
-              selectedUnit={selectedUnit}
-              year={selectedYear}
-              isLiveMode={isLiveMode}
-            />
-          </DraggablePanel>
-
-          {/* Layer Controls Panel */}
-          <DraggablePanel id="layer_controls" defaultPinned={false} defaultPosition={{x: 360, y: 530}} className="shadow-lg rounded-xl">
-            <div className="p-6">
-              <div className="flex items-center gap-2 mb-6 text-slate-800 font-bold">
-                <span className="material-symbols-outlined text-[20px]">layers</span>
-                <h4 className="text-[12px] uppercase tracking-[0.15em] text-slate-800 font-bold">LAYER CONTROLS</h4>
+          {/* Main Analysis Panels - Stacked Layout */}
+          <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar pr-2 pb-4">
+            
+            {/* Analyst Panel */}
+            <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-emerald-600">smart_toy</span>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">AI ANALYST</h4>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${isLiveMode ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                  <span className="text-[10px] text-slate-600">{selectedUnit || 'Regional'}</span>
+                </div>
               </div>
-              <div className="space-y-4">
-                <LayerToggle
-                  enabled={!showPreyDensity}
-                  onToggle={() => setShowPreyDensity(false)}
-                  color="#fbbf24"
-                  label="Lion Abundance (XGB)"
-                />
-                <LayerToggle
-                  enabled={showPreyDensity}
-                  onToggle={() => setShowPreyDensity(true)}
-                  color="#16a34a"
-                  label="Ecological Base (Prey)"
-                />
-                <LayerToggle
-                  enabled={showPrediction}
-                  onToggle={() => setShowPrediction((v) => !v)}
-                  color="#f87171"
-                  label="Neural Landscape Projection"
-                />
-                <LayerToggle
-                  enabled={showEncroachment}
-                  onToggle={() => setShowEncroachment((v) => !v)}
-                  color="#f59e0b"
-                  label="Human Encroachment (Nightlight)"
-                />
-                <div className="h-2" />
-                <LayerToggle
-                  enabled={showProtectedAreas}
-                  onToggle={() => setShowProtectedAreas((v) => !v)}
-                  color="#1db954"
-                  label="Protected Wildlife Zones"
-                />
-                <LayerToggle
-                  enabled={showCorridors}
-                  onToggle={() => setShowCorridors((v) => !v)}
-                  color="#8b5cf6"
-                  label="Biological Corridors"
-                />
-                <LayerToggle
-                  enabled={showLandXBoundary}
-                  onToggle={() => setShowLandXBoundary((v) => !v)}
-                  color="#e9c176"
-                  label="Land-X Admin Boundary"
+              <div className="p-4">
+                <AnalystPanel 
+                  selectedUnit={selectedUnit} 
+                  year={selectedYear} 
                 />
               </div>
             </div>
-          </DraggablePanel>
+
+            {/* Ecosystem Indicators Panel */}
+            <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-emerald-600">eco</span>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">ECOSYSTEM INDICATORS</h4>
+                </div>
+                <span className="text-[10px] text-slate-600">{year}</span>
+              </div>
+              <div className="p-4">
+                <EcosystemIndicatorsPanel
+                  selectedUnit={selectedUnit}
+                  year={selectedYear}
+                  isLiveMode={isLiveMode}
+                />
+              </div>
+            </div>
+
+            {/* Layer Controls Panel */}
+            <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-200">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-blue-600">layers</span>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">LAYER CONTROLS</h4>
+                </div>
+              </div>
+              <div className="p-4">
+                <div className="space-y-4">
+                  <LayerToggle
+                    enabled={!showPreyDensity}
+                    onToggle={() => setShowPreyDensity(false)}
+                    color="#fbbf24"
+                    label="Lion Abundance (XGB)"
+                  />
+                  <LayerToggle
+                    enabled={showPreyDensity}
+                    onToggle={() => setShowPreyDensity(true)}
+                    color="#16a34a"
+                    label="Ecological Base (Prey)"
+                  />
+                  <LayerToggle
+                    enabled={showPrediction}
+                    onToggle={() => setShowPrediction((v) => !v)}
+                    color="#f87171"
+                    label="Neural Landscape Projection"
+                  />
+                  <LayerToggle
+                    enabled={showEncroachment}
+                    onToggle={() => setShowEncroachment((v) => !v)}
+                    color="#f59e0b"
+                    label="Human Encroachment (Nightlight)"
+                  />
+                  <div className="h-2" />
+                  <LayerToggle
+                    enabled={showProtectedAreas}
+                    onToggle={() => setShowProtectedAreas((v) => !v)}
+                    color="#1db954"
+                    label="Protected Wildlife Zones"
+                  />
+                  <LayerToggle
+                    enabled={showCorridors}
+                    onToggle={() => setShowCorridors((v) => !v)}
+                    color="#8b5cf6"
+                    label="Biological Corridors"
+                  />
+                  <LayerToggle
+                    enabled={showLandXBoundary}
+                    onToggle={() => setShowLandXBoundary((v) => !v)}
+                    color="#e9c176"
+                    label="Land-X Admin Boundary"
+                  />
+                </div>
+              </div>
+            </div>
 
           {/* Historical Trends panel (Gap 2) */}
           <DraggablePanel id="historical_trends" defaultPinned={false} defaultPosition={{x: 700, y: 16}} className="shadow-lg rounded-xl">
