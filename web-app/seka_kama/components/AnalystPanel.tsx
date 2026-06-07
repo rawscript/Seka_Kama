@@ -299,7 +299,15 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         <div 
           className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-slate-50/50 transition-colors border-b border-slate-200"
           onClick={() => {
+            // Start performance measurement for panel toggle
+            const endMeasurement = startMeasurement('AnalystPanel', 'panel_toggle', {
+              conservationArea: selectedUnit,
+              timePeriod: year.toString(),
+              analysisType: 'ui_interaction'
+            });
+            
             setIsExpanded(!isExpanded);
+            
             // Track panel expansion/collapse
             if (hasConsent()) {
               trackAnalystInteraction('analyst-panel-header', 'click', {
@@ -307,6 +315,9 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
                 insightType: insight ? 'loaded' : 'loading'
               });
             }
+            
+            // End performance measurement
+            endMeasurement();
           }}
         >
           <div className="flex items-center gap-2">
