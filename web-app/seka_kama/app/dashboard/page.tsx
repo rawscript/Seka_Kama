@@ -575,6 +575,7 @@ function DashboardContent() {
                   </div>
                 </div>
               </div>
+            </div>
           </div>
 
           {/* Historical Trends panel (Gap 2) */}
@@ -763,7 +764,6 @@ function DashboardContent() {
           </div>
         )}
 
-      </div>
       </div>
     </ProtectedRoute>
   );
