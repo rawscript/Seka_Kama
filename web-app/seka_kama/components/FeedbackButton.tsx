@@ -147,9 +147,8 @@ export default function FeedbackButton({
       if (hasConsent()) {
         trackAnalystInteraction('feedback-submitted', 'click', {
           panelAction: 'submit_feedback',
-          component,
-          feedbackType: quickFeedback.type,
-          feedbackId
+          insightType: quickFeedback.type,
+          recommendationId: feedbackId
         });
       }
       
@@ -201,8 +200,8 @@ export default function FeedbackButton({
       if (hasConsent()) {
         trackAnalystInteraction('bug-report-submitted', 'click', {
           panelAction: 'submit_bug_report',
-          component,
-          feedbackId
+          insightType: 'bug_report',
+          recommendationId: feedbackId
         });
       }
       
