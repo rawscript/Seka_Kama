@@ -38,6 +38,22 @@ export interface PerformanceMetrics {
   };
 }
 
+// Type definitions for method return values
+export interface DeviceInfo {
+  type: 'desktop' | 'tablet' | 'phone';
+  screenSize: { width: number; height: number };
+  browser: string;
+  os: string;
+}
+
+export interface NetworkConditions {
+  connectionType?: string;
+  effectiveType?: string;
+  rtt?: number;
+  downlink?: number;
+  saveData?: boolean;
+}
+
 export interface PerformanceThreshold {
   component: string;
   action: string;
@@ -347,9 +363,12 @@ class PerformanceMonitor {
     }
     
     // Adjust based on network conditions
-    if (networkConditions.effectiveType === '4g' || networkConditions.effectiveType === '3g') {
+    const effectiveType = networkConditions.effectiveType;
+    const saveData = networkConditions.saveData;
+    
+    if (effectiveType === '4g' || effectiveType === '3g') {
       loadingMethod = 'eager';
-    } else if (networkConditions.effectiveType === '2g' || networkConditions.saveData) {
+    } else if (effectiveType === '2g' || saveData) {
       loadingMethod = 'lazy';
       placeholderType = 'none';
     }
@@ -395,7 +414,7 @@ class PerformanceMonitor {
   /**
    * Get device information
    */
-  private getDeviceInfo(): PerformanceMetrics['deviceInfo'] {
+  private getDeviceInfo(): DeviceInfo {
     if (typeof window === 'undefined') {
       return {
         type: 'desktop',
@@ -441,7 +460,7 @@ class PerformanceMonitor {
   /**
    * Get network conditions
    */
-  private getNetworkConditions(): PerformanceMetrics['networkConditions'] {
+  private getNetworkConditions(): NetworkConditions {
     if (typeof window === 'undefined' || !('connection' in navigator)) {
       return {};
     }
