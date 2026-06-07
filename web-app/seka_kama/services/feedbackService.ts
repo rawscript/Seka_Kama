@@ -45,6 +45,7 @@ export interface UserFeedback {
     pageUrl?: string;
     userRole?: string;
     expertiseLevel?: 'novice' | 'intermediate' | 'expert';
+    moderationNotes?: string;
   };
 }
 
