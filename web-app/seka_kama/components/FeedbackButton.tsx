@@ -253,8 +253,8 @@ export default function FeedbackButton({
       if (hasConsent()) {
         trackAnalystInteraction('feature-request-submitted', 'click', {
           panelAction: 'submit_feature_request',
-          component,
-          feedbackId
+          insightType: 'feature_request',
+          recommendationId: feedbackId
         });
       }
       
@@ -304,8 +304,8 @@ export default function FeedbackButton({
       if (hasConsent()) {
         trackAnalystInteraction('accessibility-issue-submitted', 'click', {
           panelAction: 'submit_accessibility_issue',
-          component,
-          feedbackId
+          insightType: 'accessibility_issue',
+          recommendationId: feedbackId
         });
       }
       
