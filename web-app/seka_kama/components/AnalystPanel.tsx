@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Bot, Shield, Zap, AlertTriangle, ChevronDown, ChevronUp, Download, RefreshCw, Info, BarChart3, TrendingUp, Clock, MapPin } from 'lucide-react';
 import { api } from '@/services/api';
 import { useUsabilityTracking } from '@/services/usabilityService';
+import { usePerformanceMonitoring } from '@/services/performanceService';
 import DraggablePanel from './DraggablePanel';
 
 interface AnalystPanelProps {
@@ -40,6 +41,13 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
     trackNavigation,
     hasConsent
   } = useUsabilityTracking();
+  
+  // Performance monitoring
+  const {
+    startMeasurement,
+    determineLoadingStrategy,
+    getPerformanceStatistics
+  } = usePerformanceMonitoring();
 
   const fetchAnalystData = useCallback(async () => {
     setLoading(true);
@@ -52,6 +60,13 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         insightType: 'initial_load'
       });
     }
+    
+    // Start performance measurement
+    const endMeasurement = startMeasurement('AnalystPanel', 'insight_load', {
+      conservationArea: selectedUnit,
+      timePeriod: year.toString(),
+      analysisType: 'ecological_insights'
+    });
     
     try {
       const [healthResp, narrativeResp] = await Promise.all([
@@ -134,9 +149,11 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         });
       }
     } finally {
+      // Always end performance measurement
+      endMeasurement();
       setLoading(false);
     }
-  }, [selectedUnit, year, hasConsent, trackAnalystInteraction]);
+  }, [selectedUnit, year, hasConsent, trackAnalystInteraction, startMeasurement]);
 
   useEffect(() => {
     fetchAnalystData();
@@ -154,6 +171,13 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         insightType: insight?.key_insights?.length ? 'multi_insight' : 'fallback'
       });
     }
+    
+    // Start performance measurement for report generation
+    const endMeasurement = startMeasurement('AnalystPanel', 'report_generation', {
+      conservationArea: selectedUnit,
+      timePeriod: year.toString(),
+      analysisType: 'full_report'
+    });
     
     setGeneratingReport(true);
     try {
@@ -180,6 +204,8 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         });
       }
     } finally {
+      // Always end performance measurement
+      endMeasurement();
       setGeneratingReport(false);
     }
   };
