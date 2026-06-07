@@ -84,8 +84,7 @@ export default function FeedbackButton({
     if (hasConsent()) {
       trackAnalystInteraction('feedback-button-open', 'click', {
         panelAction: 'open_feedback',
-        component,
-        feedbackType: 'interaction'
+        insightType: 'feedback_interaction'
       });
     }
   };
