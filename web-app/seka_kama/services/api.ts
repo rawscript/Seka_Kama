@@ -101,6 +101,52 @@ export interface ModelMetadata {
   };
 }
 
+export interface EcosystemIndicator {
+  id: string;
+  name: string;
+  value: number;
+  unit: string;
+  trend: 'up' | 'down' | 'stable';
+  change_percentage: number;
+  status: 'optimal' | 'good' | 'warning' | 'critical';
+  description: string;
+  color: string;
+  data_source: string;
+  last_updated: string;
+}
+
+export interface EcosystemIndicatorsResponse {
+  indicators: EcosystemIndicator[];
+  overall_health: 'optimal' | 'good' | 'warning' | 'critical';
+  environmental_context: {
+    season: string;
+    climate_zone: string;
+    conservation_status: string;
+  };
+  generated_at: string;
+}
+
+export interface EnvironmentalConditions {
+  temperature: number;
+  humidity: number;
+  wind_speed: number;
+  precipitation: number;
+  cloud_cover: number;
+  uv_index: number;
+  daylight_hours: number;
+  soil_moisture: number;
+  measurement_location: string;
+  measured_at: string;
+}
+
+export interface EcosystemTrend {
+  indicator_id: string;
+  indicator_name: string;
+  values: Array<{ year: number; value: number }>;
+  average_change_per_year: number;
+  significance: 'high' | 'medium' | 'low';
+}
+
 // ── Core API object ───────────────────────────────────────────────────────────
 
 export const api = {
@@ -287,6 +333,47 @@ export const api = {
     location: { longitude: number; latitude: number };
   }> {
     return this.get(`/explain/cell/${cellId}`);
+  },
+
+  // ── Ecosystem Indicators ──────────────────────────────────────────────────
+
+  async getEcosystemIndicators(managementUnit?: string, year?: number): Promise<EcosystemIndicatorsResponse> {
+    const p = new URLSearchParams();
+    if (managementUnit) p.append('management_unit', managementUnit);
+    if (year) p.append('year', year.toString());
+    const qs = p.toString();
+    return this.get(qs ? `/ecosystem/indicators?${qs}` : '/ecosystem/indicators');
+  },
+
+  async getEnvironmentalConditions(managementUnit?: string): Promise<EnvironmentalConditions> {
+    const p = new URLSearchParams();
+    if (managementUnit) p.append('management_unit', managementUnit);
+    const qs = p.toString();
+    return this.get(qs ? `/ecosystem/environment?${qs}` : '/ecosystem/environment');
+  },
+
+  async getEcosystemTrends(managementUnit?: string, indicatorIds?: string[]): Promise<EcosystemTrend[]> {
+    const p = new URLSearchParams();
+    if (managementUnit) p.append('management_unit', managementUnit);
+    if (indicatorIds) p.append('indicators', indicatorIds.join(','));
+    const qs = p.toString();
+    return this.get(qs ? `/ecosystem/trends?${qs}` : '/ecosystem/trends');
+  },
+
+  async getIndicatorHistory(indicatorId: string, managementUnit?: string): Promise<{
+    indicator_id: string;
+    indicator_name: string;
+    history: Array<{
+      year: number;
+      value: number;
+      status: 'optimal' | 'good' | 'warning' | 'critical';
+      environmental_context?: Record<string, any>;
+    }>;
+  }> {
+    const p = new URLSearchParams();
+    if (managementUnit) p.append('management_unit', managementUnit);
+    const qs = p.toString();
+    return this.get(qs ? `/ecosystem/indicator/${indicatorId}/history?${qs}` : `/ecosystem/indicator/${indicatorId}/history`);
   },
 
   // ── API key management ──────────────────────────────────────────────────
