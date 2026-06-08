@@ -59,6 +59,266 @@ interface EnvironmentalConditions {
   soilMoisture: number;
 }
 
+// Helper components moved outside of main component to avoid re-creation on each render
+
+interface IndicatorCardProps {
+  indicator: EcosystemIndicator;
+  selectedIndicator: string | null;
+  onIndicatorClick: (indicator: EcosystemIndicator) => void;
+}
+
+const IndicatorCard = ({ indicator, selectedIndicator, onIndicatorClick }: IndicatorCardProps) => {
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'optimal': return '#10b981';
+      case 'good': return '#0ea5e9';
+      case 'warning': return '#f59e0b';
+      case 'critical': return '#ef4444';
+      default: return '#6b7280';
+    }
+  };
+
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'up': return <ChevronRight className="w-3 h-3 text-emerald-500" />;
+      case 'down': return <ChevronLeft className="w-3 h-3 text-rose-500" />;
+      default: return <span className="w-3 h-3 text-slate-500">—</span>;
+    }
+  };
+
+  const getTrendText = (trend: string, percentage: number) => {
+    const absPerc = Math.abs(percentage);
+    switch (trend) {
+      case 'up': return `${absPerc.toFixed(1)}% increase`;
+      case 'down': return `${absPerc.toFixed(1)}% decrease`;
+      default: return `${absPerc.toFixed(1)}% change`;
+    }
+  };
+
+  return (
+    <div 
+      className={`p-3 rounded-lg border transition-all cursor-pointer hover:shadow-md ${
+        selectedIndicator === indicator.id 
+          ? 'bg-slate-50 border-slate-300 shadow-sm' 
+          : 'bg-white border-slate-200'
+      }`}
+      onClick={() => onIndicatorClick(indicator)}
+    >
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <div 
+            className="p-1.5 rounded-md"
+            style={{ backgroundColor: `${indicator.color}15` }}
+          >
+            <div style={{ color: indicator.color }}>
+              {indicator.icon}
+            </div>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-slate-800">{indicator.name}</h4>
+            <div className="flex items-center gap-1 mt-0.5">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: getStatusColor(indicator.status) }}
+              />
+              <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: getStatusColor(indicator.status) }}>
+                {indicator.status}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-bold text-slate-900">
+            {typeof indicator.value === 'number' && indicator.value % 1 === 0 
+              ? indicator.value 
+              : indicator.value.toFixed(2)}
+            <span className="text-xs font-normal text-slate-600 ml-0.5">{indicator.unit}</span>
+          </div>
+          <div className="flex items-center justify-end gap-1 mt-0.5">
+            {getTrendIcon(indicator.trend)}
+            <span className={`text-[10px] font-medium ${
+              indicator.trend === 'up' ? 'text-emerald-600' :
+              indicator.trend === 'down' ? 'text-rose-600' : 'text-slate-600'
+            }`}>
+              {getTrendText(indicator.trend, indicator.changePercentage)}
+            </span>
+          </div>
+        </div>
+      </div>
+      <p className="text-[11px] text-slate-600 mt-2 leading-tight">{indicator.description}</p>
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+        <span className="text-[9px] text-slate-500 font-medium">{indicator.dataSource}</span>
+        <span className="text-[8px] text-slate-400">
+          {new Date(indicator.lastUpdated).toLocaleDateString()}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+interface EnvironmentalConditionsCardProps {
+  environmentalConditions: EnvironmentalConditions;
+  selectedUnit?: string;
+}
+
+const EnvironmentalConditionsCard = ({ environmentalConditions, selectedUnit }: EnvironmentalConditionsCardProps) => (
+  <div className="p-4 rounded-lg bg-gradient-to-br from-slate-50 to-blue-50 border border-blue-100">
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <Thermometer className="w-4 h-4 text-blue-600" />
+        <h4 className="text-xs font-bold text-slate-800">Environmental Conditions</h4>
+      </div>
+      <div className="flex items-center gap-2">
+        <Sun className="w-3 h-3 text-amber-500" />
+        <span className="text-[10px] text-slate-600">{environmentalConditions.daylightHours.toFixed(1)}h daylight</span>
+      </div>
+    </div>
+    
+    <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-slate-600">Temperature</span>
+          <span className="text-xs font-bold text-slate-800">{environmentalConditions.temperature}°C</span>
+        </div>
+        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-blue-400 to-red-400"
+            style={{ width: `${Math.min(100, (environmentalConditions.temperature / 40) * 100)}%` }}
+          />
+        </div>
+      </div>
+      
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-slate-600">Humidity</span>
+          <span className="text-xs font-bold text-slate-800">{environmentalConditions.humidity}%</span>
+        </div>
+        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-cyan-400 to-blue-600"
+            style={{ width: `${environmentalConditions.humidity}%` }}
+          />
+        </div>
+      </div>
+      
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-slate-600">Wind Speed</span>
+          <span className="text-xs font-bold text-slate-800">{environmentalConditions.windSpeed}m/s</span>
+        </div>
+        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-slate-400 to-slate-600"
+            style={{ width: `${Math.min(100, (environmentalConditions.windSpeed / 10) * 100)}%` }}
+          />
+        </div>
+      </div>
+      
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-slate-600">Precipitation</span>
+          <span className="text-xs font-bold text-slate-800">{environmentalConditions.precipitation}mm</span>
+        </div>
+        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-blue-200 to-blue-500"
+            style={{ width: `${Math.min(100, (environmentalConditions.precipitation / 20) * 100)}%` }}
+          />
+        </div>
+      </div>
+    </div>
+    
+    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-200">
+      <div className="text-center">
+        <CloudRain className="w-3 h-3 text-slate-600 mx-auto mb-1" />
+        <span className="text-[10px] text-slate-700 font-medium">Cloud Cover</span>
+        <div className="text-xs font-bold text-slate-900">{environmentalConditions.cloudCover}%</div>
+      </div>
+      <div className="text-center">
+        <Sun className="w-3 h-3 text-amber-500 mx-auto mb-1" />
+        <span className="text-[10px] text-slate-700 font-medium">UV Index</span>
+        <div className="text-xs font-bold text-slate-900">{environmentalConditions.uvIndex}</div>
+      </div>
+      <div className="text-center">
+        <Gauge className="w-3 h-3 text-emerald-600 mx-auto mb-1" />
+        <span className="text-[10px] text-slate-700 font-medium">Soil Moisture</span>
+        <div className="text-xs font-bold text-slate-900">{(environmentalConditions.soilMoisture * 100).toFixed(0)}%</div>
+      </div>
+    </div>
+  </div>
+);
+
+interface StatusOverviewProps {
+  indicators: EcosystemIndicator[];
+  selectedUnit?: string;
+}
+
+const StatusOverview = ({ indicators, selectedUnit }: StatusOverviewProps) => (
+  <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200">
+    <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-2">
+        <Activity className="w-4 h-4 text-emerald-700" />
+        <h4 className="text-xs font-bold text-emerald-900">Ecosystem Health Overview</h4>
+      </div>
+      <div className="px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-bold rounded-full">
+        {selectedUnit || 'Regional'}
+      </div>
+    </div>
+    
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <div className="flex items-center gap-1 mb-1">
+          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+          <span className="text-[10px] text-emerald-800 font-medium">Optimal</span>
+        </div>
+        <div className="text-lg font-bold text-emerald-900">
+          {indicators.filter(i => i.status === 'optimal').length}
+          <span className="text-xs font-normal text-emerald-700 ml-1">indicators</span>
+        </div>
+      </div>
+      
+      <div>
+        <div className="flex items-center gap-1 mb-1">
+          <div className="w-2 h-2 rounded-full bg-blue-500" />
+          <span className="text-[10px] text-blue-800 font-medium">Good</span>
+        </div>
+        <div className="text-lg font-bold text-blue-900">
+          {indicators.filter(i => i.status === 'good').length}
+          <span className="text-xs font-normal text-blue-700 ml-1">indicators</span>
+        </div>
+      </div>
+      
+      <div>
+        <div className="flex items-center gap-1 mb-1">
+          <div className="w-2 h-2 rounded-full bg-amber-500" />
+          <span className="text-[10px] text-amber-800 font-medium">Warning</span>
+        </div>
+        <div className="text-lg font-bold text-amber-900">
+          {indicators.filter(i => i.status === 'warning').length}
+          <span className="text-xs font-normal text-amber-700 ml-1">indicators</span>
+        </div>
+      </div>
+      
+      <div>
+        <div className="flex items-center gap-1 mb-1">
+          <div className="w-2 h-2 rounded-full bg-rose-500" />
+          <span className="text-[10px] text-rose-800 font-medium">Critical</span>
+        </div>
+        <div className="text-lg font-bold text-rose-900">
+          {indicators.filter(i => i.status === 'critical').length}
+          <span className="text-xs font-normal text-rose-700 ml-1">indicators</span>
+        </div>
+      </div>
+    </div>
+    
+    <div className="mt-3 pt-2 border-t border-emerald-200">
+      <p className="text-[11px] text-emerald-800 text-center">
+        Overall ecosystem health: <span className="font-bold">Good</span>
+      </p>
+    </div>
+  </div>
+);
+
 export default function EcosystemIndicatorsPanel({ 
   selectedUnit, 
   year, 
@@ -373,218 +633,7 @@ export default function EcosystemIndicatorsPanel({
     return () => clearInterval(interval);
   }, [selectedUnit, year]);
 
-  const IndicatorCard = ({ indicator }: { indicator: EcosystemIndicator }) => (
-    <div 
-      className={`p-3 rounded-lg border transition-all cursor-pointer hover:shadow-md ${
-        selectedIndicator === indicator.id 
-          ? 'bg-slate-50 border-slate-300 shadow-sm' 
-          : 'bg-white border-slate-200'
-      }`}
-      onClick={() => handleIndicatorClick(indicator)}
-    >
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div 
-            className="p-1.5 rounded-md"
-            style={{ backgroundColor: `${indicator.color}15` }}
-          >
-            <div style={{ color: indicator.color }}>
-              {indicator.icon}
-            </div>
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-slate-800">{indicator.name}</h4>
-            <div className="flex items-center gap-1 mt-0.5">
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: getStatusColor(indicator.status) }}
-              />
-              <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: getStatusColor(indicator.status) }}>
-                {indicator.status}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-lg font-bold text-slate-900">
-            {typeof indicator.value === 'number' && indicator.value % 1 === 0 
-              ? indicator.value 
-              : indicator.value.toFixed(2)}
-            <span className="text-xs font-normal text-slate-600 ml-0.5">{indicator.unit}</span>
-          </div>
-          <div className="flex items-center justify-end gap-1 mt-0.5">
-            {getTrendIcon(indicator.trend)}
-            <span className={`text-[10px] font-medium ${
-              indicator.trend === 'up' ? 'text-emerald-600' :
-              indicator.trend === 'down' ? 'text-rose-600' : 'text-slate-600'
-            }`}>
-              {getTrendText(indicator.trend, indicator.changePercentage)}
-            </span>
-          </div>
-        </div>
-      </div>
-      <p className="text-[11px] text-slate-600 mt-2 leading-tight">{indicator.description}</p>
-      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
-        <span className="text-[9px] text-slate-500 font-medium">{indicator.dataSource}</span>
-        <span className="text-[8px] text-slate-400">
-          {new Date(indicator.lastUpdated).toLocaleDateString()}
-        </span>
-      </div>
-    </div>
-  );
 
-  const EnvironmentalConditionsCard = () => (
-    <div className="p-4 rounded-lg bg-gradient-to-br from-slate-50 to-blue-50 border border-blue-100">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Thermometer className="w-4 h-4 text-blue-600" />
-          <h4 className="text-xs font-bold text-slate-800">Environmental Conditions</h4>
-        </div>
-        <div className="flex items-center gap-2">
-          <Sun className="w-3 h-3 text-amber-500" />
-          <span className="text-[10px] text-slate-600">{environmentalConditions.daylightHours.toFixed(1)}h daylight</span>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-600">Temperature</span>
-            <span className="text-xs font-bold text-slate-800">{environmentalConditions.temperature}°C</span>
-          </div>
-          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-blue-400 to-red-400"
-              style={{ width: `${Math.min(100, (environmentalConditions.temperature / 40) * 100)}%` }}
-            />
-          </div>
-        </div>
-        
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-600">Humidity</span>
-            <span className="text-xs font-bold text-slate-800">{environmentalConditions.humidity}%</span>
-          </div>
-          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-cyan-400 to-blue-600"
-              style={{ width: `${environmentalConditions.humidity}%` }}
-            />
-          </div>
-        </div>
-        
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-600">Wind Speed</span>
-            <span className="text-xs font-bold text-slate-800">{environmentalConditions.windSpeed}m/s</span>
-          </div>
-          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-slate-400 to-slate-600"
-              style={{ width: `${Math.min(100, (environmentalConditions.windSpeed / 10) * 100)}%` }}
-            />
-          </div>
-        </div>
-        
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-600">Precipitation</span>
-            <span className="text-xs font-bold text-slate-800">{environmentalConditions.precipitation}mm</span>
-          </div>
-          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-blue-200 to-blue-500"
-              style={{ width: `${Math.min(100, (environmentalConditions.precipitation / 20) * 100)}%` }}
-            />
-          </div>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-200">
-        <div className="text-center">
-          <CloudRain className="w-3 h-3 text-slate-600 mx-auto mb-1" />
-          <span className="text-[10px] text-slate-700 font-medium">Cloud Cover</span>
-          <div className="text-xs font-bold text-slate-900">{environmentalConditions.cloudCover}%</div>
-        </div>
-        <div className="text-center">
-          <Sun className="w-3 h-3 text-amber-500 mx-auto mb-1" />
-          <span className="text-[10px] text-slate-700 font-medium">UV Index</span>
-          <div className="text-xs font-bold text-slate-900">{environmentalConditions.uvIndex}</div>
-        </div>
-        <div className="text-center">
-          <Gauge className="w-3 h-3 text-emerald-600 mx-auto mb-1" />
-          <span className="text-[10px] text-slate-700 font-medium">Soil Moisture</span>
-          <div className="text-xs font-bold text-slate-900">{(environmentalConditions.soilMoisture * 100).toFixed(0)}%</div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const StatusOverview = () => (
-    <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-emerald-700" />
-          <h4 className="text-xs font-bold text-emerald-900">Ecosystem Health Overview</h4>
-        </div>
-        <div className="px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-bold rounded-full">
-          {selectedUnit || 'Regional'}
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <div className="flex items-center gap-1 mb-1">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-[10px] text-emerald-800 font-medium">Optimal</span>
-          </div>
-          <div className="text-lg font-bold text-emerald-900">
-            {indicators.filter(i => i.status === 'optimal').length}
-            <span className="text-xs font-normal text-emerald-700 ml-1">indicators</span>
-          </div>
-        </div>
-        
-        <div>
-          <div className="flex items-center gap-1 mb-1">
-            <div className="w-2 h-2 rounded-full bg-blue-500" />
-            <span className="text-[10px] text-blue-800 font-medium">Good</span>
-          </div>
-          <div className="text-lg font-bold text-blue-900">
-            {indicators.filter(i => i.status === 'good').length}
-            <span className="text-xs font-normal text-blue-700 ml-1">indicators</span>
-          </div>
-        </div>
-        
-        <div>
-          <div className="flex items-center gap-1 mb-1">
-            <div className="w-2 h-2 rounded-full bg-amber-500" />
-            <span className="text-[10px] text-amber-800 font-medium">Warning</span>
-          </div>
-          <div className="text-lg font-bold text-amber-900">
-            {indicators.filter(i => i.status === 'warning').length}
-            <span className="text-xs font-normal text-amber-700 ml-1">indicators</span>
-          </div>
-        </div>
-        
-        <div>
-          <div className="flex items-center gap-1 mb-1">
-            <div className="w-2 h-2 rounded-full bg-rose-500" />
-            <span className="text-[10px] text-rose-800 font-medium">Critical</span>
-          </div>
-          <div className="text-lg font-bold text-rose-900">
-            {indicators.filter(i => i.status === 'critical').length}
-            <span className="text-xs font-normal text-rose-700 ml-1">indicators</span>
-          </div>
-        </div>
-      </div>
-      
-      <div className="mt-3 pt-2 border-t border-emerald-200">
-        <p className="text-[11px] text-emerald-800 text-center">
-          Overall ecosystem health: <span className="font-bold">Good</span>
-        </p>
-      </div>
-    </div>
-  );
 
   return (
     <DraggablePanel 
@@ -682,7 +731,7 @@ export default function EcosystemIndicatorsPanel({
               <>
                 {activeView === 'indicators' && (
                   <div className="space-y-3">
-                    <StatusOverview />
+                    <StatusOverview indicators={indicators} selectedUnit={selectedUnit} />
                     
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -694,7 +743,12 @@ export default function EcosystemIndicatorsPanel({
                       
                       <div className="grid grid-cols-1 gap-2">
                         {indicators.map((indicator) => (
-                          <IndicatorCard key={indicator.id} indicator={indicator} />
+                          <IndicatorCard 
+                            key={indicator.id} 
+                            indicator={indicator} 
+                            selectedIndicator={selectedIndicator}
+                            onIndicatorClick={handleIndicatorClick}
+                          />
                         ))}
                       </div>
                     </div>
@@ -712,7 +766,10 @@ export default function EcosystemIndicatorsPanel({
                 
                 {activeView === 'environment' && (
                   <div className="space-y-4">
-                    <EnvironmentalConditionsCard />
+                    <EnvironmentalConditionsCard 
+                      environmentalConditions={environmentalConditions} 
+                      selectedUnit={selectedUnit} 
+                    />
                     
                     <div className="p-3 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
                       <div className="flex items-center justify-between mb-2">
