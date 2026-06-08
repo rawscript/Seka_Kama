@@ -673,8 +673,9 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* ── Zoom + Layer toggle ── */}
+        {/* ── Left-side controls: Zoom, Layer toggle, and Coordinates ── */}
         <div className="absolute bottom-8 left-8 flex flex-col gap-4 z-20">
+          {/* Zoom controls */}
           <div className="map-overlay-card p-2 flex flex-col gap-2 rounded-lg">
             <button onClick={handleZoomIn} className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
               <span className="material-symbols-outlined text-[20px]">add</span>
@@ -684,6 +685,8 @@ function DashboardContent() {
               <span className="material-symbols-outlined text-[20px]">remove</span>
             </button>
           </div>
+          
+          {/* Map layer selection */}
           <div
             onClick={() => setActiveLayer((l) => l === 'SATELLITE (TRUE COLOR)' ? 'VECTOR (TOPOGRAPHIC)' : 'SATELLITE (TRUE COLOR)')}
             className="map-overlay-card px-4 py-2 flex items-center gap-4 rounded-lg cursor-pointer hover:border-primary transition-colors"
@@ -692,18 +695,16 @@ function DashboardContent() {
             <div className="h-4 w-[1px] bg-outline-variant" />
             <span className="text-[11px] font-bold text-on-surface uppercase tracking-widest">{activeLayer}</span>
           </div>
-        </div>
-
-        {/* ── Coordinate display ── */}
-        <div className="absolute bottom-8 right-8 z-20">
-          <div className="map-overlay-card px-4 py-2 flex gap-8 rounded-lg shadow-sm">
-            <div className="flex flex-col min-w-[80px]">
+          
+          {/* Coordinate display - moved to left side */}
+          <div className="map-overlay-card px-4 py-2 flex gap-6 rounded-lg shadow-sm">
+            <div className="flex flex-col min-w-[70px]">
               <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">Latitude</span>
               <span className="text-[12px] font-bold text-on-surface tracking-tight">
                 {Math.abs(currentCoords.lat).toFixed(4)}° {currentCoords.lat >= 0 ? 'N' : 'S'}
               </span>
             </div>
-            <div className="flex flex-col min-w-[80px]">
+            <div className="flex flex-col min-w-[70px]">
               <span className="text-[9px] font-bold text-outline uppercase tracking-widest leading-normal">Longitude</span>
               <span className="text-[12px] font-bold text-on-surface tracking-tight">
                 {Math.abs(currentCoords.lng).toFixed(4)}° {currentCoords.lng >= 0 ? 'E' : 'W'}

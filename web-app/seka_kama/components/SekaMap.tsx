@@ -600,9 +600,9 @@ function SekaMapContent({
         </div>
       )}
 
-      {/* Regional Overview Control */}
+      {/* Regional Overview Control - moved to left side below status area */}
       <div 
-        className="absolute top-16 right-4 z-30 flex flex-col gap-2"
+        className="absolute top-24 left-8 z-30 flex flex-col gap-2"
         style={{ pointerEvents: 'auto' }}
       >
         {/* Regional Overview Button */}
