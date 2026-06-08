@@ -41,9 +41,6 @@ class AuditService:
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to write audit log: {str(e)}")
 
-audit_service = AuditService()
-
-    
     @staticmethod
     def log_contact_submission(
         db,
@@ -71,3 +68,6 @@ audit_service = AuditService()
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to write contact submission audit log: {str(e)}")
+
+audit_service = AuditService()
+
