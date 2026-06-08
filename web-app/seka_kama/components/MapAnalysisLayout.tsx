@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   LayoutGrid, 
   Grid3x3, 
   Sidebar,
-  PanelLeft,
   PanelRight,
   ChevronLeft,
   ChevronRight,
@@ -47,7 +46,6 @@ export default function MapAnalysisLayout({
     onLayoutChange?.(mode);
   };
 
-  // Grid layout - panels arranged in a clean grid
   const GridLayout = () => (
     <div className="fixed inset-0 z-50 pointer-events-none p-4">
       <div className="h-full w-full grid grid-cols-3 grid-rows-3 gap-4 pointer-events-auto">

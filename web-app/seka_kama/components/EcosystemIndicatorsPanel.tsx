@@ -568,33 +568,6 @@ export default function EcosystemIndicatorsPanel({
     }
   };
 
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'optimal': return '#10b981';
-      case 'good': return '#0ea5e9';
-      case 'warning': return '#f59e0b';
-      case 'critical': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
-
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'up': return <ChevronRight className="w-3 h-3 text-emerald-500" />;
-      case 'down': return <ChevronLeft className="w-3 h-3 text-rose-500" />;
-      default: return <span className="w-3 h-3 text-slate-500">—</span>;
-    }
-  };
-
-  const getTrendText = (trend: string, percentage: number) => {
-    const absPerc = Math.abs(percentage);
-    switch (trend) {
-      case 'up': return `${absPerc.toFixed(1)}% increase`;
-      case 'down': return `${absPerc.toFixed(1)}% decrease`;
-      default: return `${absPerc.toFixed(1)}% change`;
-    }
-  };
-
   const handleRefresh = () => {
     if (hasConsent()) {
       trackAnalystInteraction('ecosystem-panel-refresh', 'click', {
