@@ -944,7 +944,8 @@ async def submit_contact_form(
     db: SupabaseService = Depends(get_db)
 ):
     """
-    Submit contact form. This sends an email to jasemwaura@gmail.com using SendGrid (free tier).
+    Submit contact form. This sends an email to jasemwaura@gmail.com using Gmail SMTP (default).
+    Requires: Enable 2FA in Google account and generate App Password.
     """
     try:
         submission_data = {
@@ -967,15 +968,10 @@ async def submit_contact_form(
         except Exception as db_error:
             logger.warning(f"Could not insert contact submission to DB: {db_error}")
         
-        # Try to send email using SendGrid (free tier: 100 emails/day)
+        # Try to send email using Gmail SMTP (Default)
         email_sent = False
-        try:
-            from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail
-            
-            # Create email content
-            subject = f"Seka Kama Contact Form: {contact_data.name}"
-            email_body = f"""New Contact Form Submission
+        subject = f"Seka Kama Contact Form: {contact_data.name}"
+        email_body = f"""New Contact Form Submission
 
 Name: {contact_data.name}
 Organization: {contact_data.organization or 'Not specified'}
@@ -987,64 +983,64 @@ Message:
 Submitted at: {datetime.now(timezone.utc).isoformat()}
 ---
 This message was sent via Seka Kama contact form."""
+        
+        # First try: Gmail SMTP (Default)
+        try:
+            smtp_host = os.environ.get("SMTP_HOST")
+            smtp_port = os.environ.get("SMTP_PORT")
+            smtp_user = os.environ.get("SMTP_USER")
+            smtp_password = os.environ.get("SMTP_PASSWORD")
             
-            sendgrid_api_key = os.environ.get("SENDGRID_API_KEY")
-            
-            if sendgrid_api_key:
-                message = Mail(
-                    from_email=os.environ.get("EMAIL_FROM", "noreply@seka-kama.io"),
-                    to_emails="jasemwaura@gmail.com",
-                    subject=subject,
-                    plain_text_content=email_body
-                )
+            if all([smtp_host, smtp_port, smtp_user, smtp_password]):
+                import smtplib
+                from email.mime.text import MIMEText
                 
-                sg = SendGridAPIClient(sendgrid_api_key)
-                response = sg.send(message)
-                logger.info(f"Email sent via SendGrid: {response.status_code}")
+                msg = MIMEText(email_body)
+                msg['From'] = os.environ.get("EMAIL_FROM", "noreply@seka-kama.io")
+                msg['To'] = "jasemwaura@gmail.com"
+                msg['Subject'] = subject
+                
+                with smtplib.SMTP(smtp_host, int(smtp_port)) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_password)
+                    server.send_message(msg)
+                
+                logger.info("Email sent via Gmail SMTP")
                 email_sent = True
-                
-                # Update submission status to email_sent
                 submission_data["status"] = "email_sent"
+                
                 if 'id' in submission_data:
                     try:
                         db.client.table("contact_submissions").update({"status": "email_sent"}).eq("id", submission_data["id"]).execute()
                     except:
                         pass
             else:
-                logger.warning("SENDGRID_API_KEY not set. Email not sent.")
+                logger.warning("Gmail SMTP not fully configured. Check SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD")
                 submission_data["status"] = "pending_email"
                 
-        except ImportError:
-            logger.warning("SendGrid not installed. Run: pip install sendgrid==6.11.0")
-            submission_data["status"] = "pending_email"
-        except Exception as email_error:
-            logger.error(f"Failed to send email: {email_error}")
+        except Exception as smtp_error:
+            logger.error(f"Gmail SMTP failed: {smtp_error}")
             submission_data["status"] = "email_failed"
-            # Don't fail the whole request if email fails
         
-        # Fallback 1: If SendGrid fails, try SMTP as backup
+        # Fallback 1: If Gmail SMTP fails, try SendGrid
         if not email_sent:
             try:
-                smtp_host = os.environ.get("SMTP_HOST")
-                smtp_port = os.environ.get("SMTP_PORT")
-                smtp_user = os.environ.get("SMTP_USER")
-                smtp_password = os.environ.get("SMTP_PASSWORD")
+                from sendgrid import SendGridAPIClient
+                from sendgrid.helpers.mail import Mail
                 
-                if all([smtp_host, smtp_port, smtp_user, smtp_password]):
-                    import smtplib
-                    from email.mime.text import MIMEText
+                sendgrid_api_key = os.environ.get("SENDGRID_API_KEY")
+                
+                if sendgrid_api_key:
+                    message = Mail(
+                        from_email=os.environ.get("EMAIL_FROM", "noreply@seka-kama.io"),
+                        to_emails="jasemwaura@gmail.com",
+                        subject=subject,
+                        plain_text_content=email_body
+                    )
                     
-                    msg = MIMEText(email_body)
-                    msg['From'] = os.environ.get("EMAIL_FROM", "noreply@seka-kama.io")
-                    msg['To'] = "jasemwaura@gmail.com"
-                    msg['Subject'] = subject
-                    
-                    with smtplib.SMTP(smtp_host, int(smtp_port)) as server:
-                        server.starttls()
-                        server.login(smtp_user, smtp_password)
-                        server.send_message(msg)
-                    
-                    logger.info("Email sent via SMTP fallback")
+                    sg = SendGridAPIClient(sendgrid_api_key)
+                    response = sg.send(message)
+                    logger.info(f"Email sent via SendGrid fallback: {response.status_code}")
                     email_sent = True
                     submission_data["status"] = "email_sent"
                     
@@ -1053,8 +1049,13 @@ This message was sent via Seka Kama contact form."""
                             db.client.table("contact_submissions").update({"status": "email_sent"}).eq("id", submission_data["id"]).execute()
                         except:
                             pass
-            except Exception as smtp_error:
-                logger.error(f"SMTP fallback also failed: {smtp_error}")
+                else:
+                    logger.warning("SENDGRID_API_KEY not set.")
+                    
+            except ImportError:
+                logger.warning("SendGrid not installed. Run: pip install sendgrid==6.11.0")
+            except Exception as sendgrid_error:
+                logger.error(f"SendGrid fallback failed: {sendgrid_error}")
                 
         # Fallback 2: If both email methods fail, try webhook (for services like n8n, Zapier, Make)
         if not email_sent:

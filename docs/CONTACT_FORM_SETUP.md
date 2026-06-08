@@ -1,15 +1,41 @@
 # Contact Form Email Forwarding Setup
 
-The Seka Kama contact form now supports multiple email forwarding options. Choose one of these free, fail-proof solutions:
+The Seka Kama contact form now supports multiple email forwarding options. **Gmail SMTP is configured as default**. Choose one of these free, fail-proof solutions:
 
-## Option 1: SendGrid (Recommended - 100 emails/day free)
+## Option 1: Gmail SMTP (Default)
+
+**Important:** You MUST enable 2-Step Verification in your Google account first!
+
+### Setup Steps:
+1. **Enable 2-Step Verification**:
+   - Go to [Google Account Security](https://myaccount.google.com/security)
+   - Click **2-Step Verification** and enable it
+
+2. **Generate App Password**:
+   - Go back to [Google Account Security](https://myaccount.google.com/security)
+   - Click **App passwords**
+   - Select **Mail** → **Other (Custom name)**
+   - Name it: `Seka Kama Contact Form`
+   - Click **Generate**
+   - You'll get a **16-character password** (like: `abcd efgh ijkl mnop`)
+
+3. **Configure Environment** (use WITHOUT spaces):
+   ```bash
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASSWORD=abcdefghijklmnop  # ← NO SPACES!
+   EMAIL_FROM=noreply@seka-kama.io
+   ```
+
+## Option 2: SendGrid (Alternative - 100 emails/day free)
 
 1. Sign up for a free SendGrid account: https://signup.sendgrid.com/
 2. Create an API key in SendGrid dashboard
 3. Add to your environment variables:
-   ```
+   ```bash
    SENDGRID_API_KEY=your_sendgrid_api_key_here
-   EMAIL_FROM=noreply@seka-kama.io
+   # Comment out Gmail SMTP settings above
    ```
 
 ## Option 2: SMTP (Gmail/Outlook/Other)
