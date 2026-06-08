@@ -111,9 +111,25 @@ export default function ContactPage() {
             {isSubmitted ? (
               <div className="text-center py-12">
                 <div className="mb-6">
-                  {/* Lion GIF - using a placeholder, you can replace with actual lion GIF URL */}
-                  <div className="w-48 h-48 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-amber-300 rounded-full flex items-center justify-center">
-                    <div className="text-6xl">🦁</div>
+                  {/* Lion GIF - free animated lion from GIPHY */}
+                  <div className="w-48 h-48 mx-auto mb-4 overflow-hidden rounded-full border-4 border-amber-200">
+                    <img 
+                      src="https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" 
+                      alt="Lion celebrating" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to emoji if GIF fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const fallback = document.createElement('div');
+                          fallback.className = 'w-full h-full bg-gradient-to-br from-amber-100 to-amber-300 flex items-center justify-center text-6xl';
+                          fallback.textContent = '🦁';
+                          parent.appendChild(fallback);
+                        }
+                      }}
+                    />
                   </div>
                   <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
                 </div>

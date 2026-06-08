@@ -920,6 +920,7 @@ async def health_check(
 # CONTACT FORM ENDPOINT
 # ============================================================
 
+import os
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
@@ -943,11 +944,9 @@ async def submit_contact_form(
     db: SupabaseService = Depends(get_db)
 ):
     """
-    Submit contact form. In production, this would send an email to jasemwaura@gmail.com.
-    For now, it logs the submission to the database.
+    Submit contact form. This sends an email to jasemwaura@gmail.com using SendGrid (free tier).
     """
     try:
-        # Log the contact submission to database
         submission_data = {
             "name": contact_data.name,
             "organization": contact_data.organization or "",
@@ -958,48 +957,135 @@ async def submit_contact_form(
             "status": "received"
         }
         
-        # Insert into contact_submissions table if it exists, otherwise just log
+        # Insert into contact_submissions table
         try:
             result = db.client.table("contact_submissions").insert(submission_data).execute()
-            logger.info(f"Contact form submitted successfully: {contact_data.name}")
+            logger.info(f"Contact form submitted: {contact_data.name}")
+            # Get the inserted ID for updating status later
+            if result.data and len(result.data) > 0:
+                submission_data["id"] = result.data[0]["id"]
         except Exception as db_error:
-            # Table might not exist, just log to console
             logger.warning(f"Could not insert contact submission to DB: {db_error}")
-            logger.info(f"Contact form submission (not saved to DB): {submission_data}")
         
-        # In production, you would add email sending logic here
-        # Example using SMTP (uncomment and configure):
-        # import smtplib
-        # from email.mime.text import MIMEText
-        # from email.mime.multipart import MIMEMultipart
-        # 
-        # msg = MIMEMultipart()
-        # msg['From'] = 'noreply@seka-kama.io'
-        # msg['To'] = 'jasemwaura@gmail.com'
-        # msg['Subject'] = f'Seka Kama Contact: {contact_data.name}'
-        # 
-        # body = f"""
-        # Name: {contact_data.name}
-        # Organization: {contact_data.organization or 'Not specified'}
-        # Email: {contact_data.email or 'Not provided'}
-        # 
-        # Message:
-        # {contact_data.message}
-        # 
-        # Submitted at: {datetime.now(timezone.utc).isoformat()}
-        # """
-        # msg.attach(MIMEText(body, 'plain'))
-        # 
-        # # Configure SMTP based on your .env settings
-        # smtp_server = request.app.state.config.SMTP_HOST
-        # smtp_port = request.app.state.config.SMTP_PORT
-        # smtp_user = request.app.state.config.SMTP_USER
-        # smtp_password = request.app.state.config.SMTP_PASSWORD
-        # 
-        # with smtplib.SMTP(smtp_server, smtp_port) as server:
-        #     server.starttls()
-        #     server.login(smtp_user, smtp_password)
-        #     server.send_message(msg)
+        # Try to send email using SendGrid (free tier: 100 emails/day)
+        email_sent = False
+        try:
+            from sendgrid import SendGridAPIClient
+            from sendgrid.helpers.mail import Mail
+            
+            # Create email content
+            subject = f"Seka Kama Contact Form: {contact_data.name}"
+            email_body = f"""New Contact Form Submission
+
+Name: {contact_data.name}
+Organization: {contact_data.organization or 'Not specified'}
+Email: {contact_data.email or 'Not provided'}
+
+Message:
+{contact_data.message}
+
+Submitted at: {datetime.now(timezone.utc).isoformat()}
+---
+This message was sent via Seka Kama contact form."""
+            
+            sendgrid_api_key = os.environ.get("SENDGRID_API_KEY")
+            
+            if sendgrid_api_key:
+                message = Mail(
+                    from_email=os.environ.get("EMAIL_FROM", "noreply@seka-kama.io"),
+                    to_emails="jasemwaura@gmail.com",
+                    subject=subject,
+                    plain_text_content=email_body
+                )
+                
+                sg = SendGridAPIClient(sendgrid_api_key)
+                response = sg.send(message)
+                logger.info(f"Email sent via SendGrid: {response.status_code}")
+                email_sent = True
+                
+                # Update submission status to email_sent
+                submission_data["status"] = "email_sent"
+                if 'id' in submission_data:
+                    try:
+                        db.client.table("contact_submissions").update({"status": "email_sent"}).eq("id", submission_data["id"]).execute()
+                    except:
+                        pass
+            else:
+                logger.warning("SENDGRID_API_KEY not set. Email not sent.")
+                submission_data["status"] = "pending_email"
+                
+        except ImportError:
+            logger.warning("SendGrid not installed. Run: pip install sendgrid==6.11.0")
+            submission_data["status"] = "pending_email"
+        except Exception as email_error:
+            logger.error(f"Failed to send email: {email_error}")
+            submission_data["status"] = "email_failed"
+            # Don't fail the whole request if email fails
+        
+        # Fallback 1: If SendGrid fails, try SMTP as backup
+        if not email_sent:
+            try:
+                smtp_host = os.environ.get("SMTP_HOST")
+                smtp_port = os.environ.get("SMTP_PORT")
+                smtp_user = os.environ.get("SMTP_USER")
+                smtp_password = os.environ.get("SMTP_PASSWORD")
+                
+                if all([smtp_host, smtp_port, smtp_user, smtp_password]):
+                    import smtplib
+                    from email.mime.text import MIMEText
+                    
+                    msg = MIMEText(email_body)
+                    msg['From'] = os.environ.get("EMAIL_FROM", "noreply@seka-kama.io")
+                    msg['To'] = "jasemwaura@gmail.com"
+                    msg['Subject'] = subject
+                    
+                    with smtplib.SMTP(smtp_host, int(smtp_port)) as server:
+                        server.starttls()
+                        server.login(smtp_user, smtp_password)
+                        server.send_message(msg)
+                    
+                    logger.info("Email sent via SMTP fallback")
+                    email_sent = True
+                    submission_data["status"] = "email_sent"
+                    
+                    if 'id' in submission_data:
+                        try:
+                            db.client.table("contact_submissions").update({"status": "email_sent"}).eq("id", submission_data["id"]).execute()
+                        except:
+                            pass
+            except Exception as smtp_error:
+                logger.error(f"SMTP fallback also failed: {smtp_error}")
+                
+        # Fallback 2: If both email methods fail, try webhook (for services like n8n, Zapier, Make)
+        if not email_sent:
+            try:
+                webhook_url = os.environ.get("CONTACT_WEBHOOK_URL")
+                if webhook_url:
+                    import httpx
+                    webhook_data = {
+                        "name": contact_data.name,
+                        "organization": contact_data.organization or "",
+                        "email": contact_data.email or "",
+                        "message": contact_data.message,
+                        "submitted_at": datetime.now(timezone.utc).isoformat(),
+                        "forward_to": "jasemwaura@gmail.com"
+                    }
+                    
+                    async with httpx.AsyncClient() as client:
+                        response = await client.post(webhook_url, json=webhook_data, timeout=10.0)
+                        
+                    if response.status_code < 300:
+                        logger.info(f"Contact form forwarded via webhook: {response.status_code}")
+                        submission_data["status"] = "webhook_sent"
+                        email_sent = True
+                        
+                        if 'id' in submission_data:
+                            try:
+                                db.client.table("contact_submissions").update({"status": "webhook_sent"}).eq("id", submission_data["id"]).execute()
+                            except:
+                                pass
+            except Exception as webhook_error:
+                logger.error(f"Webhook fallback failed: {webhook_error}")
         
         # Audit log
         audit_service.log_contact_submission(
@@ -1009,9 +1095,14 @@ async def submit_contact_form(
             organization=contact_data.organization or ""
         )
         
+        if email_sent:
+            message = "Your message has been sent to jasemwaura@gmail.com"
+        else:
+            message = "Your message has been received and logged. We'll forward it to jasemwaura@gmail.com shortly."
+        
         return ContactFormResponse(
             success=True,
-            message="Your message has been received and will be forwarded to jasemwaura@gmail.com",
+            message=message,
             forwarded_to="jasemwaura@gmail.com"
         )
         
