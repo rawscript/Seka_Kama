@@ -446,8 +446,7 @@ export default function MapAnalysisLayout({
   switch (layoutMode) {
     case 'sidebar':
       return (
-        <SidebarLayout 
-          children={children}
+        <SidebarLayout
           selectedUnit={selectedUnit}
           year={year}
           isLiveMode={isLiveMode}
@@ -455,7 +454,9 @@ export default function MapAnalysisLayout({
           onLayoutChange={handleLayoutChange}
           onToggleExpanded={() => setIsExpanded(!isExpanded)}
           onTabChange={setActiveTab}
-        />
+        >
+          {children}
+        </SidebarLayout>
       );
     case 'compact':
       return (
@@ -470,8 +471,7 @@ export default function MapAnalysisLayout({
     case 'grid':
     default:
       return (
-        <GridLayout 
-          children={children}
+        <GridLayout
           selectedUnit={selectedUnit}
           year={year}
           isLiveMode={isLiveMode}
@@ -479,7 +479,9 @@ export default function MapAnalysisLayout({
           isExpanded={isExpanded}
           onLayoutChange={handleLayoutChange}
           onToggleExpanded={() => setIsExpanded(!isExpanded)}
-        />
+        >
+          {children}
+        </GridLayout>
       );
   }
 }
