@@ -27,6 +27,71 @@ interface AnalystInsight {
   };
 }
 
+// Helper components moved outside of main component to avoid re-creation on each render
+
+const LoadingSkeleton = () => (
+  <div className="space-y-4 animate-pulse">
+    <div className="h-3 w-3/4 bg-slate-200 rounded" />
+    <div className="h-3 w-full bg-slate-200 rounded" />
+    <div className="h-3 w-5/6 bg-slate-200 rounded" />
+    <div className="grid grid-cols-2 gap-3 mt-4">
+      <div className="h-16 bg-slate-100 rounded" />
+      <div className="h-16 bg-slate-100 rounded" />
+    </div>
+  </div>
+);
+
+interface InsightMetricsProps {
+  metrics?: AnalystInsight['ecological_metrics'];
+}
+
+const InsightMetrics = ({ metrics }: InsightMetricsProps) => {
+  if (!metrics) return null;
+  
+  const metricItems = [
+    { label: 'Habitat Suitability', value: `${(metrics.habitat_suitability * 100).toFixed(0)}%`, icon: <MapPin className="w-3 h-3" />, color: 'text-emerald-600' },
+    { label: 'Threat Level', value: `${(metrics.threat_level * 100).toFixed(0)}%`, icon: <AlertTriangle className="w-3 h-3" />, color: metrics.threat_level > 0.1 ? 'text-amber-600' : 'text-slate-600' },
+    { label: 'Connectivity', value: `${(metrics.connectivity_score * 100).toFixed(0)}%`, icon: <TrendingUp className="w-3 h-3" />, color: 'text-blue-600' },
+    { label: 'Rainfall', value: `${metrics.rainfall_mm}mm`, icon: <BarChart3 className="w-3 h-3" />, color: 'text-cyan-600' },
+    { label: 'Vegetation', value: `${metrics.vegetation_cover}%`, icon: <Shield className="w-3 h-3" />, color: 'text-green-600' },
+  ];
+
+  return (
+    <div className="grid grid-cols-5 gap-2 mb-4">
+      {metricItems.map((metric, index) => (
+        <div key={index} className="text-center">
+          <div className={`p-1 rounded-md bg-slate-50 mb-1 ${metric.color}`}>
+            {metric.icon}
+          </div>
+          <div className="text-[8px] font-bold text-slate-700">{metric.value}</div>
+          <div className="text-[6px] text-slate-500 truncate">{metric.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+interface KeyInsightsProps {
+  insights: string[];
+}
+
+const KeyInsights = ({ insights }: KeyInsightsProps) => (
+  <div className="space-y-2 mb-4">
+    <div className="flex items-center gap-1 mb-1">
+      <Info className="w-3 h-3 text-blue-500" />
+      <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Key Insights</span>
+    </div>
+    <ul className="space-y-1">
+      {insights.map((insight, index) => (
+        <li key={index} className="flex items-start gap-1">
+          <div className="w-1 h-1 rounded-full bg-blue-500 mt-1 flex-shrink-0" />
+          <span className="text-[10px] text-slate-600 leading-tight">{insight}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
 export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) {
   const [loading, setLoading] = useState(false);
   const [insight, setInsight] = useState<AnalystInsight | null>(null);
@@ -231,60 +296,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
     return `${Math.floor(seconds / 86400)} days ago`;
   };
 
-  const LoadingSkeleton = () => (
-    <div className="space-y-4 animate-pulse">
-      <div className="h-3 w-3/4 bg-slate-200 rounded" />
-      <div className="h-3 w-full bg-slate-200 rounded" />
-      <div className="h-3 w-5/6 bg-slate-200 rounded" />
-      <div className="grid grid-cols-2 gap-3 mt-4">
-        <div className="h-16 bg-slate-100 rounded" />
-        <div className="h-16 bg-slate-100 rounded" />
-      </div>
-    </div>
-  );
 
-  const InsightMetrics = ({ metrics }: { metrics?: AnalystInsight['ecological_metrics'] }) => {
-    if (!metrics) return null;
-    
-    const metricItems = [
-      { label: 'Habitat Suitability', value: `${(metrics.habitat_suitability * 100).toFixed(0)}%`, icon: <MapPin className="w-3 h-3" />, color: 'text-emerald-600' },
-      { label: 'Threat Level', value: `${(metrics.threat_level * 100).toFixed(0)}%`, icon: <AlertTriangle className="w-3 h-3" />, color: metrics.threat_level > 0.1 ? 'text-amber-600' : 'text-slate-600' },
-      { label: 'Connectivity', value: `${(metrics.connectivity_score * 100).toFixed(0)}%`, icon: <TrendingUp className="w-3 h-3" />, color: 'text-blue-600' },
-      { label: 'Rainfall', value: `${metrics.rainfall_mm}mm`, icon: <BarChart3 className="w-3 h-3" />, color: 'text-cyan-600' },
-      { label: 'Vegetation', value: `${metrics.vegetation_cover}%`, icon: <Shield className="w-3 h-3" />, color: 'text-green-600' },
-    ];
-
-    return (
-      <div className="grid grid-cols-5 gap-2 mb-4">
-        {metricItems.map((metric, index) => (
-          <div key={index} className="text-center">
-            <div className={`p-1 rounded-md bg-slate-50 mb-1 ${metric.color}`}>
-              {metric.icon}
-            </div>
-            <div className="text-[8px] font-bold text-slate-700">{metric.value}</div>
-            <div className="text-[6px] text-slate-500 truncate">{metric.label}</div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const KeyInsights = ({ insights }: { insights: string[] }) => (
-    <div className="space-y-2 mb-4">
-      <div className="flex items-center gap-1 mb-1">
-        <Info className="w-3 h-3 text-blue-500" />
-        <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Key Insights</span>
-      </div>
-      <ul className="space-y-1">
-        {insights.map((insight, index) => (
-          <li key={index} className="flex items-start gap-1">
-            <div className="w-1 h-1 rounded-full bg-blue-500 mt-1 flex-shrink-0" />
-            <span className="text-[10px] text-slate-600 leading-tight">{insight}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
 
   return (
     <DraggablePanel 
