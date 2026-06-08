@@ -157,7 +157,6 @@ function SekaMapContent({
   // Notify parent of initial view state once on mount
   useEffect(() => {
     onViewStateChange?.(viewState);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleMove = useCallback(
