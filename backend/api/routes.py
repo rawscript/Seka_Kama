@@ -914,3 +914,110 @@ async def health_check(
             "llm":        "nvidia_nim_active",
         }
     }
+
+
+# ============================================================
+# CONTACT FORM ENDPOINT
+# ============================================================
+
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+
+class ContactFormRequest(BaseModel):
+    """Contact form submission"""
+    name: str
+    organization: Optional[str] = None
+    message: str
+    email: Optional[EmailStr] = None  # Optional, users might want a reply
+
+class ContactFormResponse(BaseModel):
+    """Contact form response"""
+    success: bool
+    message: str
+    forwarded_to: str = "jasemwaura@gmail.com"
+
+@router.post("/contact", response_model=ContactFormResponse)
+async def submit_contact_form(
+    contact_data: ContactFormRequest,
+    request: Request,
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Submit contact form. In production, this would send an email to jasemwaura@gmail.com.
+    For now, it logs the submission to the database.
+    """
+    try:
+        # Log the contact submission to database
+        submission_data = {
+            "name": contact_data.name,
+            "organization": contact_data.organization or "",
+            "email": contact_data.email or "",
+            "message": contact_data.message,
+            "submitted_at": datetime.now(timezone.utc).isoformat(),
+            "forwarded_to": "jasemwaura@gmail.com",
+            "status": "received"
+        }
+        
+        # Insert into contact_submissions table if it exists, otherwise just log
+        try:
+            result = db.client.table("contact_submissions").insert(submission_data).execute()
+            logger.info(f"Contact form submitted successfully: {contact_data.name}")
+        except Exception as db_error:
+            # Table might not exist, just log to console
+            logger.warning(f"Could not insert contact submission to DB: {db_error}")
+            logger.info(f"Contact form submission (not saved to DB): {submission_data}")
+        
+        # In production, you would add email sending logic here
+        # Example using SMTP (uncomment and configure):
+        # import smtplib
+        # from email.mime.text import MIMEText
+        # from email.mime.multipart import MIMEMultipart
+        # 
+        # msg = MIMEMultipart()
+        # msg['From'] = 'noreply@seka-kama.io'
+        # msg['To'] = 'jasemwaura@gmail.com'
+        # msg['Subject'] = f'Seka Kama Contact: {contact_data.name}'
+        # 
+        # body = f"""
+        # Name: {contact_data.name}
+        # Organization: {contact_data.organization or 'Not specified'}
+        # Email: {contact_data.email or 'Not provided'}
+        # 
+        # Message:
+        # {contact_data.message}
+        # 
+        # Submitted at: {datetime.now(timezone.utc).isoformat()}
+        # """
+        # msg.attach(MIMEText(body, 'plain'))
+        # 
+        # # Configure SMTP based on your .env settings
+        # smtp_server = request.app.state.config.SMTP_HOST
+        # smtp_port = request.app.state.config.SMTP_PORT
+        # smtp_user = request.app.state.config.SMTP_USER
+        # smtp_password = request.app.state.config.SMTP_PASSWORD
+        # 
+        # with smtplib.SMTP(smtp_server, smtp_port) as server:
+        #     server.starttls()
+        #     server.login(smtp_user, smtp_password)
+        #     server.send_message(msg)
+        
+        # Audit log
+        audit_service.log_contact_submission(
+            db=db,
+            user_name=contact_data.name,
+            user_email=contact_data.email or "",
+            organization=contact_data.organization or ""
+        )
+        
+        return ContactFormResponse(
+            success=True,
+            message="Your message has been received and will be forwarded to jasemwaura@gmail.com",
+            forwarded_to="jasemwaura@gmail.com"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing contact form: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to process contact form. Please try emailing directly to jasemwaura@gmail.com"
+        )

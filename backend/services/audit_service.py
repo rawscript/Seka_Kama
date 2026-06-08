@@ -42,3 +42,32 @@ class AuditService:
             logger.error(f"Failed to write audit log: {str(e)}")
 
 audit_service = AuditService()
+
+    
+    @staticmethod
+    def log_contact_submission(
+        db,
+        user_name: str,
+        user_email: str,
+        organization: str = ""
+    ):
+        """
+        Log a contact form submission.
+        """
+        try:
+            db.client.table("audit_logs").insert({
+                "action": "contact_submission",
+                "resource_type": "contact",
+                "details": {
+                    "user_name": user_name,
+                    "user_email": user_email,
+                    "organization": organization,
+                    "forwarded_to": "jasemwaura@gmail.com"
+                },
+                "created_at": datetime.utcnow().isoformat()
+            }).execute()
+        except Exception as e:
+            # We don't want audit logging failure to crash the main request
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to write contact submission audit log: {str(e)}")
