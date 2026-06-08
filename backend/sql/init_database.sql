@@ -231,3 +231,21 @@ CREATE TABLE IF NOT EXISTS historical_stats (
 
 -- Index for fast look‑ups
 CREATE INDEX IF NOT EXISTS idx_historical_unit_year ON historical_stats (management_unit, year);
+
+
+-- Contact Submissions Table
+CREATE TABLE IF NOT EXISTS contact_submissions (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    organization VARCHAR(255),
+    email VARCHAR(255),
+    message TEXT NOT NULL,
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    forwarded_to VARCHAR(255) DEFAULT 'jasemwaura@gmail.com',
+    status VARCHAR(50) DEFAULT 'received',
+    notes TEXT
+);
+
+-- Index for contact submissions
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_email ON contact_submissions(email);
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_submitted_at ON contact_submissions(submitted_at);

@@ -166,11 +166,28 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON public.audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON public.audit_logs(action);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON public.audit_logs(created_at);
 
--- 9. Enable Row Level Security (RLS)
+-- 9. Create Contact Submissions Table
+CREATE TABLE IF NOT EXISTS public.contact_submissions (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    organization TEXT,
+    email TEXT,
+    message TEXT NOT NULL,
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    forwarded_to TEXT DEFAULT 'jasemwaura@gmail.com',
+    status TEXT DEFAULT 'received',
+    notes TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_email ON public.contact_submissions(email);
+CREATE INDEX IF NOT EXISTS idx_contact_submissions_submitted_at ON public.contact_submissions(submitted_at);
+
+-- 11. Enable Row Level Security (RLS)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.scenario_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contact_submissions ENABLE ROW LEVEL SECURITY;
 
 -- 10. Create RLS Policies
 -- Note: Service Role Key bypasses RLS by default. These are for extra safety.
@@ -199,6 +216,18 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Service role bypass RLS' AND tablename = 'api_keys') THEN
         CREATE POLICY "Service role bypass RLS" ON public.api_keys
             FOR ALL USING (auth.role() = 'service_role');
+    END IF;
+    
+    -- Policy: anyone can submit contact forms (anonymous submissions)
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Anyone can submit contact forms' AND tablename = 'contact_submissions') THEN
+        CREATE POLICY "Anyone can submit contact forms" ON public.contact_submissions
+            FOR INSERT WITH CHECK (true);
+    END IF;
+    
+    -- Policy: only service role can view contact submissions (for privacy)
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Only service role can view contact submissions' AND tablename = 'contact_submissions') THEN
+        CREATE POLICY "Only service role can view contact submissions" ON public.contact_submissions
+            FOR SELECT USING (auth.role() = 'service_role');
     END IF;
 END $$;
 
