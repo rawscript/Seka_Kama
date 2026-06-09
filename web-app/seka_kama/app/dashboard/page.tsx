@@ -166,7 +166,7 @@ function DashboardContent() {
       .catch(() => { if (!cancelled) setTrends([]); })
       .finally(() => { if (!cancelled) setTrendsLoading(false); });
     return () => { cancelled = true; };
-  }, [showTrends, selectedUnit]);
+  }, [showTrends, selectedUnit, selectedYear]);
 
   // -- Responsive check --
   useEffect(() => {

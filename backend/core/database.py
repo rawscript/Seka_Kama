@@ -277,14 +277,17 @@ class SupabaseService:
     
     # ========== Statistics and Aggregations ==========
     
-    def get_total_lion_population(self, management_unit: Optional[str] = None) -> float:
+    def get_total_lion_population(self, management_unit: Optional[str] = None, year: Optional[int] = None) -> float:
         """
-        Calculate total lion population across all or specific management unit.
+        Calculate total lion population across all or specific management unit for a given year.
         """
         query = self.client.table("grid_cells").select("baseline_lion_density")
         
         if management_unit:
             query = query.eq("management_unit", management_unit)
+        
+        if year:
+            query = query.eq("year", year)
         
         result = query.execute()
         
@@ -299,13 +302,17 @@ class SupabaseService:
         units = set(cell["management_unit"] for cell in result.data if cell.get("management_unit"))
         return sorted(list(units))
     
-    def get_spatial_summary(self, management_unit: Optional[str] = None) -> Dict[str, Any]:
+    def get_spatial_summary(self, management_unit: Optional[str] = None, year: Optional[int] = None) -> Dict[str, Any]:
         """
         Get spatial summary statistics.
         """
+        params = {"management_unit": management_unit}
+        if year:
+            params["target_year"] = year
+        
         result = self.client.rpc(
             "get_spatial_summary",
-            {"management_unit": management_unit}
+            params
         ).execute()
         return result.data[0] if result.data else {}
 
@@ -313,26 +320,48 @@ class SupabaseService:
         """
         Comprehensive landscape statistics for the digital twin dashboard.
         """
-        # 1. Total ions
-        total_lions = self.get_total_lion_population(management_unit)
+        # 1. Total lions for the given year
+        total_lions = self.get_total_lion_population(management_unit, year)
         
-        # 2. Area total (approximate from cell count)
+        # 2. Area total (approximate from cell count for the given year)
         query = self.client.table("grid_cells").select("cell_id", count="exact")
         if management_unit:
             query = query.eq("management_unit", management_unit)
+        if year:
+            query = query.eq("year", year)
         area_res = query.execute()
         cell_count = area_res.count or 0
         total_area_km2 = cell_count # Assuming 1km2 per cell for the Mara grid
         
         # 3. Aggregates via RPC
-        summary = self.get_spatial_summary(management_unit)
+        summary = self.get_spatial_summary(management_unit, year)
+        
+        # Calculate high-risk cells for the given year
+        high_risk_cells = 0
+        if year:
+            # Fetch cells for the specific year to calculate high-risk
+            cells_query = self.client.table("grid_cells").select("*")
+            if management_unit:
+                cells_query = cells_query.eq("management_unit", management_unit)
+            cells_query = cells_query.eq("year", year)
+            cells_result = cells_query.execute()
+            
+            # Count high-risk cells (lion density < 5 and nightlight trend > 0.1)
+            for cell in cells_result.data:
+                lion_density = cell.get("baseline_lion_density", 0)
+                nightlight_trend = cell.get("longterm_slope_mean", 0)
+                if lion_density < 5 and nightlight_trend > 0.1:
+                    high_risk_cells += 1
+        else:
+            # Use placeholder if no year specified
+            high_risk_cells = summary.get("cell_count", 0) // 10
         
         return {
             "total_lions": total_lions,
             "total_area_km2": total_area_km2,
             "avg_lion_density": total_lions / total_area_km2 if total_area_km2 > 0 else 0,
             "avg_nightlight": summary.get("avg_nightlight", 0),
-            "high_risk_cell_count": summary.get("cell_count", 0) // 10, # Placeholder logic
+            "high_risk_cell_count": high_risk_cells,
             "management_unit_count": 1 if management_unit else 12
         }
 
