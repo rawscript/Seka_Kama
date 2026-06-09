@@ -10,6 +10,7 @@ export default function ContactPage() {
   const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
     organization: '',
     message: ''
   });
@@ -32,8 +33,15 @@ export default function ContactPage() {
     e.preventDefault();
     
     // Basic validation
-    if (!formData.name.trim() || !formData.message.trim()) {
+    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
       setError('Please fill in all required fields');
+      return;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
       return;
     }
 
@@ -63,6 +71,7 @@ export default function ContactPage() {
         // Reset form after successful submission
         setFormData({
           name: '',
+          email: '',
           organization: '',
           message: ''
         });
@@ -135,8 +144,8 @@ export default function ContactPage() {
                 </div>
                 <h4 className="text-2xl font-serif font-medium text-[#1a1c1c] mb-3">Message Sent Successfully!</h4>
                 <p className="text-[#4e4639] mb-6">
-                  Thank you for your inquiry. We'll get back to you at{' '}
-                  <span className="text-[#775a19] font-medium">jasemwaura@gmail.com</span> shortly.
+                  Thank you for your inquiry. We'll reply to{' '}
+                  <span className="text-[#775a19] font-medium">{formData.email}</span> shortly.
                 </p>
                 <button
                   onClick={() => setIsSubmitted(false)}
@@ -165,6 +174,22 @@ export default function ContactPage() {
                     required
                     className="w-full bg-[#f3f3f3] border border-[#d1c5b4]/40 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-[#775a19] transition-colors placeholder:text-[#d1c5b4]/80" 
                     placeholder="Dr. Jane Doe" 
+                    disabled={isSubmitting}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-[#7f7667] uppercase tracking-widest">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-[#f3f3f3] border border-[#d1c5b4]/40 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-[#775a19] transition-colors placeholder:text-[#d1c5b4]/80" 
+                    placeholder="jane.doe@example.com" 
                     disabled={isSubmitting}
                   />
                 </div>
@@ -201,6 +226,8 @@ export default function ContactPage() {
                 
                 <div className="text-xs text-[#7f7667] italic">
                   Your message will be forwarded to <span className="text-[#775a19] font-medium">jasemwaura@gmail.com</span>
+                  <br />
+                  We'll reply to your email address so you can continue the conversation.
                 </div>
                 
                 <button 

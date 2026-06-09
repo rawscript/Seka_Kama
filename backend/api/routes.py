@@ -927,9 +927,9 @@ from typing import Optional
 class ContactFormRequest(BaseModel):
     """Contact form submission"""
     name: str
+    email: EmailStr  # REQUIRED: So you can reply to the person
     organization: Optional[str] = None
     message: str
-    email: Optional[EmailStr] = None  # Optional, users might want a reply
 
 class ContactFormResponse(BaseModel):
     """Contact form response"""
@@ -951,7 +951,7 @@ async def submit_contact_form(
         submission_data = {
             "name": contact_data.name,
             "organization": contact_data.organization or "",
-            "email": contact_data.email or "",
+            "email": contact_data.email,  # Required field
             "message": contact_data.message,
             "submitted_at": datetime.now(timezone.utc).isoformat(),
             "forwarded_to": "jasemwaura@gmail.com",
@@ -971,18 +971,19 @@ async def submit_contact_form(
         # Try to send email using Gmail SMTP (Default)
         email_sent = False
         subject = f"Seka Kama Contact Form: {contact_data.name}"
-        email_body = f"""New Contact Form Submission
+        email_body = f"""📨 NEW CONTACT FORM SUBMISSION
 
-Name: {contact_data.name}
-Organization: {contact_data.organization or 'Not specified'}
-Email: {contact_data.email or 'Not provided'}
+👤 From: {contact_data.name}
+📧 Email: {contact_data.email}  ← REPLY TO THIS ADDRESS
+🏢 Organization: {contact_data.organization or 'Not specified'}
+📅 Submitted: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
 
-Message:
+💬 Message:
 {contact_data.message}
 
-Submitted at: {datetime.now(timezone.utc).isoformat()}
 ---
-This message was sent via Seka Kama contact form."""
+🔗 This message was sent via Seka Kama contact form.
+📝 You can reply directly to {contact_data.email} to respond to {contact_data.name}."""
         
         # First try: Gmail SMTP (Default)
         try:
