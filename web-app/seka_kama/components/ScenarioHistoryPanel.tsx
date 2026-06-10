@@ -68,7 +68,20 @@ export default function ScenarioHistoryPanel({
     
     try {
       const response = await api.getScenarioHistory(100);
-      setScenarios(response.scenarios || []);
+      const mappedScenarios = (response.scenarios || []).map(scenario => ({
+        id: scenario.scenario_id,
+        user_description: scenario.user_description || 'Unnamed Scenario',
+        created_at: scenario.created_at,
+        baseline_total_lions: scenario.baseline_total_lions,
+        predicted_total_lions: scenario.predicted_total_lions,
+        delta_lions: scenario.delta_lions,
+        delta_percent: scenario.delta_percent,
+        affected_cells: scenario.affected_cells || 0,
+        llm_narrative: scenario.llm_narrative,
+        modified_features: scenario.modified_features || {},
+        request_data: scenario.request_data
+      }));
+      setScenarios(mappedScenarios);
     } catch (err: any) {
       console.error('Failed to load scenario history:', err);
       setError(err.message || 'Failed to load scenario history');
