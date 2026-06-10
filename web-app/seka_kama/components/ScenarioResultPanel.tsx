@@ -107,7 +107,7 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
   return (
     <div className="w-[400px] shadow-xl rounded-xl overflow-hidden flex flex-col p-0 animate-in fade-in slide-in-from-right-8 duration-500 bg-white">
       {/* Header Section */}
-      <div className="p-5 border-b border-slate-200 flex justify-between items-start bg-slate-50">
+      <div className="p-5 border-b border-slate-200 flex justify-between items-start bg-white">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <div className={`enterprise-badge ${accentColor} ${accentBg} ${accentBorder} border`}>
@@ -230,7 +230,7 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
 
               {/* Intelligence Narrative */}
               {narrative && (
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3 relative overflow-hidden group">
+                <div className="p-4 bg-white border border-emerald-300 rounded-xl space-y-3 relative overflow-hidden group shadow-sm">
                   <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/20 group-hover:bg-emerald-500 transition-colors" />
                   <div className="flex items-center gap-2">
                     <Brain className="w-3 h-3 text-emerald-600 animate-pulse" />
@@ -244,7 +244,7 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
       </div>
 
       {/* Footer */}
-      <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-600 font-mono">
+      <div className="p-4 bg-white border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-600 font-mono">
          <span className="flex items-center gap-1.5"><Activity className="w-3 h-3" /> Real-time Compute</span>
          
          <div className="flex items-center gap-4">
@@ -295,7 +295,7 @@ function ComparePanel({ scenarios, onClose }: { scenarios: any[]; onClose: () =>
 
   return (
     <div className="w-[520px] shadow-xl rounded-xl overflow-hidden flex flex-col p-0 animate-in fade-in slide-in-from-right-8 duration-500 bg-white">
-      <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+      <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-white">
         <div className="flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-amber-600" />
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest">Scenario Comparison</h3>
@@ -355,7 +355,7 @@ function ComparePanel({ scenarios, onClose }: { scenarios: any[]; onClose: () =>
           {/* Narratives */}
           <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200">
             {[a, b].map((s, i) => s.narrative && (
-              <div key={i} className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <div key={i} className="p-3 bg-white border border-emerald-300 rounded-xl shadow-sm">
                 <p className="text-[9px] font-bold text-slate-700 uppercase tracking-widest mb-2">
                   Scenario {i === 0 ? 'A' : 'B'} — AI Narrative
                 </p>
@@ -376,7 +376,7 @@ function ComparePanel({ scenarios, onClose }: { scenarios: any[]; onClose: () =>
               Close this panel, run another scenario, then click <strong className="text-amber-600">Compare</strong> to see a side-by-side analysis.
             </p>
           </div>
-          <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-xl w-full">
+          <div className="mt-2 p-3 bg-white border border-slate-300 rounded-xl w-full shadow-sm">
             <p className="text-[9px] font-mono text-amber-700 uppercase tracking-widest mb-1">Queued: Scenario A</p>
             <p className="text-xs text-slate-700 truncate">{a.title}</p>
             <p className="text-[10px] font-mono text-emerald-600 mt-1">
