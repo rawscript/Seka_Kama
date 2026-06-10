@@ -370,11 +370,11 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         {isExpanded && (
           <div className="p-4 flex-1 overflow-auto">
             {error && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-md mb-3">
-                <p className="text-[10px] text-rose-600 font-medium">{error}</p>
+              <div className="p-3 bg-white border border-rose-300 rounded-md mb-3 shadow-sm">
+                <p className="text-[10px] text-rose-700 font-medium">{error}</p>
                 <button
                   onClick={handleRefresh}
-                  className="text-[9px] text-rose-700 font-medium mt-1 hover:underline"
+                  className="text-[9px] text-rose-800 font-medium mt-1 hover:text-rose-900 hover:underline"
                 >
                   Try again
                 </button>
@@ -416,22 +416,22 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
               ) : (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-2">
-                    <div className="flex gap-3 p-3 bg-emerald-50/50 rounded-md items-start border border-emerald-100">
-                      <div className="p-1.5 bg-emerald-100 rounded">
+                    <div className="flex gap-3 p-3 bg-white rounded-md items-start border border-emerald-200 shadow-sm">
+                      <div className="p-1.5 bg-emerald-50 rounded">
                         <Shield className="w-3.5 h-3.5 text-emerald-600" />
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider mb-1">Neural Defense</p>
-                        <p className="text-[11px] text-slate-600">Habitat suitability is currently optimal in the northern corridors. Human pressure remains below 0.1 trend threshold.</p>
+                        <p className="text-[11px] text-slate-800">Habitat suitability is currently optimal in the northern corridors. Human pressure remains below 0.1 trend threshold.</p>
                       </div>
                     </div>
-                    <div className="flex gap-3 p-3 bg-amber-50/50 rounded-md items-start border border-amber-100">
-                      <div className="p-1.5 bg-amber-100 rounded">
+                    <div className="flex gap-3 p-3 bg-white rounded-md items-start border border-amber-200 shadow-sm">
+                      <div className="p-1.5 bg-amber-50 rounded">
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">Active Threat</p>
-                        <p className="text-[11px] text-slate-600">Nightlight encroachment detected near Talek boundary. Probability of HWC (Human-Wildlife Conflict) is elevated at 12%.</p>
+                        <p className="text-[11px] text-slate-800">Nightlight encroachment detected near Talek boundary. Probability of HWC (Human-Wildlife Conflict) is elevated at 12%.</p>
                       </div>
                     </div>
                   </div>

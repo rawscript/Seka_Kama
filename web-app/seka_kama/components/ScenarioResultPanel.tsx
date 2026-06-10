@@ -136,7 +136,7 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
                   <StatItem icon={Users} label="Current Lions" value={safeFixedAbs(result.cells?.reduce((s: any, c: any) => s + (c.properties?.lion_density ?? 0), 0), 1)} />
                </div>
                
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+                <div className="p-4 bg-white border border-amber-300 rounded-xl space-y-2 shadow-sm">
                    <div className="flex items-center gap-2 text-amber-700">
                      <Info className="w-4 h-4" />
                      <span className="text-[11px] font-bold uppercase tracking-wider">Spatial Insights</span>
@@ -197,7 +197,7 @@ export default function ScenarioResultPanel({ result, onClose }: ScenarioResultP
 
               {/* Ecological context */}
               {eco && (
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3">
+                <div className="p-4 bg-white border border-emerald-300 rounded-xl space-y-3 shadow-sm">
                   <div className="flex items-center gap-2 text-emerald-700 mb-1">
                     <Activity className="w-3 h-3" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">Live Ecological Context</span>

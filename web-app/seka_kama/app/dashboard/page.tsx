@@ -10,6 +10,7 @@ import {  Download,
   Crosshair,
   HelpCircle,
   Lightbulb,
+  History,
 } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -35,6 +36,7 @@ const SekaMap = dynamic(() => import('@/components/SekaMap'), {
 });
 
 const ScenarioResultPanel = dynamic(() => import('@/components/ScenarioResultPanel'), { ssr: false });
+const ScenarioHistoryPanel = dynamic(() => import('@/components/ScenarioHistoryPanel'), { ssr: false });
 const TrendChart = dynamic(() => import('@/components/TrendChart'), { ssr: false });
 const NotificationPanel = dynamic(() => import('@/components/NotificationPanel'), { ssr: false });
 const AnalystPanel = dynamic(() => import('@/components/AnalystPanel'), { ssr: false });
@@ -102,6 +104,7 @@ function DashboardContent() {
 
   // Map / UI state
   const [scenarioResult, setScenarioResult] = useState<any>(null);
+  const [isScenarioHistoryOpen, setIsScenarioHistoryOpen] = useState(false);
   const [selectedUnit, setSelectedUnit]     = useState('');
   const [isZoneMenuOpen, setIsZoneMenuOpen] = useState(false);
   const [currentCoords, setCurrentCoords]   = useState({ lat: -1.25, lng: 35.1 });
@@ -300,6 +303,16 @@ function DashboardContent() {
           
           <div className="relative">
             <button 
+              onClick={() => setIsScenarioHistoryOpen(!isScenarioHistoryOpen)}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isScenarioHistoryOpen ? 'bg-purple-600 text-white' : 'bg-white/80 text-secondary hover:bg-white backdrop-blur-md border border-outline-variant'}`}
+              title="Scenario History"
+            >
+              <span className="material-symbols-outlined text-[18px]">history</span>
+            </button>
+          </div>
+
+          <div className="relative">
+            <button 
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isNotificationsOpen ? 'bg-primary text-white' : 'bg-white/80 text-secondary hover:bg-white backdrop-blur-md border border-outline-variant'}`}
             >
@@ -362,6 +375,23 @@ function DashboardContent() {
               </ErrorBoundary>
             </div>
           </DraggablePanel>
+        )}
+
+        {/* ── Scenario History Panel ── */}
+        {isScenarioHistoryOpen && (
+          <ScenarioHistoryPanel
+            isOpen={isScenarioHistoryOpen}
+            onClose={() => setIsScenarioHistoryOpen(false)}
+            onLoadScenario={async (scenarioId) => {
+              try {
+                const scenario = await api.getScenarioById(scenarioId);
+                setScenarioResult(scenario);
+                setIsScenarioHistoryOpen(false);
+              } catch (err) {
+                console.error('Failed to load scenario:', err);
+              }
+            }}
+          />
         )}
 
         {/* -- Mobile Toggle -- */}
