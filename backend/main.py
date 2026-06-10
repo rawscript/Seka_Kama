@@ -1,5 +1,6 @@
 from typing import List, Dict, Optional
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import joblib
 import os
@@ -123,174 +124,44 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# Add middleware stack
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
 # Initialize Prometheus instrumentation — only expose in debug/dev
 instrumentator = Instrumentator().instrument(app)
 if settings.DEBUG:
     instrumentator.expose(app)
 
 # ---------------------------------------------------------------------------
-# CORS
+# CORS Setup - Using FastAPI's built-in CORSMiddleware
 # ---------------------------------------------------------------------------
-# Build the explicit allowed-origins list from hardcoded values + env vars.
-_origins_str = os.getenv("ALLOWED_ORIGINS", "")
+# Build comprehensive allowed origins list
+allowed_origins = list(settings.allowed_origins_list)
 
-_allowed_origins: list[str] = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "https://seka-kama.vercel.app",
-]
-
-# Vercel injects VERCEL_URL on the frontend side; on the backend we can also
-# accept it if someone sets it as an env var.
+# Add any VERCEL_URL if set
 if os.getenv("VERCEL_URL"):
-    _allowed_origins.append(f"https://{os.getenv('VERCEL_URL')}")
+    vercel_url = f"https://{os.getenv('VERCEL_URL')}"
+    if vercel_url not in allowed_origins:
+        allowed_origins.append(vercel_url)
 
-# Comma-separated extra origins from Railway env vars
-if _origins_str:
-    _extra = [o.strip() for o in _origins_str.split(",") if o.strip()]
-    _allowed_origins.extend(_extra)
+# Add localhost variants for development
+for localhost_port in [3000, 3001, 8000]:
+    localhost_url = f"http://localhost:{localhost_port}"
+    if localhost_url not in allowed_origins:
+        allowed_origins.append(localhost_url)
 
-# Deduplicate while preserving order
-_allowed_origins = list(dict.fromkeys(_allowed_origins))
+logger.info(f"✓ CORS configured for origins: {allowed_origins}")
 
-_allow_all = os.getenv("ALLOW_ALL_ORIGINS") == "True"
-
-# Regex for Vercel preview deployments, e.g. seka-kama-git-branch-org.vercel.app
-_VERCEL_PREVIEW_RE = re.compile(r"^https://seka-kama(-[a-z0-9-]+)?\.vercel\.app$")
-
-
-def _is_origin_allowed(origin: str) -> bool:
-    """Return True if the origin should receive CORS headers."""
-    if _allow_all:
-        return True
-    if origin in _allowed_origins:
-        return True
-    if _VERCEL_PREVIEW_RE.match(origin):
-        return True
-    return False
-
-
-class DynamicCORSMiddleware:
-    """
-    Pure ASGI CORS middleware.
-
-    Starlette's built-in CORSMiddleware does not support combining
-    allow_credentials=True with a runtime origin check (it only supports
-    a static list or a regex, not both).  This middleware inspects the
-    Origin header on every request and sets the correct CORS response
-    headers dynamically, which is the only reliable way to handle both
-    a static allowlist and Vercel preview-URL patterns simultaneously.
-    """
-
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] not in ("http", "websocket"):
-            await self.app(scope, receive, send)
-            return
-
-        headers = dict(scope.get("headers", []))
-        origin = headers.get(b"origin", b"").decode("latin-1")
-
-        # `allowed` is True only when origin is non-empty AND in the allowlist.
-        allowed = bool(origin) and _is_origin_allowed(origin)
-
-        logger.debug(
-            "CORS check — origin=%r allowed=%s method=%s path=%s",
-            origin,
-            allowed,
-            scope.get("method", ""),
-            scope.get("path", ""),
-        )
-
-        if scope["type"] == "http" and scope.get("method") == "OPTIONS" and allowed:
-            # Preflight — respond immediately without hitting the app
-            logger.debug("CORS preflight response for origin=%r", origin)
-            response_headers = [
-                (b"access-control-allow-origin",      origin.encode()),
-                (b"access-control-allow-credentials", b"true"),
-                (b"access-control-allow-methods",     b"GET, POST, PUT, PATCH, DELETE, OPTIONS"),
-                (b"access-control-allow-headers",     b"*"),
-                (b"access-control-max-age",           b"600"),
-                (b"vary",                             b"Origin"),
-                (b"content-length",                   b"0"),
-            ]
-            await send({
-                "type": "http.response.start",
-                "status": 204,
-                "headers": response_headers,
-            })
-            await send({"type": "http.response.body", "body": b""})
-            return
-
-        # For all other requests, inject CORS headers into the response
-        # whenever the origin is present and allowed.  The condition is
-        # `allowed` alone — it already implies `origin` is non-empty.
-        async def send_with_cors(message):
-            if message["type"] == "http.response.start":
-                if allowed:
-                    logger.debug(
-                        "CORS: injecting headers for origin=%r status=%s",
-                        origin,
-                        message.get("status"),
-                    )
-                    headers_list = list(message.get("headers", []))
-                    headers_list += [
-                        (b"access-control-allow-origin",      origin.encode()),
-                        (b"access-control-allow-credentials", b"true"),
-                        (b"vary",                             b"Origin"),
-                    ]
-                    message = {**message, "headers": headers_list}
-                else:
-                    logger.debug(
-                        "CORS: origin=%r not allowed, skipping headers",
-                        origin,
-                    )
-            await send(message)
-
-        await self.app(scope, receive, send_with_cors)
-
-
-class SecurityHeadersMiddleware:
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope["type"] != "http":
-            await self.app(scope, receive, send)
-            return
-
-        async def send_with_security_headers(message):
-            if message["type"] == "http.response.start":
-                headers = list(message.get("headers", []))
-                headers.extend([
-                    (b"content-security-policy", b"default-src 'self'; script-src 'self'; object-src 'none'; frame-ancestors 'none';"),
-                    (b"x-content-type-options", b"nosniff"),
-                    (b"x-frame-options", b"DENY"),
-                    (b"x-xss-protection", b"1; mode=block"),
-                    (b"strict-transport-security", b"max-age=31536000; includeSubDomains"),
-                ])
-                message = {**message, "headers": headers}
-            await send(message)
-
-        await self.app(scope, receive, send_with_security_headers)
-
-# ── Middleware stack — ORDER MATTERS ────────────────────────────────────────
-# Starlette applies add_middleware() in REVERSE order, so the LAST call added
-# becomes the OUTERMOST wrapper (first to receive a request).
-#
-# Desired execution order:
-#   DynamicCORSMiddleware  ← must be first to handle OPTIONS preflights
-#   SecurityHeadersMiddleware
-#   ProxyHeadersMiddleware (trust X-Forwarded-* from Railway's load balancer)
-#   SlowAPIMiddleware      ← rate-limiter's 429s will now have CORS headers
-#
-# To achieve this, register them in REVERSE order:
-app.add_middleware(SlowAPIMiddleware)
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(DynamicCORSMiddleware)  # ← outermost: added LAST
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,
+)
 
 
 # Allowlist of trusted domains for the GeoJSON proxy.
@@ -425,9 +296,11 @@ async def health_check(request: Request):
 
 @app.get("/api/cors-check")
 async def cors_check(request: Request):
+    """Simple CORS check endpoint for diagnostics."""
     origin = request.headers.get("origin", "")
     return {
         "origin": origin,
-        "allowed": _is_origin_allowed(origin) if origin else False,
-        "explicit_origins": _allowed_origins,
+        "allowed": origin in allowed_origins if origin else False,
+        "configured_origins": allowed_origins,
+        "settings_origins": settings.allowed_origins_list,
     }

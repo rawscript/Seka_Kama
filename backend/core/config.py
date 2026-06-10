@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     PROMETHEUS_ENABLED: bool = os.getenv("PROMETHEUS_ENABLED", "true").lower() in ("true", "1", "yes", "on")
     
     # CORS Configuration (Production-ready)
-    ALLOWED_ORIGINS: str = "http://localhost:3000,https://seka-kama.vercel.app"
+    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://seka-kama.vercel.app")
     ALLOW_ALL_ORIGINS: bool = os.getenv("ALLOW_ALL_ORIGINS", "false").lower() in ("true", "1", "yes", "on")
     
     @property

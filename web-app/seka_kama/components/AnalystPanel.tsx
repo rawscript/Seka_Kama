@@ -166,6 +166,9 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
           });
         }
       } else {
+        // API is unavailable - show fallback with notification
+        console.warn('API unavailable - using fallback data. This may be due to CORS or backend connectivity issues.');
+        
         // Set fallback insight with current metrics for the selected year
         const yearAdjustment = year ? (year - 2023) * 0.02 : 0; // Small adjustment based on year
         const baseRainfall = selectedUnit ? 850 : 920;
@@ -195,6 +198,8 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
             vegetation_cover: selectedUnit ? 65 + Math.round(yearAdjustment * 10) : 72 + Math.round(yearAdjustment * 10)
           }
         });
+        
+        setError('Backend API unavailable. Showing cached insights. Please check your connection.');
         
         // Track fallback data usage
         if (hasConsent()) {
