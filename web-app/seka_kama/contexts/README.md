@@ -336,6 +336,4 @@ See working implementations in:
 
 ## Support
 
-For issues or questions, refer to:
-- `CORS_FIX_GUIDE.md` - CORS troubleshooting
-- `CONTEXT_API_IMPLEMENTATION_COMPLETE.md` - Implementation details
+Implementation details
