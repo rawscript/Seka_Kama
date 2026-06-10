@@ -483,6 +483,7 @@ export const usabilityService = {
       panelAction: string;
       insightType?: string;
       recommendationId?: string;
+      year?: number;
     }
   ): Promise<void> {
     return this.trackInteraction({
@@ -493,7 +494,8 @@ export const usabilityService = {
         action: context.panelAction,
         panelContext: {
           insightType: context.insightType,
-          recommendationId: context.recommendationId
+          recommendationId: context.recommendationId,
+          year: context.year
         }
       }
     });
@@ -606,6 +608,7 @@ export function useUsabilityTracking() {
         panelAction: string;
         insightType?: string;
         recommendationId?: string;
+        year?: number;
       }
     ) => usabilityService.trackAnalystInteraction(elementId, interactionType, context),
     
