@@ -1,6 +1,11 @@
 import { getApiUrl } from './config';
 
-// ── Interfaces ────────────────────────────────────────────────────────────────
+// ── Global CORS error tracking to prevent infinite loops ──────────────────────
+let corsErrorDetected = false;
+let corsErrorStartTime = 0;
+
+export const getCorsErrorStatus = () => corsErrorDetected;
+export const resetCorsError = () => { corsErrorDetected = false; corsErrorStartTime = 0; };
 
 export interface ScenarioRequest {
   geometry: GeoJSON.Geometry;
@@ -153,8 +158,14 @@ export const api = {
   /**
    * Centralized request helper — injects auth, handles 401 redirect,
    * and surfaces backend error detail strings.
+   * Also detects CORS errors and prevents infinite retry loops.
    */
   async request(endpoint: string, options: RequestInit = {}) {
+    // If CORS error was detected within the last 30 seconds, fail fast without retrying
+    if (corsErrorDetected && (Date.now() - corsErrorStartTime) < 30000) {
+      throw new Error('CORS error detected. Backend API is unavailable. Please wait for server to come online.');
+    }
+
     const token =
       typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
@@ -164,10 +175,22 @@ export const api = {
 
     const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
-    const response = await fetch(`${getApiUrl()}${normalizedEndpoint}`, {
-      ...options,
-      headers,
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${getApiUrl()}${normalizedEndpoint}`, {
+        ...options,
+        headers,
+      });
+    } catch (err) {
+      // Network error — check if it's CORS related
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      if (errorMsg.includes('CORS') || errorMsg.includes('cors')) {
+        corsErrorDetected = true;
+        corsErrorStartTime = Date.now();
+        console.error('🔴 CORS Error detected - stopping API retries for 30 seconds', err);
+      }
+      throw err;
+    }
 
     if (!response.ok) {
       // 401 → clear token and redirect to login with return path
@@ -184,6 +207,12 @@ export const api = {
         if (errBody?.detail) detail = errBody.detail;
       } catch { /* ignore */ }
       throw new Error(detail);
+    }
+
+    // Success — reset CORS error flag if it was set
+    if (corsErrorDetected) {
+      corsErrorDetected = false;
+      console.log('✅ API recovered - CORS errors cleared');
     }
 
     const ct = response.headers.get('content-type') ?? '';

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Bot, Shield, Zap, AlertTriangle, ChevronDown, ChevronUp, Download, RefreshCw, Info, BarChart3, TrendingUp, Clock, MapPin } from 'lucide-react';
-import { api } from '@/services/api';
+import { api, getCorsErrorStatus, resetCorsError } from '@/services/api';
 import { useUsabilityTracking } from '@/services/usabilityService';
 import { usePerformanceMonitoring } from '@/services/performanceService';
 import DraggablePanel from './DraggablePanel';
@@ -117,8 +117,8 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
   } = usePerformanceMonitoring();
 
   const fetchAnalystData = useCallback(async () => {
-    // Skip fetch if API is marked as unavailable and we've retried too many times
-    if (apiUnavailable && retryCount > 2) {
+    // Skip fetch if CORS error is currently active OR we've already retried too many times
+    if (getCorsErrorStatus() || (apiUnavailable && retryCount > 2)) {
       setLoading(false);
       return;
     }
@@ -168,6 +168,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         // API succeeded - reset error state
         setApiUnavailable(false);
         setRetryCount(0);
+        resetCorsError();
         
         const insightData: AnalystInsight = {
           narrative: narrativeResp.narrative || '',
@@ -206,7 +207,12 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
           });
         }
         
-        setError('Backend API is unavailable. Please ensure the backend server is running and CORS is properly configured.');
+        const corsActive = getCorsErrorStatus();
+        if (corsActive) {
+          setError('🔴 CORS ERROR: Backend API is blocking requests. The server is either offline or CORS headers are not configured. Retries paused for 30 seconds.');
+        } else {
+          setError('Backend API is unavailable. Please ensure the backend server is running and CORS is properly configured.');
+        }
         
         // Track fallback data usage
         if (hasConsent()) {
@@ -222,7 +228,13 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       console.error('Analyst data fetch failed:', e);
       setApiUnavailable(true);
       setRetryCount(prev => prev + 1);
-      setError('Unable to connect to backend. Please check your connection and ensure CORS is enabled.');
+      
+      const corsActive = getCorsErrorStatus();
+      if (corsActive) {
+        setError('🔴 CORS ERROR: Backend API is blocking requests. Retries paused for 30 seconds. Please check server status.');
+      } else {
+        setError('Unable to connect to backend. Please check your connection and ensure CORS is enabled.');
+      }
       
       // Track data fetch failure
       if (hasConsent()) {

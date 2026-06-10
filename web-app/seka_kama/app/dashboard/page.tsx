@@ -382,7 +382,7 @@ function DashboardContent() {
           <ScenarioHistoryPanel
             isOpen={isScenarioHistoryOpen}
             onClose={() => setIsScenarioHistoryOpen(false)}
-            onLoadScenario={async (scenarioId) => {
+            onLoadScenario={async (scenarioId: number) => {
               try {
                 const scenario = await api.getScenarioById(scenarioId);
                 setScenarioResult(scenario);
