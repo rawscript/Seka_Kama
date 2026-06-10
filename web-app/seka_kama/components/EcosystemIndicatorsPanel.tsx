@@ -527,8 +527,7 @@ export default function EcosystemIndicatorsPanel({
         if (hasConsent()) {
           trackAnalystInteraction('ecosystem-panel-fallback', 'click', {
             panelAction: 'fallback_indicators',
-            insightType: 'year_adjusted_data',
-            year: year
+            insightType: 'year_adjusted_data'
           });
         }
       }
