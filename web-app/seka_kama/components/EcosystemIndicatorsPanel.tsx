@@ -448,24 +448,17 @@ export default function EcosystemIndicatorsPanel({
   year, 
   isLiveMode = false 
 }: EcosystemIndicatorsPanelProps) {
-  const [indicators, setIndicators] = useState<EcosystemIndicator[]>(() => 
-    getYearAdjustedIndicators(year, selectedUnit)
-  );
+  const [indicators, setIndicators] = useState<EcosystemIndicator[]>([]);
 
-  const [environmentalConditions, setEnvironmentalConditions] = useState<EnvironmentalConditions>(() => {
-    const yearOffset = year - 2023;
-    const yearFactor = yearOffset * 0.02;
-    
-    return {
-      temperature: 24.5 + (yearFactor * 0.5),
-      humidity: 65 + (yearFactor * 2),
-      windSpeed: 3.2 + (yearFactor * 0.1),
-      precipitation: 2.4 + (yearFactor * 0.2),
-      cloudCover: 45 + (yearFactor * 1),
-      uvIndex: 6 + (yearFactor * 0.2),
-      daylightHours: 12.2,
-      soilMoisture: 0.65 + (yearFactor * 0.1)
-    };
+  const [environmentalConditions, setEnvironmentalConditions] = useState<EnvironmentalConditions>({
+    temperature: 24.5,
+    humidity: 65,
+    windSpeed: 3.2,
+    precipitation: 2.4,
+    cloudCover: 45,
+    uvIndex: 6,
+    daylightHours: 12.2,
+    soilMoisture: 0.65
   });
 
   const [loading, setLoading] = useState(false);
