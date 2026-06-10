@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { useUsabilityTracking } from '@/services/usabilityService';
+import { useApiContext } from '@/contexts/ApiContext';
 import DraggablePanel from './DraggablePanel';
 
 interface EcosystemIndicatorsPanelProps {
@@ -469,8 +470,17 @@ export default function EcosystemIndicatorsPanel({
 
   // Usability tracking
   const { trackAnalystInteraction, hasConsent } = useUsabilityTracking();
+  
+  // API context for centralized request control
+  const { shouldAttemptRequest, markApiUnavailable, markApiAvailable } = useApiContext();
 
   const fetchEcosystemData = async () => {
+    // Check if we should attempt request (respects CORS cooldown)
+    if (!shouldAttemptRequest()) {
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     
     if (hasConsent()) {
@@ -503,6 +513,7 @@ export default function EcosystemIndicatorsPanel({
           }));
           
           setIndicators(transformedIndicators);
+          markApiAvailable(); // API succeeded
           
           if (hasConsent()) {
             trackAnalystInteraction('ecosystem-panel-fetch-success', 'click', {
@@ -513,6 +524,8 @@ export default function EcosystemIndicatorsPanel({
         }
       } catch (apiError) {
         console.warn('Ecosystem indicators API not available, using year-adjusted data:', apiError);
+        markApiUnavailable('Ecosystem API unavailable');
+        
         // Use year-adjusted indicators when API fails
         const yearAdjustedIndicators = getYearAdjustedIndicators(year, selectedUnit);
         setIndicators(yearAdjustedIndicators);
@@ -561,6 +574,7 @@ export default function EcosystemIndicatorsPanel({
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to fetch ecosystem data:', error);
+      markApiUnavailable('Network error fetching ecosystem data');
       
       if (hasConsent()) {
         trackAnalystInteraction('ecosystem-panel-fetch-failed', 'click', {

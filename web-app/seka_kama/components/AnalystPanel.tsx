@@ -5,6 +5,7 @@ import { Bot, Shield, Zap, AlertTriangle, ChevronDown, ChevronUp, Download, Refr
 import { api, getCorsErrorStatus, resetCorsError } from '@/services/api';
 import { useUsabilityTracking } from '@/services/usabilityService';
 import { usePerformanceMonitoring } from '@/services/performanceService';
+import { useApiContext } from '@/contexts/ApiContext';
 import DraggablePanel from './DraggablePanel';
 
 interface AnalystPanelProps {
@@ -99,26 +100,31 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [generatingReport, setGeneratingReport] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [apiUnavailable, setApiUnavailable] = useState(false);
+  
+  // Use API context for centralized error handling
+  const { 
+    shouldAttemptRequest, 
+    markApiUnavailable, 
+    markApiAvailable,
+    apiAvailable,
+    corsErrorActive,
+    corsErrorMessage 
+  } = useApiContext();
   
   // Usability tracking
   const {
     trackAnalystInteraction,
-    trackNavigation,
     hasConsent
   } = useUsabilityTracking();
   
   // Performance monitoring
   const {
-    startMeasurement,
-    determineLoadingStrategy,
-    getPerformanceStatistics
+    startMeasurement
   } = usePerformanceMonitoring();
 
   const fetchAnalystData = useCallback(async () => {
-    // Skip fetch if CORS error is currently active OR we've already retried too many times
-    if (getCorsErrorStatus() || (apiUnavailable && retryCount > 2)) {
+    // Use context's centralized request control
+    if (!shouldAttemptRequest()) {
       setLoading(false);
       return;
     }
@@ -160,15 +166,12 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       if (healthResp && typeof healthResp === 'object' && 'ok' in healthResp && !healthResp.ok) {
         const status = (healthResp as any).status;
         console.warn('API returned error status:', status);
-        setApiUnavailable(true);
-        setRetryCount(prev => prev + 1);
+        markApiUnavailable('API health check failed');
       }
       
       if (narrativeResp) {
-        // API succeeded - reset error state
-        setApiUnavailable(false);
-        setRetryCount(0);
-        resetCorsError();
+        // API succeeded - reset error state using context
+        markApiAvailable();
         
         const insightData: AnalystInsight = {
           narrative: narrativeResp.narrative || '',
@@ -191,8 +194,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       } else {
         // API failed - show user-friendly error instead of silently showing fallback
         console.warn('API unavailable - backend may have CORS issues or connectivity problems.');
-        setApiUnavailable(true);
-        setRetryCount(prev => prev + 1);
+        markApiUnavailable('Backend API unavailable');
         
         // Show actual fallback only if this is first load and we have some data
         if (!insight) {
@@ -207,8 +209,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
           });
         }
         
-        const corsActive = getCorsErrorStatus();
-        if (corsActive) {
+        if (corsErrorActive) {
           setError('🔴 CORS ERROR: Backend API is blocking requests. The server is either offline or CORS headers are not configured. Retries paused for 30 seconds.');
         } else {
           setError('Backend API is unavailable. Please ensure the backend server is running and CORS is properly configured.');
@@ -226,11 +227,9 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       setLastUpdated(new Date());
     } catch (e) {
       console.error('Analyst data fetch failed:', e);
-      setApiUnavailable(true);
-      setRetryCount(prev => prev + 1);
+      markApiUnavailable('Network connection failed');
       
-      const corsActive = getCorsErrorStatus();
-      if (corsActive) {
+      if (corsErrorActive) {
         setError('🔴 CORS ERROR: Backend API is blocking requests. Retries paused for 30 seconds. Please check server status.');
       } else {
         setError('Unable to connect to backend. Please check your connection and ensure CORS is enabled.');
@@ -248,18 +247,18 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       endMeasurement();
       setLoading(false);
     }
-  }, [selectedUnit, year, hasConsent, trackAnalystInteraction, startMeasurement, apiUnavailable, retryCount, insight]);
+  }, [selectedUnit, year, hasConsent, trackAnalystInteraction, startMeasurement, shouldAttemptRequest, markApiUnavailable, markApiAvailable, corsErrorActive, insight]);
 
   useEffect(() => {
     fetchAnalystData();
     
     // Only set up auto-refresh if API is available
     // Stop refreshing if API is marked unavailable to reduce noise
-    if (!apiUnavailable) {
+    if (apiAvailable) {
       const interval = setInterval(fetchAnalystData, 5 * 60 * 1000);
       return () => clearInterval(interval);
     }
-  }, [fetchAnalystData, apiUnavailable]);
+  }, [fetchAnalystData, apiAvailable]);
 
   const handleGenerateReport = async () => {
     // Track report generation
@@ -399,15 +398,15 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         {isExpanded && (
           <div className="p-4 flex-1 overflow-auto">
             {error && (
-              <div className={`p-3 rounded-md mb-3 shadow-sm ${apiUnavailable ? 'bg-rose-50 border border-rose-200' : 'bg-amber-50 border border-amber-200'}`}>
-                <p className={`text-[10px] font-medium ${apiUnavailable ? 'text-rose-700' : 'text-amber-700'}`}>{error}</p>
+              <div className={`p-3 rounded-md mb-3 shadow-sm ${!apiAvailable ? 'bg-rose-50 border border-rose-200' : 'bg-amber-50 border border-amber-200'}`}>
+                <p className={`text-[10px] font-medium ${!apiAvailable ? 'text-rose-700' : 'text-amber-700'}`}>{error}</p>
                 <button
                   onClick={handleRefresh}
-                  className={`text-[9px] font-medium mt-2 hover:underline ${apiUnavailable ? 'text-rose-800 hover:text-rose-900' : 'text-amber-800 hover:text-amber-900'}`}
+                  className={`text-[9px] font-medium mt-2 hover:underline ${!apiAvailable ? 'text-rose-800 hover:text-rose-900' : 'text-amber-800 hover:text-amber-900'}`}
                 >
                   🔄 Retry Connection
                 </button>
-                {apiUnavailable && (
+                {!apiAvailable && (
                   <p className="text-[8px] text-rose-600 mt-2">
                     ⚠️ The backend server appears to be offline. Please check that:
                     <ul className="ml-4 mt-1 space-y-0.5">

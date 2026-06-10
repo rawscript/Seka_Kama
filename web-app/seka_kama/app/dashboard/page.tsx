@@ -17,6 +17,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import dynamic from 'next/dynamic';
 import { MapProvider, useMap } from 'react-map-gl/maplibre';
 import { api, type LandscapeStats, type HistoricalTrend } from '@/services/api';
+import { ApiProvider } from '@/contexts/ApiContext';
 
 // ── Dynamic imports (browser-only) ───────────────────────────────────────────
 import DraggablePanel from '@/components/DraggablePanel';
@@ -93,7 +94,9 @@ function StatCard({
 export default function DashboardPage() {
   return (
     <MapProvider>
-      <DashboardContent />
+      <ApiProvider>
+        <DashboardContent />
+      </ApiProvider>
     </MapProvider>
   );
 }
