@@ -99,6 +99,8 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [generatingReport, setGeneratingReport] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [apiUnavailable, setApiUnavailable] = useState(false);
   
   // Usability tracking
   const {
@@ -115,6 +117,12 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
   } = usePerformanceMonitoring();
 
   const fetchAnalystData = useCallback(async () => {
+    // Skip fetch if API is marked as unavailable and we've retried too many times
+    if (apiUnavailable && retryCount > 2) {
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     
@@ -134,19 +142,33 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
     });
     
     try {
+      // Use a timeout for the health check to fail fast
+      const healthPromise = Promise.race([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/health`),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Health check timeout')), 3000))
+      ]).catch(() => null);
+      
+      const narrativePromise = api.getLandscapeSummary(selectedUnit || undefined, year)
+        .catch(() => null);
+      
       const [healthResp, narrativeResp] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/health`)
-          .catch(() => null),
-        api.getLandscapeSummary(selectedUnit || undefined, year)
-          .catch(() => null)
+        healthPromise,
+        narrativePromise
       ]);
       
-      // Check API health
-      if (healthResp && !healthResp.ok) {
-        console.warn('API health check warning:', healthResp.status);
+      // Check if health endpoint returned non-OK status (CORS issue indicator)
+      if (healthResp && typeof healthResp === 'object' && 'ok' in healthResp && !healthResp.ok) {
+        const status = (healthResp as any).status;
+        console.warn('API returned error status:', status);
+        setApiUnavailable(true);
+        setRetryCount(prev => prev + 1);
       }
       
       if (narrativeResp) {
+        // API succeeded - reset error state
+        setApiUnavailable(false);
+        setRetryCount(0);
+        
         const insightData: AnalystInsight = {
           narrative: narrativeResp.narrative || '',
           confidence: narrativeResp.confidence || 0.942,
@@ -166,46 +188,31 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
           });
         }
       } else {
-        // API is unavailable - show fallback with notification
-        console.warn('API unavailable - using fallback data. This may be due to CORS or backend connectivity issues.');
+        // API failed - show user-friendly error instead of silently showing fallback
+        console.warn('API unavailable - backend may have CORS issues or connectivity problems.');
+        setApiUnavailable(true);
+        setRetryCount(prev => prev + 1);
         
-        // Set fallback insight with current metrics for the selected year
-        const yearAdjustment = year ? (year - 2023) * 0.02 : 0; // Small adjustment based on year
-        const baseRainfall = selectedUnit ? 850 : 920;
-        const rainfallAdjusted = baseRainfall * (1 + yearAdjustment);
+        // Show actual fallback only if this is first load and we have some data
+        if (!insight) {
+          // Set minimal fallback for first load only
+          setInsight({
+            narrative: `Loading ecological insights for ${selectedUnit || 'this area'} in ${year}...`,
+            confidence: 0,
+            key_insights: [],
+            recommendations: [],
+            generated_at: new Date().toISOString(),
+            ecological_metrics: undefined
+          });
+        }
         
-        setInsight({
-          narrative: `Year ${year} analysis: ${selectedUnit || 'Regional'} ecosystem shows ${year > 2023 ? 'improving' : 'stable'} conditions.`,
-          confidence: 0.942,
-          key_insights: [
-            `Habitat suitability for ${year} is optimal in northern corridors`,
-            `Human pressure remains below 0.1 trend threshold for ${year}`,
-            'Nightlight encroachment detected near Talek boundary',
-            `Probability of HWC for ${year} elevated at 12%`
-          ],
-          recommendations: [
-            `Prioritize northern corridor protection in ${year}`,
-            'Monitor Talek boundary for encroachment',
-            'Implement early warning systems for HWC',
-            `Conduct ${year} seasonal habitat assessments`
-          ],
-          generated_at: new Date().toISOString(),
-          ecological_metrics: {
-            habitat_suitability: 0.85 + yearAdjustment,
-            threat_level: 0.12 - (yearAdjustment * 0.5),
-            connectivity_score: 0.78 + yearAdjustment,
-            rainfall_mm: Math.round(rainfallAdjusted),
-            vegetation_cover: selectedUnit ? 65 + Math.round(yearAdjustment * 10) : 72 + Math.round(yearAdjustment * 10)
-          }
-        });
-        
-        setError('Backend API unavailable. Showing cached insights. Please check your connection.');
+        setError('Backend API is unavailable. Please ensure the backend server is running and CORS is properly configured.');
         
         // Track fallback data usage
         if (hasConsent()) {
-          trackAnalystInteraction('analyst-panel-fallback', 'click', {
-            panelAction: 'fallback_insights',
-            insightType: 'fallback_data'
+          trackAnalystInteraction('analyst-panel-unavailable', 'click', {
+            panelAction: 'api_unavailable',
+            insightType: 'backend_error'
           });
         }
       }
@@ -213,13 +220,15 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       setLastUpdated(new Date());
     } catch (e) {
       console.error('Analyst data fetch failed:', e);
-      setError('Unable to load ecological insights. Please try again.');
+      setApiUnavailable(true);
+      setRetryCount(prev => prev + 1);
+      setError('Unable to connect to backend. Please check your connection and ensure CORS is enabled.');
       
       // Track data fetch failure
       if (hasConsent()) {
         trackAnalystInteraction('analyst-panel-fetch-failed', 'click', {
           panelAction: 'fetch_failed',
-          insightType: 'error'
+          insightType: 'network_error'
         });
       }
     } finally {
@@ -227,15 +236,18 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       endMeasurement();
       setLoading(false);
     }
-  }, [selectedUnit, year, hasConsent, trackAnalystInteraction, startMeasurement]);
+  }, [selectedUnit, year, hasConsent, trackAnalystInteraction, startMeasurement, apiUnavailable, retryCount, insight]);
 
   useEffect(() => {
     fetchAnalystData();
     
-    // Refresh data every 5 minutes
-    const interval = setInterval(fetchAnalystData, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [fetchAnalystData]);
+    // Only set up auto-refresh if API is available
+    // Stop refreshing if API is marked unavailable to reduce noise
+    if (!apiUnavailable) {
+      const interval = setInterval(fetchAnalystData, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [fetchAnalystData, apiUnavailable]);
 
   const handleGenerateReport = async () => {
     // Track report generation
@@ -375,14 +387,24 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         {isExpanded && (
           <div className="p-4 flex-1 overflow-auto">
             {error && (
-              <div className="p-3 bg-white border border-rose-300 rounded-md mb-3 shadow-sm">
-                <p className="text-[10px] text-rose-700 font-medium">{error}</p>
+              <div className={`p-3 rounded-md mb-3 shadow-sm ${apiUnavailable ? 'bg-rose-50 border border-rose-200' : 'bg-amber-50 border border-amber-200'}`}>
+                <p className={`text-[10px] font-medium ${apiUnavailable ? 'text-rose-700' : 'text-amber-700'}`}>{error}</p>
                 <button
                   onClick={handleRefresh}
-                  className="text-[9px] text-rose-800 font-medium mt-1 hover:text-rose-900 hover:underline"
+                  className={`text-[9px] font-medium mt-2 hover:underline ${apiUnavailable ? 'text-rose-800 hover:text-rose-900' : 'text-amber-800 hover:text-amber-900'}`}
                 >
-                  Try again
+                  🔄 Retry Connection
                 </button>
+                {apiUnavailable && (
+                  <p className="text-[8px] text-rose-600 mt-2">
+                    ⚠️ The backend server appears to be offline. Please check that:
+                    <ul className="ml-4 mt-1 space-y-0.5">
+                      <li>• Backend is running on Railway</li>
+                      <li>• CORS headers are properly configured</li>
+                      <li>• Network connectivity is working</li>
+                    </ul>
+                  </p>
+                )}
               </div>
             )}
             
