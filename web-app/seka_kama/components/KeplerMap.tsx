@@ -16,6 +16,7 @@ import { createKeplerConfig } from '@/services/kepler-config';
 
 interface KeplerMapProps {
   managementUnit?: string;
+  scenarioData?: any; // Scenario data to load
   onCellSelect?: (cellId: number) => void;
   onScenarioApply?: (cells: any[], modifications: Record<string, number>) => void;
 }
@@ -28,24 +29,41 @@ const reducers = combineReducers({
 // Create store with palm middleware for task handling
 const store = createStore(reducers, {}, applyMiddleware(taskMiddleware));
 
-function KeplerMapInner({ managementUnit, onCellSelect, onScenarioApply }: KeplerMapProps) {
+function KeplerMapInner({ managementUnit, scenarioData, onCellSelect, onScenarioApply }: KeplerMapProps) {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (scenarioData?: any) => {
     if (!process.env.NEXT_PUBLIC_MAPBOX_TOKEN) return;
     
     try {
       setIsLoading(true);
       setError(null);
 
-      // Fetch both baseline and protected areas
-      const [baselineResponse, protectedResponse] = await Promise.all([
-        api.getBaseline(managementUnit),
-        api.getProtectedAreas(),
-      ]);
+      let baselineResponse, protectedResponse, scenarioGeojson;
+      
+      if (scenarioData) {
+        // Load specific scenario from history
+        console.log('Loading scenario into Kepler.gl:', scenarioData);
+        
+        // Fetch the full scenario details including GeoJSON
+        const fullScenario = await api.getScenarioById(scenarioData.id);
+        
+        // Get baseline data for comparison
+        baselineResponse = await api.getBaseline(managementUnit);
+        protectedResponse = await api.getProtectedAreas();
+        scenarioGeojson = fullScenario.scenario_geojson || fullScenario.request_data?.scenario_geojson;
+        
+        console.log('Scenario GeoJSON loaded:', scenarioGeojson);
+      } else {
+        // Load default baseline view
+        [baselineResponse, protectedResponse] = await Promise.all([
+          api.getBaseline(managementUnit),
+          api.getProtectedAreas(),
+        ]);
+      }
 
       // Extract management units for the filter config
       const managementUnits: string[] = Array.from(
@@ -56,55 +74,83 @@ function KeplerMapInner({ managementUnit, onCellSelect, onScenarioApply }: Keple
         )
       );
 
-      const keplerConfig = createKeplerConfig(managementUnits);
+      const keplerConfig = createKeplerConfig(managementUnits, !!scenarioGeojson);
 
-      // Add data to Map with direct GeoJSON datasets for better reliability
+      // Prepare datasets
+      const datasets: any[] = [
+        {
+          info: { id: 'grid_cells', label: 'Baseline Lion Density' },
+          data: {
+            fields: [
+              { name: 'geometry', type: 'geojson' },
+              { name: 'lion_density', type: 'real' },
+              { name: 'management_unit', type: 'string' },
+              { name: 'nightlight_intensity', type: 'real' },
+              { name: 'nightlight_trend', type: 'real' },
+              { name: 'dist_km', type: 'real' }
+            ],
+            rows: (baselineResponse.features || []).map((f: any) => [
+              f.geometry,
+              f.properties.lion_density || 0,
+              f.properties.management_unit || 'Unknown',
+              f.properties.nightlight_intensity || 0,
+              f.properties.nightlight_trend || 0,
+              f.properties.distance_to_protected_km || 0
+            ]),
+          },
+        },
+        {
+          info: { id: 'protected_areas', label: 'Protected Areas (WDPA)' },
+          data: {
+            fields: [
+              { name: 'geometry', type: 'geojson' },
+              { name: 'site_name', type: 'string' },
+              { name: 'designation', type: 'string' }
+            ],
+            rows: (protectedResponse.features || []).map((f: any) => [
+              f.geometry,
+              f.properties.site_name || 'Unnamed Site',
+              f.properties.designation || 'ProtectedArea'
+            ]),
+          },
+        },
+      ];
+      
+      // Add scenario predictions layer if available
+      if (scenarioGeojson && scenarioGeojson.features) {
+        datasets.push({
+          info: { id: 'scenario_predictions', label: `Scenario: ${scenarioData?.user_description || 'Predictions'}` },
+          data: {
+            fields: [
+              { name: 'geometry', type: 'geojson' },
+              { name: 'baseline_density', type: 'real' },
+              { name: 'scenario_density', type: 'real' },
+              { name: 'delta', type: 'real' },
+              { name: 'cell_id', type: 'integer' }
+            ],
+            rows: scenarioGeojson.features.map((f: any) => [
+              f.geometry,
+              f.properties.baseline_density || 0,
+              f.properties.scenario_density || 0,
+              f.properties.delta || 0,
+              f.properties.cell_id || 0
+            ]),
+          },
+        });
+      }
+
+      // Add data to Kepler
       dispatch(
         addDataToMap({
-          datasets: [
-            {
-              info: { id: 'grid_cells', label: 'Lion Density Grid' },
-              data: {
-                fields: [
-                  { name: 'geometry', type: 'geojson' },
-                  { name: 'lion_density', type: 'real' },
-                  { name: 'management_unit', type: 'string' },
-                  { name: 'nightlight_intensity', type: 'real' },
-                  { name: 'nightlight_trend', type: 'real' },
-                  { name: 'dist_km', type: 'real' }
-                ],
-                rows: (baselineResponse.features || []).map((f: any) => [
-                  f.geometry,
-                  f.properties.lion_density || 0,
-                  f.properties.management_unit || 'Unknown',
-                  f.properties.nightlight_intensity || 0,
-                  f.properties.nightlight_trend || 0,
-                  f.properties.distance_to_protected_km || 0
-                ]),
-              },
-            },
-            {
-              info: { id: 'protected_areas', label: 'Protected Areas' },
-              data: {
-                fields: [
-                  { name: 'geometry', type: 'geojson' },
-                  { name: 'site_name', type: 'string' },
-                  { name: 'designation', type: 'string' }
-                ],
-                rows: (protectedResponse.features || []).map((f: any) => [
-                  f.geometry,
-                  f.properties.site_name || 'Unnamed Site',
-                  f.properties.designation || 'ProtectedArea'
-                ]),
-              },
-            },
-          ],
+          datasets,
           options: { centerMap: true, readOnly: false },
           config: keplerConfig,
         } as any)
       );
+      
+      console.log('✅ Kepler.gl loaded with', datasets.length, 'datasets');
     } catch (err) {
-      console.error('Kepler loading error:', err);
+      console.error('❌ Kepler loading error:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize database');
     } finally {
       setIsLoading(false);
@@ -112,8 +158,8 @@ function KeplerMapInner({ managementUnit, onCellSelect, onScenarioApply }: Keple
   }, [dispatch, managementUnit]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadData(scenarioData);
+  }, [loadData, scenarioData]);
 
   if (error || !process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
     const isTokenMissing = !process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
