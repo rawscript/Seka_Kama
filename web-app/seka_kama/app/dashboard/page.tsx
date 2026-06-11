@@ -227,18 +227,33 @@ function DashboardContent() {
       return;
     }
 
-    // Landmark search (Mocked for Mara locations)
+    // Landmark/conservancy search - extend with API call if available
     const landmarks: Record<string, [number, number]> = {
+      // Maasai Mara conservancies
+      'mara north': [35.034, -1.168],
+      'olare motorogi': [35.138, -1.296],
+      'olare-motorogi': [35.138, -1.296],
+      'naboisho': [35.334, -1.312],
+      'ol kinyei': [35.454, -1.332],
+      // Major landmarks
       'narok': [35.86, -1.08],
       'musiara': [35.03, -1.29],
       'keekorok': [35.25, -1.58],
       'talek': [35.21, -1.44],
       'sekernani': [35.34, -1.52],
+      // Gate areas
+      'talek gate': [35.35, -1.53],
+      'sekenani gate': [35.34, -1.52],
+      'oloolaimutia gate': [35.24, -1.32]
     };
 
     const target = searchQuery.toLowerCase().trim();
     if (landmarks[target]) {
       mapMain?.flyTo({ center: landmarks[target], zoom: 12, duration: 3000 });
+      setSearchQuery(''); // Clear search after successful navigation
+    } else {
+      // Show error or suggestion
+      console.warn(`Location "${searchQuery}" not found in landmark database`);
     }
   };
 

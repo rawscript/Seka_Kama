@@ -354,12 +354,12 @@ export default function FeedbackButton({
   };
 
   const feedbackTypes = [
-    { id: 'improvement', label: 'Improvement', icon: '🎨', color: 'bg-blue-100 text-blue-700' },
-    { id: 'bug', label: 'Bug', icon: '🐛', color: 'bg-rose-100 text-rose-700' },
-    { id: 'feature', label: 'Feature', icon: '✨', color: 'bg-purple-100 text-purple-700' },
-    { id: 'accessibility', label: 'Accessibility', icon: '♿', color: 'bg-emerald-100 text-emerald-700' },
-    { id: 'performance', label: 'Performance', icon: '⚡', color: 'bg-amber-100 text-amber-700' },
-    { id: 'general', label: 'General', icon: '💬', color: 'bg-slate-100 text-slate-700' }
+    { id: 'improvement', label: 'Improvement', icon: <Sparkles className="w-4 h-4" />, color: 'bg-blue-100 text-blue-700' },
+    { id: 'bug', label: 'Bug', icon: <Bug className="w-4 h-4" />, color: 'bg-rose-100 text-rose-700' },
+    { id: 'feature', label: 'Feature', icon: <Sparkles className="w-4 h-4" />, color: 'bg-purple-100 text-purple-700' },
+    { id: 'accessibility', label: 'Accessibility', icon: <Accessibility className="w-4 h-4" />, color: 'bg-emerald-100 text-emerald-700' },
+    { id: 'performance', label: 'Performance', icon: <Zap className="w-4 h-4" />, color: 'bg-amber-100 text-amber-700' },
+    { id: 'general', label: 'General', icon: <MessageSquare className="w-4 h-4" />, color: 'bg-slate-100 text-slate-700' }
   ];
 
   if (!isOpen) {
@@ -461,9 +461,9 @@ export default function FeedbackButton({
                         <button
                           key={type.id}
                           onClick={() => setQuickFeedback(prev => ({ ...prev, type: type.id as any }))}
-                          className={`p-3 rounded-lg border transition-all ${quickFeedback.type === type.id ? `${type.color} border-current` : 'border-slate-200 hover:border-slate-300'}`}
+                          className={`p-3 rounded-lg border transition-all flex flex-col items-center gap-2 ${quickFeedback.type === type.id ? `${type.color} border-current` : 'border-slate-200 hover:border-slate-300'}`}
                         >
-                          <div className="text-lg mb-1">{type.icon}</div>
+                          <div className="flex items-center justify-center">{type.icon}</div>
                           <div className="text-xs font-medium">{type.label}</div>
                         </button>
                       ))}

@@ -210,7 +210,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         }
         
         if (corsErrorActive) {
-          setError('🔴 CORS ERROR: Backend API is blocking requests. The server is either offline or CORS headers are not configured. Retries paused for 30 seconds.');
+          setError('CORS ERROR: Backend API is blocking requests. The server is either offline or CORS headers are not configured. Retries paused for 30 seconds.');
         } else {
           setError('Backend API is unavailable. Please ensure the backend server is running and CORS is properly configured.');
         }
@@ -230,7 +230,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       markApiUnavailable('Network connection failed');
       
       if (corsErrorActive) {
-        setError('🔴 CORS ERROR: Backend API is blocking requests. Retries paused for 30 seconds. Please check server status.');
+        setError('CORS ERROR: Backend API is blocking requests. Retries paused for 30 seconds. Please check server status.');
       } else {
         setError('Unable to connect to backend. Please check your connection and ensure CORS is enabled.');
       }
@@ -278,9 +278,29 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
     
     setGeneratingReport(true);
     try {
-      // Simulate report generation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      alert('Report generation started. You will receive a notification when it\'s ready.');
+      // Generate comprehensive report with current insights
+      const report = {
+        timestamp: new Date().toISOString(),
+        conservationArea: selectedUnit || 'Regional Overview',
+        timePeriod: year,
+        narrative: insight?.narrative || '',
+        keyInsights: insight?.key_insights || [],
+        recommendations: insight?.recommendations || [],
+        ecologicalMetrics: insight?.ecological_metrics,
+        confidence: insight?.confidence || 0,
+        generatedBy: 'SekaNet Analyst v2.0.0'
+      };
+      
+      // Create downloadable report
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sekanet-report-${selectedUnit || 'regional'}-${year}-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       
       // Track successful report generation
       if (hasConsent()) {
@@ -402,19 +422,25 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
                 <p className={`text-[10px] font-medium ${!apiAvailable ? 'text-rose-700' : 'text-amber-700'}`}>{error}</p>
                 <button
                   onClick={handleRefresh}
-                  className={`text-[9px] font-medium mt-2 hover:underline ${!apiAvailable ? 'text-rose-800 hover:text-rose-900' : 'text-amber-800 hover:text-amber-900'}`}
+                  className={`flex items-center gap-1 text-[9px] font-medium mt-2 hover:underline ${!apiAvailable ? 'text-rose-800 hover:text-rose-900' : 'text-amber-800 hover:text-amber-900'}`}
                 >
-                  🔄 Retry Connection
+                  <RefreshCw className="w-2.5 h-2.5" />
+                  Retry Connection
                 </button>
                 {!apiAvailable && (
-                  <p className="text-[8px] text-rose-600 mt-2">
-                    ⚠️ The backend server appears to be offline. Please check that:
-                    <ul className="ml-4 mt-1 space-y-0.5">
-                      <li>• Backend is running on Railway</li>
-                      <li>• CORS headers are properly configured</li>
-                      <li>• Network connectivity is working</li>
-                    </ul>
-                  </p>
+                  <div className="mt-2 p-2 bg-rose-50 rounded border border-rose-200">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-3 h-3 text-rose-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-[8px] text-rose-700 font-medium mb-1">Backend server appears to be offline</p>
+                        <ul className="ml-2 space-y-0.5 text-[8px] text-rose-600">
+                          <li>• Backend is running on Railway</li>
+                          <li>• CORS headers are properly configured</li>
+                          <li>• Network connectivity is working</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
