@@ -127,6 +127,15 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
   const handleRun = async () => {
     if (!drawnGeometry) return;
     setLoading(true);
+    
+    console.log('🚀 Starting scenario execution...', {
+      geometry: drawnGeometry,
+      modifications,
+      simulation_years: modifications.simulation_years || 0,
+      user_query: userQuery,
+      selected_unit: selectedUnit
+    });
+    
     try {
       const { simulation_years, ...otherMods } = modifications as any;
       const result = await api.runScenario({
@@ -136,11 +145,24 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
         user_query: userQuery,
         management_units: selectedUnit ? [selectedUnit] : undefined,
       });
+      
+      console.log('✅ Scenario execution successful!', {
+        scenario_id: result.scenario_id,
+        baseline_lions: result.baseline_total_lions,
+        predicted_lions: result.predicted_total_lions,
+        delta: result.delta_lions,
+        delta_percent: result.delta_percent,
+        has_geojson: !!result.scenario_geojson,
+        features_count: result.scenario_geojson?.features?.length || 0,
+        ecological_context: result.ecological_context
+      });
+      
       onScenarioRun?.(result);
       cancelDrawing();
     } catch (error) {
-      console.error('Scenario run failed:', error);
-      alert('Simulation failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      console.error('❌ Scenario execution failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Simulation failed: ${errorMessage}\n\nPlease check:\n1. Backend server is running\n2. Database is connected\n3. XGBoost model is loaded\n4. Selected area contains grid cells`);
     } finally {
       setLoading(false);
     }

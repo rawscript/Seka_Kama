@@ -312,7 +312,28 @@ export const api = {
   // ── Scenario engine ─────────────────────────────────────────────────────
 
   async runScenario(request: ScenarioRequest): Promise<ScenarioResponse> {
-    return this.post('/scenario', request);
+    console.log('📡 API: Sending scenario request to backend...', {
+      endpoint: '/scenario',
+      geometry_type: request.geometry.type,
+      modifications: request.feature_modifications,
+      simulation_years: request.simulation_years,
+      has_user_query: !!request.user_query,
+      management_units: request.management_units
+    });
+    
+    const response = await this.post('/scenario', request);
+    
+    console.log('📡 API: Received scenario response from backend', {
+      scenario_id: response.scenario_id,
+      baseline_total: response.baseline_total_lions,
+      predicted_total: response.predicted_total_lions,
+      delta: response.delta_lions,
+      has_narrative: !!response.llm_narrative,
+      has_geojson: !!response.scenario_geojson,
+      features_count: response.scenario_geojson?.features?.length
+    });
+    
+    return response;
   },
 
   async getScenarioHistory(limit = 50): Promise<{ scenarios: Scenario[]; count: number }> {

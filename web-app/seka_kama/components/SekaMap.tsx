@@ -101,7 +101,7 @@ function SekaMapContent({
   isLiveMode = false,
 }: SekaMapProps): JSX.Element {
   const { 'main-map': mapMain } = useMap();
-  const [onScenarioRunResult, setOnScenarioRunResult] = useState<any>(null);
+  const [scenarioResult, setScenarioResult] = useState<any>(null);
   const envLandXUrl = process.env.NEXT_PUBLIC_LANDX_TILE_URL || '';
   const landXSourceUrl = getDirectDriveLink(envLandXUrl);
 
@@ -423,37 +423,38 @@ function SekaMapContent({
             )}
 
             {/* Future Scenario Layer — shown only after a run */}
-            {onScenarioRunResult?.scenario_geojson && (
-              <Source id="scenario-result" type="geojson" data={onScenarioRunResult.scenario_geojson}>
+            {scenarioResult?.scenario_geojson && (
+              <Source id="scenario-result" type="geojson" data={scenarioResult.scenario_geojson}>
                 <Layer
                   id="scenario-heatmap"
                   type="circle"
                   paint={{
                     'circle-radius': [
                       'interpolate', ['linear'], ['zoom'],
-                      8,  ['interpolate', ['linear'], ['coalesce', ['get', 'scenario_density'], 0], 0, 2, 30, 12],
-                      12, ['interpolate', ['linear'], ['coalesce', ['get', 'scenario_density'], 0], 0, 6, 30, 40],
+                      8,  ['interpolate', ['linear'], ['coalesce', ['get', 'scenario_density'], 0], 0, 3, 30, 14],
+                      12, ['interpolate', ['linear'], ['coalesce', ['get', 'scenario_density'], 0], 0, 8, 30, 45],
                     ],
                     'circle-color': [
                       'interpolate', ['linear'], ['coalesce', ['get', 'scenario_density'], 0],
-                      0,  '#fef3c7',
-                      5,  '#fbbf24',
-                      15, '#f59e0b',
-                      30, '#d97706',
+                      0,  '#dbeafe',
+                      5,  '#60a5fa',
+                      15, '#2563eb',
+                      30, '#1e40af',
                     ],
                     'circle-opacity': [
                       'case',
-                      ['==', ['length', ['literal', filteredBins]], 0], 0.9,
+                      ['==', ['length', ['literal', filteredBins]], 0], 0.85,
                       ['any', 
                         ['all', ['<', ['coalesce', ['get', 'scenario_density'], 0], 5], ['in', 'Very low  (0–5)', ['literal', filteredBins]]],
                         ['all', ['>=', ['coalesce', ['get', 'scenario_density'], 0], 5], ['<', ['coalesce', ['get', 'scenario_density'], 0], 15], ['in', 'Low       (5–15)', ['literal', filteredBins]]],
                         ['all', ['>=', ['coalesce', ['get', 'scenario_density'], 0], 15], ['<', ['coalesce', ['get', 'scenario_density'], 0], 30], ['in', 'Moderate  (15–30)', ['literal', filteredBins]]],
                         ['all', ['>=', ['coalesce', ['get', 'scenario_density'], 0], 30], ['in', 'High      (30+)', ['literal', filteredBins]]]
-                      ], 0.95,
-                      0.05
+                      ], 0.9,
+                      0.1
                     ],
                     'circle-stroke-width': 2,
-                    'circle-stroke-color': '#fff',
+                    'circle-stroke-color': '#1e3a8a',
+                    'circle-stroke-opacity': 0.8
                   }}
                 />
               </Source>
@@ -489,11 +490,32 @@ function SekaMapContent({
 
         <ScenarioDrawer
           onScenarioRun={(res) => {
-            setOnScenarioRunResult(res);
+            console.log('✓ Scenario execution completed with predictions:', {
+              baseline: res.baseline_total_lions,
+              predicted: res.predicted_total_lions,
+              delta: res.delta_lions,
+              cells_affected: res.affected_cells || res.scenario_geojson?.features?.length || 0
+            });
+            setScenarioResult(res);
             onScenarioRun?.(res);
           }}
           selectedUnit={selectedUnit}
         />
+
+        {/* Clear Scenario Button */}
+        {scenarioResult && (
+          <button
+            onClick={() => {
+              setScenarioResult(null);
+              console.log('✓ Scenario results cleared from map');
+            }}
+            className="absolute bottom-32 left-1/2 -translate-x-1/2 z-40 px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-full shadow-lg transition-all flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4"
+            title="Clear scenario visualization"
+          >
+            <X className="w-4 h-4" />
+            <span className="text-sm font-bold uppercase tracking-wider">Clear Scenario</span>
+          </button>
+        )}
 
         {hoverInfo && (
           <div 
@@ -650,7 +672,7 @@ function SekaMapContent({
 
       {/* ── Map Legend ────────────────────────────────────────────── */}
       <MapLegend 
-        hasScenario={!!onScenarioRunResult?.scenario_geojson} 
+        hasScenario={!!scenarioResult?.scenario_geojson} 
         isPrey={showPreyDensity} 
         filteredBins={filteredBins}
         onToggleBin={(bin) => {
