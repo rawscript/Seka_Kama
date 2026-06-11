@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {  Download,
   GitCompare,
   ChevronRight,
@@ -104,6 +105,7 @@ export default function DashboardPage() {
 // ── Main dashboard ────────────────────────────────────────────────────────────
 function DashboardContent() {
   const { 'main-map': mapMain } = useMap();
+  const router = useRouter();
 
   // Map / UI state
   const [scenarioResult, setScenarioResult] = useState<any>(null);
@@ -400,14 +402,14 @@ function DashboardContent() {
           <ScenarioHistoryPanel
             isOpen={isScenarioHistoryOpen}
             onClose={() => setIsScenarioHistoryOpen(false)}
-            onLoadScenario={async (scenarioId: number) => {
-              try {
-                const scenario = await api.getScenarioById(scenarioId);
-                setScenarioResult(scenario);
-                setIsScenarioHistoryOpen(false);
-              } catch (err) {
-                console.error('Failed to load scenario:', err);
-              }
+            onLoadScenario={(scenarioId: number) => {
+              console.log('🗺️ Loading scenario #' + scenarioId + ' in Kepler.gl...');
+              
+              // Store scenario ID in sessionStorage for Kepler page to pick up
+              sessionStorage.setItem('kepler_scenario_id', scenarioId.toString());
+              
+              // Navigate to existing Kepler page
+              router.push('/dashboard/kepler?scenario=' + scenarioId);
             }}
           />
         )}

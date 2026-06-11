@@ -24,6 +24,7 @@ export interface ScenarioResponse {
   affected_units: Record<string, number>;
   llm_narrative: string;
   map_visualization_url: string;
+  scenario_geojson?: any; // GeoJSON FeatureCollection with prediction results
   ecological_context?: {
     avg_prey_density: number;
     avg_rainfall_mm: number;
@@ -59,6 +60,7 @@ export interface ProtectedArea {
 export interface Scenario extends ScenarioResponse {
   created_at: string;
   request_data: ScenarioRequest;
+  scenario_geojson?: any; // GeoJSON FeatureCollection with prediction results
   // history-shape aliases
   user_description?: string;
   modified_features?: Record<string, number>;
