@@ -54,7 +54,8 @@ function KeplerMapInner({ managementUnit, scenarioData, onCellSelect, onScenario
         // Get baseline data for comparison
         baselineResponse = await api.getBaseline(managementUnit);
         protectedResponse = await api.getProtectedAreas();
-        scenarioGeojson = fullScenario.scenario_geojson || fullScenario.request_data?.scenario_geojson;
+        // The scenario_geojson is located at the top level of the Scenario response
+        scenarioGeojson = fullScenario.scenario_geojson;
         
         console.log('Scenario GeoJSON loaded:', scenarioGeojson);
       } else {
