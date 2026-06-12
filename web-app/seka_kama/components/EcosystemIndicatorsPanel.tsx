@@ -320,129 +320,7 @@ const StatusOverview = ({ indicators, selectedUnit }: StatusOverviewProps) => (
   </div>
 );
 
-// Helper function to generate year-adjusted indicators
-const getYearAdjustedIndicators = (year: number, selectedUnit?: string): EcosystemIndicator[] => {
-  const yearOffset = year - 2023; // Base year is 2023
-  const yearFactor = yearOffset * 0.02; // 2% change per year
-  
-  const baseRainfall = selectedUnit ? 850 : 920;
-  const rainfallAdjusted = baseRainfall * (1 + yearFactor);
-  
-  return [
-    {
-      id: 'habitat_suitability',
-      name: 'Habitat Suitability',
-      value: 0.85 + (yearFactor * 0.5),
-      unit: '%',
-      trend: year > 2023 ? 'up' : 'stable',
-      changePercentage: year > 2023 ? 1.2 + (yearFactor * 10) : 1.2,
-      status: (0.85 + (yearFactor * 0.5)) > 0.8 ? 'optimal' : 'good',
-      description: `Overall habitat quality for target species in ${year}`,
-      icon: <TreePine className="w-4 h-4" />,
-      color: '#10b981',
-      dataSource: 'SekaNet Model',
-      lastUpdated: `${year}-06-07T10:30:00Z`
-    },
-    {
-      id: 'threat_level',
-      name: 'Threat Level',
-      value: Math.max(0.05, 0.12 - (yearFactor * 0.3)),
-      unit: '%',
-      trend: year > 2023 ? 'down' : 'stable',
-      changePercentage: year > 2023 ? -2.4 - (yearFactor * 5) : -2.4,
-      status: 'good',
-      description: `Human-wildlife conflict risk assessment for ${year}`,
-      icon: <AlertTriangle className="w-4 h-4" />,
-      color: '#f59e0b',
-      dataSource: 'HWC Monitoring',
-      lastUpdated: `${year}-06-07T10:30:00Z`
-    },
-    {
-      id: 'connectivity',
-      name: 'Connectivity',
-      value: 0.78 + (yearFactor * 0.3),
-      unit: '%',
-      trend: year > 2023 ? 'up' : 'stable',
-      changePercentage: year > 2023 ? 3.6 + (yearFactor * 8) : 3.6,
-      status: (0.78 + (yearFactor * 0.3)) > 0.8 ? 'optimal' : 'good',
-      description: `Ecological corridor effectiveness in ${year}`,
-      icon: <Network className="w-4 h-4" />,
-      color: '#8b5cf6',
-      dataSource: 'Corridor Analysis',
-      lastUpdated: `${year}-06-07T10:30:00Z`
-    },
-    {
-      id: 'rainfall',
-      name: 'Rainfall',
-      value: Math.round(rainfallAdjusted),
-      unit: 'mm',
-      trend: year > 2023 ? 'up' : 'stable',
-      changePercentage: year > 2023 ? 5.2 + (yearFactor * 15) : 5.2,
-      status: 'optimal',
-      description: `Annual precipitation accumulation for ${year}`,
-      icon: <Droplets className="w-4 h-4" />,
-      color: '#0ea5e9',
-      dataSource: 'CHIRPS Satellite',
-      lastUpdated: `${year}-06-07T10:30:00Z`
-    },
-    {
-      id: 'vegetation',
-      name: 'Vegetation Cover',
-      value: selectedUnit ? 65 + Math.round(yearFactor * 7) : 72 + Math.round(yearFactor * 7),
-      unit: '%',
-      trend: year > 2023 ? 'up' : 'stable',
-      changePercentage: year > 2023 ? 0.8 + (yearFactor * 3) : 0.8,
-      status: 'good',
-      description: `Percentage of land with vegetation in ${year}`,
-      icon: <Shield className="w-4 h-4" />,
-      color: '#22c55e',
-      dataSource: 'Sentinel-2 NDVI',
-      lastUpdated: `${year}-06-07T10:30:00Z`
-    },
-    {
-      id: 'hwc_risk',
-      name: 'HWC Risk',
-      value: Math.max(0.02, 0.08 - (yearFactor * 0.2)),
-      unit: '%',
-      trend: year > 2023 ? 'down' : 'stable',
-      changePercentage: year > 2023 ? -1.8 - (yearFactor * 4) : -1.8,
-      status: 'good',
-      description: `Probability of human-wildlife conflict in ${year}`,
-      icon: <Zap className="w-4 h-4" />,
-      color: '#ec4899',
-      dataSource: 'Neural Prediction',
-      lastUpdated: `${year}-06-07T10:30:00Z`
-    },
-    {
-      id: 'corridor_health',
-      name: 'Corridor Health',
-      value: 0.82 + (yearFactor * 0.2),
-      unit: '%',
-      trend: year > 2023 ? 'up' : 'stable',
-      changePercentage: year > 2023 ? 2.1 + (yearFactor * 6) : 2.1,
-      status: 'optimal',
-      description: `Biological corridor functionality in ${year}`,
-      icon: <MapPin className="w-4 h-4" />,
-      color: '#6366f1',
-      dataSource: 'Spatial Analysis',
-      lastUpdated: `${year}-06-07T10:30:00Z`
-    },
-    {
-      id: 'soil_moisture',
-      name: 'Soil Moisture',
-      value: 0.65 + (yearFactor * 0.1),
-      unit: '%',
-      trend: year > 2023 ? 'up' : 'down',
-      changePercentage: year > 2023 ? 1.5 + (yearFactor * 5) : -3.2,
-      status: (0.65 + (yearFactor * 0.1)) > 0.6 ? 'good' : 'warning',
-      description: `Available soil water content for ${year}`,
-      icon: <CloudRain className="w-4 h-4" />,
-      color: '#0d9488',
-      dataSource: 'SMAP Satellite',
-      lastUpdated: `${year}-06-07T10:30:00Z`
-    }
-  ];
-};
+// Mock removal in progress...
 
 export default function EcosystemIndicatorsPanel({ 
   selectedUnit, 
@@ -468,14 +346,10 @@ export default function EcosystemIndicatorsPanel({
   const [selectedIndicator, setSelectedIndicator] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  // Usability tracking
   const { trackAnalystInteraction, hasConsent } = useUsabilityTracking();
-  
-  // API context for centralized request control
   const { shouldAttemptRequest, markApiUnavailable, markApiAvailable } = useApiContext();
 
   const fetchEcosystemData = async () => {
-    // Check if we should attempt request (respects CORS cooldown)
     if (!shouldAttemptRequest()) {
       setLoading(false);
       return;
@@ -483,115 +357,47 @@ export default function EcosystemIndicatorsPanel({
     
     setLoading(true);
     
-    if (hasConsent()) {
-      trackAnalystInteraction('ecosystem-panel-fetch-start', 'click', {
-        panelAction: 'fetch_indicators',
-        insightType: 'ecosystem_data'
-      });
-    }
-
     try {
-      // Try to fetch ecosystem indicators from API
-      try {
-        const indicatorsData = await api.getEcosystemIndicators(selectedUnit || undefined, year);
-        
-        if (indicatorsData && indicatorsData.indicators) {
-          // Transform API data to indicator format
-          const transformedIndicators: EcosystemIndicator[] = indicatorsData.indicators.map((indicator: any) => ({
-            id: indicator.id,
-            name: indicator.name,
-            value: indicator.value,
-            unit: indicator.unit,
-            trend: indicator.trend,
-            changePercentage: indicator.change_percentage,
-            status: indicator.status,
-            description: indicator.description,
-            icon: getIconForIndicator(indicator.id),
-            color: indicator.color,
-            dataSource: indicator.data_source,
-            lastUpdated: indicator.last_updated
-          }));
-          
-          setIndicators(transformedIndicators);
-          markApiAvailable(); // API succeeded
-          
-          if (hasConsent()) {
-            trackAnalystInteraction('ecosystem-panel-fetch-success', 'click', {
-              panelAction: 'indicators_loaded',
-              insightType: 'api_success'
-            });
-          }
-        }
-      } catch (apiError) {
-        console.warn('Ecosystem indicators API not available, using year-adjusted data:', apiError);
-        markApiUnavailable('Ecosystem API unavailable');
-        
-        // Use year-adjusted indicators when API fails
-        const yearAdjustedIndicators = getYearAdjustedIndicators(year, selectedUnit);
-        setIndicators(yearAdjustedIndicators);
-        
-        if (hasConsent()) {
-          trackAnalystInteraction('ecosystem-panel-fallback', 'click', {
-            panelAction: 'fallback_indicators',
-            insightType: 'year_adjusted_data'
-          });
-        }
-      }
+      // 1. Fetch live ecosystem indicators
+      const indicatorsData = await api.getEcosystemIndicators(selectedUnit || undefined, year);
       
-      // Fetch environmental conditions
-      try {
-        const envData = await api.getEnvironmentalConditions(selectedUnit || undefined);
-        if (envData) {
-          setEnvironmentalConditions({
-            temperature: envData.temperature || 24.5,
-            humidity: envData.humidity || 65,
-            windSpeed: envData.wind_speed || 3.2,
-            precipitation: envData.precipitation || 2.4,
-            cloudCover: envData.cloud_cover || 45,
-            uvIndex: envData.uv_index || 6,
-            daylightHours: envData.daylight_hours || 12.2,
-            soilMoisture: envData.soil_moisture || 0.65
-          });
-        }
-      } catch (error) {
-        console.warn('Could not fetch environmental conditions, using year-adjusted defaults:', error);
-        // Use year-adjusted environmental conditions
-        const yearOffset = year - 2023;
-        const yearFactor = yearOffset * 0.02;
-        
+      if (indicatorsData?.indicators) {
+        setIndicators(indicatorsData.indicators.map((i: any) => ({
+          ...i,
+          icon: getIconForIndicator(i.id)
+        })));
+        markApiAvailable();
+      }
+
+      // 2. Fetch live environmental conditions
+      const envData = await api.getEnvironmentalConditions(selectedUnit || undefined, year);
+      if (envData) {
         setEnvironmentalConditions({
-          temperature: 24.5 + (yearFactor * 0.5),
-          humidity: 65 + (yearFactor * 2),
-          windSpeed: 3.2 + (yearFactor * 0.1),
-          precipitation: 2.4 + (yearFactor * 0.2),
-          cloudCover: 45 + (yearFactor * 1),
-          uvIndex: 6 + (yearFactor * 0.2),
-          daylightHours: 12.2,
-          soilMoisture: 0.65 + (yearFactor * 0.1)
+          temperature: envData.temperature ?? 24.5,
+          humidity: envData.humidity ?? 65,
+          windSpeed: envData.wind_speed ?? 3.2,
+          precipitation: envData.precipitation ?? 2.4,
+          cloudCover: envData.cloud_cover ?? 45,
+          uvIndex: envData.uv_index ?? 6,
+          daylightHours: envData.daylight_hours ?? 12.2,
+          soilMoisture: envData.soil_moisture ?? 0.65
         });
       }
       
       setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Failed to fetch ecosystem data:', error);
-      markApiUnavailable('Network error fetching ecosystem data');
-      
+
       if (hasConsent()) {
-        trackAnalystInteraction('ecosystem-panel-fetch-failed', 'click', {
-          panelAction: 'fetch_failed',
-          insightType: 'error'
+        trackAnalystInteraction('ecosystem-panel-fetch-success', 'click', {
+          panelAction: 'data_synchronized',
+          insightType: 'api_live'
         });
       }
+    } catch (error) {
+      console.error('Failed to fetch ecosystem data:', error);
+      markApiUnavailable('API Error');
     } finally {
       setLoading(false);
     }
-  };
-
-  const getStatusFromValue = (value: number, threshold: number): 'optimal' | 'good' | 'warning' | 'critical' => {
-    if (value >= 0.8) return 'optimal';
-    if (value >= 0.6) return 'good';
-    if (value >= 0.4) return 'warning';
-    return 'critical';
   };
 
   const getIconForIndicator = (indicatorId: string): React.ReactNode => {

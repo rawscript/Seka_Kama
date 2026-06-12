@@ -397,9 +397,10 @@ export const api = {
     return this.get(qs ? `/ecosystem/indicators?${qs}` : '/ecosystem/indicators');
   },
 
-  async getEnvironmentalConditions(managementUnit?: string): Promise<EnvironmentalConditions> {
+  async getEnvironmentalConditions(managementUnit?: string, year?: number): Promise<EnvironmentalConditions> {
     const p = new URLSearchParams();
     if (managementUnit) p.append('management_unit', managementUnit);
+    if (year) p.append('year', year.toString());
     const qs = p.toString();
     return this.get(qs ? `/ecosystem/environment?${qs}` : '/ecosystem/environment');
   },

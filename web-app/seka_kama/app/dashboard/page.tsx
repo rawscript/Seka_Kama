@@ -486,184 +486,130 @@ function DashboardContent() {
               </div>
             </div>
           </div>
-
-          {/* Main Analysis Panels - Stacked Layout */}
-          <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar pr-2 pb-4">
+          {/* Main Sidebar Panels Container */}
+          <div className="space-y-4 max-h-[calc(100vh-320px)] overflow-y-auto custom-scrollbar pr-2 pb-4 no-drag">
             
-            {/* Analyst Panel */}
-            <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px] text-emerald-600">smart_toy</span>
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">AI ANALYST</h4>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${isLiveMode ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-                  <span className="text-[10px] text-slate-600">{selectedUnit || 'Regional'}</span>
-                </div>
-              </div>
-              <div className="p-4">
-                <AnalystPanel 
-                  selectedUnit={selectedUnit} 
-                  year={selectedYear} 
-                />
-              </div>
-            </div>
-
-            {/* Ecosystem Indicators Panel */}
-            <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px] text-emerald-600">eco</span>
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">ECOSYSTEM INDICATORS</h4>
-                </div>
-                <span className="text-[10px] text-slate-600">{selectedYear}</span>
-              </div>
-              <div className="p-4">
-                <EcosystemIndicatorsPanel
-                  selectedUnit={selectedUnit}
-                  year={selectedYear}
-                  isLiveMode={isLiveMode}
-                />
-              </div>
-            </div>
-
             {/* Layer Controls Panel */}
             <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-200">
+              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[18px] text-blue-600">layers</span>
                   <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">LAYER CONTROLS</h4>
                 </div>
               </div>
-              <div className="p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-amber-400" />
-                      <span className="text-sm text-slate-700 font-medium">Lion Abundance (XGB)</span>
-                    </div>
-                    <button 
-                      onClick={() => setShowPreyDensity(false)}
-                      className={`w-10 h-5 rounded-full relative transition-colors ${!showPreyDensity ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                    >
-                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${!showPreyDensity ? 'left-6' : 'left-1'}`} />
-                    </button>
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-amber-400" />
+                    <span className="text-sm text-slate-700 font-medium">Lion Abundance (XGB)</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                      <span className="text-sm text-slate-700 font-medium">Ecological Base (Prey)</span>
-                    </div>
-                    <button 
-                      onClick={() => setShowPreyDensity(true)}
-                      className={`w-10 h-5 rounded-full relative transition-colors ${showPreyDensity ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                    >
-                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showPreyDensity ? 'left-6' : 'left-1'}`} />
-                    </button>
+                  <button 
+                    onClick={() => setShowPreyDensity(false)}
+                    className={`w-10 h-5 rounded-full relative transition-colors ${!showPreyDensity ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${!showPreyDensity ? 'left-6' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                    <span className="text-sm text-slate-700 font-medium">Ecological Base (Prey)</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-400" />
-                      <span className="text-sm text-slate-700 font-medium">Neural Landscape Projection</span>
-                    </div>
-                    <button 
-                      onClick={() => setShowPrediction((v) => !v)}
-                      className={`w-10 h-5 rounded-full relative transition-colors ${showPrediction ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                    >
-                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showPrediction ? 'left-6' : 'left-1'}`} />
-                    </button>
+                  <button 
+                    onClick={() => setShowPreyDensity(true)}
+                    className={`w-10 h-5 rounded-full relative transition-colors ${showPreyDensity ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showPreyDensity ? 'left-6' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-400" />
+                    <span className="text-sm text-slate-700 font-medium">Neural Landscape Projection</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-amber-500" />
-                      <span className="text-sm text-slate-700 font-medium">Human Encroachment (Nightlight)</span>
-                    </div>
-                    <button 
-                      onClick={() => setShowEncroachment((v) => !v)}
-                      className={`w-10 h-5 rounded-full relative transition-colors ${showEncroachment ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                    >
-                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showEncroachment ? 'left-6' : 'left-1'}`} />
-                    </button>
+                  <button 
+                    onClick={() => setShowPrediction((v) => !v)}
+                    className={`w-10 h-5 rounded-full relative transition-colors ${showPrediction ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showPrediction ? 'left-6' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-amber-500" />
+                    <span className="text-sm text-slate-700 font-medium">Human Encroachment (Nightlight)</span>
                   </div>
-                  <div className="h-2" />
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                      <span className="text-sm text-slate-700 font-medium">Protected Wildlife Zones</span>
-                    </div>
-                    <button 
-                      onClick={() => setShowProtectedAreas((v) => !v)}
-                      className={`w-10 h-5 rounded-full relative transition-colors ${showProtectedAreas ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                    >
-                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showProtectedAreas ? 'left-6' : 'left-1'}`} />
-                    </button>
+                  <button 
+                    onClick={() => setShowEncroachment((v) => !v)}
+                    className={`w-10 h-5 rounded-full relative transition-colors ${showEncroachment ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showEncroachment ? 'left-6' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-emerald-600" />
+                    <span className="text-sm text-slate-700 font-medium">Protected Wildlife Zones</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-purple-500" />
-                      <span className="text-sm text-slate-700 font-medium">Biological Corridors</span>
-                    </div>
-                    <button 
-                      onClick={() => setShowCorridors((v) => !v)}
-                      className={`w-10 h-5 rounded-full relative transition-colors ${showCorridors ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                    >
-                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showCorridors ? 'left-6' : 'left-1'}`} />
-                    </button>
+                  <button 
+                    onClick={() => setShowProtectedAreas((v) => !v)}
+                    className={`w-10 h-5 rounded-full relative transition-colors ${showProtectedAreas ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showProtectedAreas ? 'left-6' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-purple-500" />
+                    <span className="text-sm text-slate-700 font-medium">Biological Corridors</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-amber-300" />
-                      <span className="text-sm text-slate-700 font-medium">Land-X Admin Boundary</span>
-                    </div>
-                    <button 
-                      onClick={() => setShowLandXBoundary((v) => !v)}
-                      className={`w-10 h-5 rounded-full relative transition-colors ${showLandXBoundary ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                    >
-                      <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showLandXBoundary ? 'left-6' : 'left-1'}`} />
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => setShowCorridors((v) => !v)}
+                    className={`w-10 h-5 rounded-full relative transition-colors ${showCorridors ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showCorridors ? 'left-6' : 'left-1'}`} />
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Historical Trends panel (Gap 2) */}
-          <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-            <button
-              onClick={() => setShowTrends((v) => !v)}
-              className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-50 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[18px] text-purple-600">show_chart</span>
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">HISTORICAL TRENDS</h4>
-              </div>
-              <span className={`material-symbols-outlined text-slate-600 transition-transform duration-200 ${showTrends ? 'rotate-180' : ''}`}>
-                keyboard_arrow_down
-              </span>
-            </button>
+            {/* Historical Trends panel */}
+            <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+              <button
+                onClick={() => setShowTrends((v) => !v)}
+                className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-purple-600">show_chart</span>
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">HISTORICAL TRENDS</h4>
+                </div>
+                <span className={`material-symbols-outlined text-slate-600 transition-transform duration-200 ${showTrends ? 'rotate-180' : ''}`}>
+                  keyboard_arrow_down
+                </span>
+              </button>
 
-            {showTrends && (
-              <div className="px-4 pb-5">
-                {trendsLoading ? (
-                  <div className="flex items-center justify-center py-10 gap-3">
-                    <div className="w-4 h-4 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
-                    <span className="text-[11px] text-slate-500 uppercase tracking-widest">Loading trends…</span>
-                  </div>
-                ) : trends.length === 0 ? (
-                  <p className="text-[12px] text-slate-600 text-center py-8">
-                    No historical data available for {selectedUnit || 'Regional Total'}.
-                  </p>
-                ) : (
-                  <ErrorBoundary label="Trend Chart">
-                    <TrendChart
-                      trends={trends}
-                      unit={selectedUnit || 'Regional Total'}
-                    />
-                  </ErrorBoundary>
-                )}
-              </div>
-            )}
+              {showTrends && (
+                <div className="px-4 pb-5">
+                  {trendsLoading ? (
+                    <div className="flex items-center justify-center py-10 gap-3">
+                      <div className="w-4 h-4 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+                      <span className="text-[11px] text-slate-500 uppercase tracking-widest">Loading trends…</span>
+                    </div>
+                  ) : trends.length === 0 ? (
+                    <p className="text-[12px] text-slate-600 text-center py-8">
+                      No historical data available for {selectedUnit || 'Regional Total'}.
+                    </p>
+                  ) : (
+                    <ErrorBoundary label="Trend Chart">
+                      <TrendChart
+                        trends={trends}
+                        unit={selectedUnit || 'Regional Total'}
+                      />
+                    </ErrorBoundary>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -724,6 +670,22 @@ function DashboardContent() {
         </div>
 
         {/* ── Left-side controls: Zoom, Layer toggle, and Coordinates ── */}
+        {/* ── Floating Primary Panels ── */}
+        {isSidebarOpen && (
+          <>
+            <AnalystPanel 
+              selectedUnit={selectedUnit} 
+              year={selectedYear} 
+            />
+            
+            <EcosystemIndicatorsPanel
+              selectedUnit={selectedUnit}
+              year={selectedYear}
+              isLiveMode={isLiveMode}
+            />
+          </>
+        )}
+
         <div className="absolute bottom-8 left-8 flex flex-col gap-4 z-20">
           {/* Zoom controls */}
           <div className="map-overlay-card p-2 flex flex-col gap-2 rounded-lg">
