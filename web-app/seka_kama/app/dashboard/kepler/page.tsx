@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -8,7 +9,7 @@ import { api } from '@/services/api';
 
 const KeplerMap = dynamic(() => import('@/components/KeplerMap'), { ssr: false });
 
-export default function KeplerPage() {
+function KeplerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [scenarioData, setScenarioData] = useState<any>(null);
@@ -53,21 +54,38 @@ export default function KeplerPage() {
   }, [searchParams]);
 
   return (
-    <ProtectedRoute>
-      <div style={{ width: '100%', height: 'calc(100vh - 58px)', position: 'relative', overflow: 'hidden' }}>
-        {loading ? (
-          <div className="w-full h-full flex items-center justify-center bg-slate-900">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-              <p className="text-emerald-500 font-medium text-xs uppercase tracking-widest">
-                Loading Scenario Visualization...
-              </p>
-            </div>
+    <div style={{ width: '100%', height: 'calc(100vh - 58px)', position: 'relative', overflow: 'hidden' }}>
+      {loading ? (
+        <div className="w-full h-full flex items-center justify-center bg-slate-900">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+            <p className="text-emerald-500 font-medium text-xs uppercase tracking-widest">
+              Loading Scenario Visualization...
+            </p>
           </div>
-        ) : (
-          <KeplerMap scenarioData={scenarioData} />
-        )}
-      </div>
+        </div>
+      ) : (
+        <KeplerMap scenarioData={scenarioData} />
+      )}
+    </div>
+  );
+}
+
+export default function KeplerPage() {
+  return (
+    <ProtectedRoute>
+      <Suspense fallback={
+        <div className="w-full h-[calc(100vh-58px)] flex items-center justify-center bg-slate-900">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+            <p className="text-emerald-500 font-medium text-xs uppercase tracking-widest">
+              Initializing Analyst Workspace...
+            </p>
+          </div>
+        </div>
+      }>
+        <KeplerContent />
+      </Suspense>
     </ProtectedRoute>
   );
 }
