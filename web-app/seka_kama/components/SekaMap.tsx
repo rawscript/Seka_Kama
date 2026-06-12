@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Map, { Source, Layer, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { ShieldCheck, Info, Target } from 'lucide-react';
+import { ShieldCheck, Info, Target, X } from 'lucide-react';
 import { api } from '@/services/api';
 import { getApiUrl } from '@/services/config';
 import ScenarioDrawer from './ScenarioDrawer';
@@ -765,7 +765,7 @@ function MapLegend({
           <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
             Spatial Legend
           </span>
-          <span style={{ fontSize: 10, opacity: 0.4 }}>{collapsed ? '▲' : '▼'}</span>
+          <span style={{ fontSize: 10, opacity: 0.4 }}>{collapsed ? 'SHOW' : 'HIDE'}</span>
         </button>
 
         {!collapsed && (
