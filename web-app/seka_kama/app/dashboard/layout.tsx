@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { getApiUrl } from '@/services/config';
 import NotificationPanel from '@/components/NotificationPanel';
+import { DashboardUiProvider, useDashboardUi } from '@/contexts/DashboardUiContext';
 
 interface User {
   id: number;
@@ -19,6 +20,18 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  return (
+    <DashboardUiProvider>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </DashboardUiProvider>
+  );
+}
+
+function DashboardLayoutContent({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
@@ -26,6 +39,7 @@ export default function DashboardLayout({
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const { visiblePanels, togglePanel } = useDashboardUi();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -106,6 +120,7 @@ export default function DashboardLayout({
           --primary-container: #c5a059;
           --on-primary-container: #4e3700;
           --error: #ba1a1a;
+          --status-online: #775a19;
         }
 
         .dashboard-container {
@@ -139,22 +154,26 @@ export default function DashboardLayout({
           border-right: 2px solid var(--primary);
         }
 
+        .sharp-edge {
+          border-radius: 0 !important;
+        }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #d1c5b4; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #d1c5b4; border-radius: 0; }
       `}} />
 
       <div className="dashboard-container flex h-screen overflow-hidden">
         {/* Sidebar Navigation */}
-        <aside className="fixed left-0 top-0 h-full w-72 border-r border-outline-variant bg-surface-container-lowest flex flex-col pt-8 pb-6 px-6 z-50">
+        <aside className="fixed left-0 top-0 h-full w-72 border-r border-outline-variant bg-surface-container-lowest flex flex-col pt-8 pb-6 px-6 z-50 sharp-edge">
           <div className="mb-10 flex flex-col">
             <span className="headline-font text-2xl font-semibold text-primary uppercase tracking-widest leading-none">Seka Kama</span>
             <span className="text-[12px] font-semibold text-secondary tracking-[0.3em] mt-1">ENTERPRISE</span>
           </div>
 
-          <div className="flex flex-col gap-y-8 flex-grow overflow-y-auto custom-scrollbar">
+          <div className="flex flex-col gap-y-6 flex-grow overflow-y-auto custom-scrollbar">
             <div>
-              <h3 className="text-[12px] font-semibold text-outline mb-4 px-2 tracking-[0.15em] uppercase">MAIN INTELLIGENCE</h3>
+              <h3 className="text-[12px] font-semibold text-outline mb-4 px-2 tracking-[0.15em] uppercase">Intelligence Hub</h3>
               <nav className="space-y-1">
                 {navLinks.map((link) => {
                   const isActive = pathname === link.href;
@@ -162,7 +181,7 @@ export default function DashboardLayout({
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-sm ${
+                      className={`sidebar-link flex items-center gap-3 px-3 py-2.5 sharp-edge ${
                         isActive 
                           ? 'active font-semibold' 
                           : 'text-secondary hover:text-primary hover:bg-surface-container-low'
@@ -177,6 +196,40 @@ export default function DashboardLayout({
             </div>
 
             <div>
+              <h3 className="text-[12px] font-semibold text-outline mb-4 px-2 tracking-[0.15em] uppercase">Real-time Metrics</h3>
+              <nav className="space-y-1">
+                <button 
+                  onClick={() => togglePanel('analyst')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.analyst ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
+                >
+                  <span className="material-symbols-outlined">analytics</span>
+                  <span className="text-[16px] tracking-tight">Analyst Insights</span>
+                </button>
+                <button 
+                  onClick={() => togglePanel('indicators')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.indicators ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
+                >
+                  <span className="material-symbols-outlined">monitoring</span>
+                  <span className="text-[16px] tracking-tight">Ecosystem Metrics</span>
+                </button>
+                <button 
+                  onClick={() => togglePanel('layers')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.layers ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
+                >
+                  <span className="material-symbols-outlined">layers</span>
+                  <span className="text-[16px] tracking-tight">Map Layers</span>
+                </button>
+                <button 
+                  onClick={() => togglePanel('trends')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.trends ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
+                >
+                  <span className="material-symbols-outlined">trending_up</span>
+                  <span className="text-[16px] tracking-tight">Historical Trends</span>
+                </button>
+              </nav>
+            </div>
+
+            <div>
               <h3 className="text-[12px] font-semibold text-outline mb-4 px-2 tracking-[0.15em] uppercase">SYSTEM CONTROL</h3>
               <nav className="space-y-1">
                 {adminLinks.map((link) => {
@@ -185,7 +238,7 @@ export default function DashboardLayout({
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-sm ${
+                      className={`sidebar-link flex items-center gap-3 px-3 py-2.5 sharp-edge ${
                         isActive 
                           ? 'active font-semibold' 
                           : 'text-secondary hover:text-primary hover:bg-surface-container-low'
@@ -201,7 +254,7 @@ export default function DashboardLayout({
           </div>
 
           <div className="mt-auto pt-6">
-            <button className="w-full bg-[#775a19] text-white py-3 px-4 text-[12px] font-semibold uppercase tracking-widest hover:bg-opacity-90 active:scale-[0.98] transition-all">
+            <button className="w-full bg-[#775a19] text-white py-4 px-4 text-[12px] font-bold uppercase tracking-widest hover:bg-opacity-95 active:scale-[0.99] transition-all sharp-edge">
               New Analysis
             </button>
           </div>
@@ -224,7 +277,7 @@ export default function DashboardLayout({
 
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#1db954] animate-pulse"></div>
+                <div className="w-2 h-2 rounded-none bg-[#775a19] animate-pulse"></div>
                 <span className="text-[12px] font-semibold text-secondary uppercase tracking-widest">System Operational</span>
               </div>
               
@@ -246,7 +299,7 @@ export default function DashboardLayout({
                 </div>
                 <button 
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="w-10 h-10 bg-[#c5a059] rounded-full flex items-center justify-center text-[#4e3700] text-sm font-semibold border border-outline-variant overflow-hidden hover:opacity-90 transition-opacity"
+                  className="w-10 h-10 bg-[#c5a059] rounded-none flex items-center justify-center text-[#4e3700] text-sm font-semibold border border-outline-variant overflow-hidden hover:opacity-90 transition-opacity sharp-edge"
                 >
                   {user?.full_name ? initials : (
                     <img 

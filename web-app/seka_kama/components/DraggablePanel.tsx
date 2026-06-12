@@ -250,7 +250,7 @@ export default function DraggablePanel({
         <div className="absolute top-2 right-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
           <button 
             onClick={togglePin} 
-            className="p-2 bg-white/90 hover:bg-white text-slate-700 rounded-full transition-colors shadow-lg border border-slate-200 backdrop-blur-sm"
+            className="p-2 bg-white/90 hover:bg-white text-slate-700 rounded-none transition-colors shadow-lg border border-slate-200 backdrop-blur-sm sharp-edge"
             title="Unpin panel to float"
           >
             <Pin className="w-4 h-4" />
@@ -283,17 +283,17 @@ export default function DraggablePanel({
       >
         {/* Collision warning indicator */}
         {isColliding && (
-          <div className="absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-bl-lg z-50 animate-pulse shadow-md" title="Panel overlap detected - dragging to resolve" />
+          <div className="absolute top-0 right-0 w-3 h-3 bg-rose-500 z-50 animate-pulse shadow-md" title="Panel overlap detected - dragging to resolve" />
         )}
         
         {/* Drag Handle */}
-        <div className={`drag-handle w-full h-10 bg-white/95 hover:bg-white/100 cursor-move flex items-center justify-between px-4 rounded-t-xl transition-all relative border-b border-slate-200 shadow-sm z-20 group-header backdrop-blur-sm ${isColliding ? 'border-rose-500/50' : 'border-slate-200/50'}`}>
+        <div className={`drag-handle w-full h-10 bg-white/95 hover:bg-white/100 cursor-move flex items-center justify-between px-4 rounded-none transition-all relative border-b border-slate-200 shadow-sm z-20 group-header backdrop-blur-sm ${isColliding ? 'border-rose-500/50' : 'border-slate-200/50'}`}>
           {/* Drag handle visual indicator */}
           <div className="flex items-center gap-3 drag-handle opacity-60 hover:opacity-100 transition-opacity">
             <div className="flex gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-slate-300/80" />
-              <div className="w-2 h-2 rounded-full bg-slate-300/80" />
-              <div className="w-2 h-2 rounded-full bg-slate-300/80" />
+              <div className="w-2 h-2 rounded-none bg-slate-300/80" />
+              <div className="w-2 h-2 rounded-none bg-slate-300/80" />
+              <div className="w-2 h-2 rounded-none bg-slate-300/80" />
             </div>
             <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider ml-1">Draggable</span>
           </div>
@@ -301,9 +301,9 @@ export default function DraggablePanel({
           <div className="flex items-center gap-1.5">
             <button 
               onClick={togglePin} 
-              className={`p-1.5 rounded-md transition-all ${
+              className={`p-1.5 rounded-none transition-all ${
                 isPinned 
-                  ? 'bg-emerald-500/10 text-emerald-600' 
+                  ? 'bg-[#775a19]/10 text-[#775a19]' 
                   : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
               }`}
               title={isPinned ? "Pin panel back" : "Unpin panel to float"}
@@ -323,7 +323,7 @@ export default function DraggablePanel({
         
         {/* Visual indicator when dragging */}
         {isDragging && (
-          <div className="absolute inset-0 border-2 border-emerald-500/30 rounded-xl pointer-events-none z-50 bg-emerald-500/5 shadow-lg" />
+          <div className="absolute inset-0 border-2 border-[#775a19]/30 rounded-none pointer-events-none z-50 bg-[#775a19]/5 shadow-lg" />
         )}
       </div>
     </Draggable>

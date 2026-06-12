@@ -71,8 +71,8 @@ interface IndicatorCardProps {
 const IndicatorCard = ({ indicator, selectedIndicator, onIndicatorClick }: IndicatorCardProps) => {
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'optimal': return '#10b981';
-      case 'good': return '#0ea5e9';
+      case 'optimal': return '#775a19';
+      case 'good': return '#c5a059';
       case 'warning': return '#f59e0b';
       case 'critical': return '#ef4444';
       default: return '#6b7280';
@@ -98,7 +98,7 @@ const IndicatorCard = ({ indicator, selectedIndicator, onIndicatorClick }: Indic
 
   return (
     <div 
-      className={`p-3 rounded-lg border transition-all cursor-pointer hover:shadow-md ${
+      className={`p-3 rounded-none border transition-all cursor-pointer hover:shadow-md ${
         selectedIndicator === indicator.id 
           ? 'bg-slate-50 border-slate-300 shadow-sm' 
           : 'bg-white border-slate-200'
@@ -108,10 +108,10 @@ const IndicatorCard = ({ indicator, selectedIndicator, onIndicatorClick }: Indic
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
           <div 
-            className="p-1.5 rounded-md"
-            style={{ backgroundColor: `${indicator.color}15` }}
+            className="p-1.5 rounded-none"
+            style={{ backgroundColor: `${indicator.color === '#10b981' ? '#775a19' : indicator.color}15` }}
           >
-            <div style={{ color: indicator.color }}>
+            <div style={{ color: indicator.color === '#10b981' ? '#775a19' : indicator.color }}>
               {indicator.icon}
             </div>
           </div>
@@ -119,8 +119,8 @@ const IndicatorCard = ({ indicator, selectedIndicator, onIndicatorClick }: Indic
             <h4 className="text-xs font-bold text-slate-800">{indicator.name}</h4>
             <div className="flex items-center gap-1 mt-0.5">
               <div 
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: getStatusColor(indicator.status) }}
+                className="w-2 h-2 rounded-none"
+                style={{ backgroundColor: getStatusColor(indicator.status === 'optimal' ? 'optimal' : indicator.status) }}
               />
               <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: getStatusColor(indicator.status) }}>
                 {indicator.status}
@@ -138,7 +138,7 @@ const IndicatorCard = ({ indicator, selectedIndicator, onIndicatorClick }: Indic
           <div className="flex items-center justify-end gap-1 mt-0.5">
             {getTrendIcon(indicator.trend)}
             <span className={`text-[10px] font-medium ${
-              indicator.trend === 'up' ? 'text-emerald-600' :
+              indicator.trend === 'up' ? 'text-[#775a19]' :
               indicator.trend === 'down' ? 'text-rose-600' : 'text-slate-600'
             }`}>
               {getTrendText(indicator.trend, indicator.changePercentage)}
@@ -255,13 +255,13 @@ interface StatusOverviewProps {
 }
 
 const StatusOverview = ({ indicators, selectedUnit }: StatusOverviewProps) => (
-  <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200">
+  <div className="p-3 rounded-none bg-gradient-to-br from-[#775a19]/5 to-[#775a19]/10 border border-[#775a19]/20">
     <div className="flex items-center justify-between mb-2">
       <div className="flex items-center gap-2">
-        <Activity className="w-4 h-4 text-emerald-700" />
-        <h4 className="text-xs font-bold text-emerald-900">Ecosystem Health Overview</h4>
+        <Activity className="w-4 h-4 text-[#775a19]" />
+        <h4 className="text-xs font-bold text-[#4e3700]">Ecosystem Health Overview</h4>
       </div>
-      <div className="px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-bold rounded-full">
+      <div className="px-2 py-0.5 bg-[#775a19] text-white text-[9px] font-bold rounded-none">
         {selectedUnit || 'Regional'}
       </div>
     </div>
@@ -269,18 +269,18 @@ const StatusOverview = ({ indicators, selectedUnit }: StatusOverviewProps) => (
     <div className="grid grid-cols-2 gap-3">
       <div>
         <div className="flex items-center gap-1 mb-1">
-          <div className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span className="text-[10px] text-emerald-800 font-medium">Optimal</span>
+          <div className="w-2 h-2 rounded-none bg-[#775a19]" />
+          <span className="text-[10px] text-[#775a19] font-medium">Optimal</span>
         </div>
-        <div className="text-lg font-bold text-emerald-900">
+        <div className="text-lg font-bold text-[#4e3700]">
           {indicators.filter(i => i.status === 'optimal').length}
-          <span className="text-xs font-normal text-emerald-700 ml-1">indicators</span>
+          <span className="text-xs font-normal text-[#775a19] ml-1">indicators</span>
         </div>
       </div>
       
       <div>
         <div className="flex items-center gap-1 mb-1">
-          <div className="w-2 h-2 rounded-full bg-blue-500" />
+          <div className="w-2 h-2 rounded-none bg-blue-500" />
           <span className="text-[10px] text-blue-800 font-medium">Good</span>
         </div>
         <div className="text-lg font-bold text-blue-900">
@@ -291,7 +291,7 @@ const StatusOverview = ({ indicators, selectedUnit }: StatusOverviewProps) => (
       
       <div>
         <div className="flex items-center gap-1 mb-1">
-          <div className="w-2 h-2 rounded-full bg-amber-500" />
+          <div className="w-2 h-2 rounded-none bg-amber-500" />
           <span className="text-[10px] text-amber-800 font-medium">Warning</span>
         </div>
         <div className="text-lg font-bold text-amber-900">
@@ -302,7 +302,7 @@ const StatusOverview = ({ indicators, selectedUnit }: StatusOverviewProps) => (
       
       <div>
         <div className="flex items-center gap-1 mb-1">
-          <div className="w-2 h-2 rounded-full bg-rose-500" />
+          <div className="w-2 h-2 rounded-none bg-rose-500" />
           <span className="text-[10px] text-rose-800 font-medium">Critical</span>
         </div>
         <div className="text-lg font-bold text-rose-900">
@@ -312,8 +312,8 @@ const StatusOverview = ({ indicators, selectedUnit }: StatusOverviewProps) => (
       </div>
     </div>
     
-    <div className="mt-3 pt-2 border-t border-emerald-200">
-      <p className="text-[11px] text-emerald-800 text-center">
+    <div className="mt-3 pt-2 border-t border-[#775a19]/20">
+      <p className="text-[11px] text-[#775a19] text-center">
         Overall ecosystem health: <span className="font-bold">Good</span>
       </p>
     </div>
@@ -467,8 +467,8 @@ export default function EcosystemIndicatorsPanel({
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Activity className="w-5 h-5 text-emerald-600" />
-              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              <Activity className="w-5 h-5 text-[#775a19]" />
+              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#775a19] rounded-none animate-pulse" />
             </div>
             <div>
               <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-[0.2em]">
@@ -542,7 +542,7 @@ export default function EcosystemIndicatorsPanel({
             {loading ? (
               <div className="flex flex-col items-center justify-center h-full">
                 <div className="relative w-12 h-12 flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                  <div className="absolute inset-0 rounded-none border-4 border-[#775a19]/20 border-t-[#775a19] animate-spin" />
                 </div>
                 <p className="mt-4 text-xs text-slate-600">Loading ecosystem indicators...</p>
               </div>

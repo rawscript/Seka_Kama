@@ -25,6 +25,7 @@ import dynamic from 'next/dynamic';
 import { MapProvider, useMap } from 'react-map-gl/maplibre';
 import { api, type LandscapeStats, type HistoricalTrend } from '@/services/api';
 import { ApiProvider } from '@/contexts/ApiContext';
+import { useDashboardUi } from '@/contexts/DashboardUiContext';
 
 // ── Dynamic imports (browser-only) ───────────────────────────────────────────
 import DraggablePanel from '@/components/DraggablePanel';
@@ -148,32 +149,12 @@ function DashboardContent() {
   const [searchQuery, setSearchQuery]               = useState('');
   const [isSidebarOpen, setIsSidebarOpen]           = useState(true);
   const [isMobile, setIsMobile]                     = useState(false);
+  const { visiblePanels, togglePanel } = useDashboardUi();
   const [isWalkthroughOpen, setIsWalkthroughOpen]   = useState(false);
   const [isLiveMode, setIsLiveMode]                 = useState(false);
 
-  // Panel visibility state
-  const [visiblePanels, setVisiblePanels] = useState<Record<string, boolean>>({
-    'analyst': true,
-    'indicators': true,
-    'layers': true,
-    'history': false,
-    'trends': false
-  });
-
-  const togglePanel = (panelId: string) => {
-    setVisiblePanels(prev => ({ ...prev, [panelId]: !prev[panelId] }));
-  };
-
   // ── Pages / Layout ──────────────────────────────────────────────────────────
-  const SideDock = dynamic(() => import('@/components/SideDock'), { ssr: false });
-
-  const dockPanels = [
-    { id: 'analyst', label: 'Analyst Insights', icon: <Bot className="w-4 h-4" />, isVisible: visiblePanels.analyst, onToggle: () => togglePanel('analyst') },
-    { id: 'indicators', label: 'Ecosystem Metrics', icon: <Activity className="w-4 h-4" />, isVisible: visiblePanels.indicators, onToggle: () => togglePanel('indicators') },
-    { id: 'layers', label: 'Map Layers', icon: <Layers className="w-4 h-4" />, isVisible: visiblePanels.layers, onToggle: () => togglePanel('layers') },
-    { id: 'history', label: 'Scenario History', icon: <History className="w-4 h-4" />, isVisible: visiblePanels.history, onToggle: () => togglePanel('history') },
-    { id: 'trends', label: 'Historical Trends', icon: <BarChart3 className="w-4 h-4" />, isVisible: visiblePanels.trends, onToggle: () => togglePanel('trends') },
-  ];
+  // Removed SideDock - functionality moved to DashboardLayout sidebar
 
   // Temporal slider
   const [timeValue, setTimeValue] = useState(66);
@@ -225,16 +206,6 @@ function DashboardContent() {
   }, [showTrends, selectedUnit, selectedYear]);
 
   // -- Responsive check --
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 1024;
-      setIsMobile(mobile);
-      if (mobile) setIsSidebarOpen(false);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // ── Playback ──────────────────────────────────────────────────────────────
   const stopPlayback = useCallback(() => {
@@ -315,6 +286,7 @@ function DashboardContent() {
           background: rgba(255,255,255,0.92);
           backdrop-filter: blur(16px);
           border: 0.5px solid #d1c5b4;
+          border-radius: 0;
         }
         .premium-gradient-bar {
           background: linear-gradient(to right, #775a19 0%, #ffdea5 50%, #ba1a1a 100%);
@@ -324,13 +296,11 @@ function DashboardContent() {
         }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1c5b4; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1c5b4; border-radius: 0px; }
       `}} />
 
       {/* Floating layer for draggable panels to escape flex wrappers */}
       <div id="floating-layer" className="fixed inset-0 pointer-events-none z-[9999]" />
-
-      <SideDock panels={dockPanels} />
 
       <div className="relative w-full h-full bg-[#dadada]">
 
@@ -354,11 +324,11 @@ function DashboardContent() {
         </ErrorBoundary>
 
         {/* ── Status pill ── */}
-        <div className="absolute top-8 left-72 flex items-center gap-3 z-10 transition-all duration-300">
-          <div className="flex items-center gap-3 px-4 py-2 bg-[#1a1c1c]/80 backdrop-blur-md rounded-full pointer-events-none">
-            <div className="w-2 h-2 rounded-full bg-[#1db954]" />
+        <div className="absolute top-8 left-8 flex items-center gap-3 z-10 transition-all duration-300">
+          <div className="flex items-center gap-3 px-4 py-2 bg-[#1a1c1c]/80 backdrop-blur-md rounded-none pointer-events-none border border-white/10">
+            <div className="w-2 h-2 rounded-none bg-[#775a19]" />
             <span className="text-[10px] font-bold text-white uppercase tracking-widest">DIGITAL TWIN ACTIVE</span>
-            <span className="text-[10px] font-bold text-[#1db954] ml-2 opacity-80 uppercase tracking-widest">{selectedYear}</span>
+            <span className="text-[10px] font-bold text-[#775a19] ml-2 opacity-80 uppercase tracking-widest">{selectedYear}</span>
           </div>
 
           {!isMobile && (
@@ -394,9 +364,9 @@ function DashboardContent() {
 
           <button 
             onClick={() => setIsLiveMode(!isLiveMode)}
-            className={`px-4 py-2 rounded-full border backdrop-blur-md text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${isLiveMode ? 'bg-emerald-500 text-white border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-white/10 text-white/60 border-white/10 hover:bg-white/20'}`}
+            className={`px-4 py-2 rounded-none border backdrop-blur-md text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 ${isLiveMode ? 'bg-[#775a19] text-white border-[#775a19] shadow-[0_0_15px_rgba(119,90,25,0.4)]' : 'bg-white/10 text-white/60 border-white/10 hover:bg-white/20'}`}
           >
-            <div className={`w-1.5 h-1.5 rounded-full ${isLiveMode ? 'bg-white animate-pulse' : 'bg-white/20'}`} />
+            <div className={`w-1.5 h-1.5 rounded-none ${isLiveMode ? 'bg-white animate-pulse' : 'bg-white/20'}`} />
             {isLiveMode ? 'Live Twin Active' : 'Enable Live Twin'}
           </button>
         </div>

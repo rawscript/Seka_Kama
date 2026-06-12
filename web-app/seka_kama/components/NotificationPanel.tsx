@@ -109,7 +109,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
       <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
         {loading ? (
           <div className="p-10 flex flex-col items-center justify-center gap-3">
-             <div className="w-5 h-5 border-2 border-[#775a19] border-t-transparent rounded-full animate-spin"></div>
+             <div className="w-5 h-5 border-2 border-[#775a19] border-t-transparent rounded-none animate-spin"></div>
              <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Syncing Stream...</p>
           </div>
         ) : (
@@ -118,7 +118,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
               <div className="p-4 bg-[#1a1c1c] border-b border-white/5 space-y-4">
                  <div className="flex items-center justify-between">
                     <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Connectivity</span>
-                    <span className="text-[9px] font-mono text-emerald-400 uppercase">{health.status}</span>
+                    <span className="text-[9px] font-mono text-[#c5a059] uppercase">{health.status}</span>
                  </div>
                  <div className="grid grid-cols-2 gap-2">
                     <div className="p-2 bg-white/5 rounded-sm">
@@ -174,7 +174,7 @@ function NotificationItem({ log }: { log: AuditLog }) {
     switch (log.resource_type?.toLowerCase()) {
       case 'security': return <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />;
       case 'system': return <Zap className="w-3.5 h-3.5 text-amber-500" />;
-      case 'intelligence': return <Info className="w-3.5 h-3.5 text-emerald-500" />;
+      case 'intelligence': return <Info className="w-3.5 h-3.5 text-[#775a19]" />;
       default: return <Bell className="w-3.5 h-3.5 text-slate-400" />;
     }
   };

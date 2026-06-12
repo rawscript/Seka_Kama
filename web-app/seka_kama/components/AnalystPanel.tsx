@@ -50,18 +50,18 @@ const InsightMetrics = ({ metrics }: InsightMetricsProps) => {
   if (!metrics) return null;
   
   const metricItems = [
-    { label: 'Habitat Suitability', value: `${(metrics.habitat_suitability * 100).toFixed(0)}%`, icon: <MapPin className="w-3 h-3" />, color: 'text-emerald-600' },
+    { label: 'Habitat Suitability', value: `${(metrics.habitat_suitability * 100).toFixed(0)}%`, icon: <MapPin className="w-3 h-3" />, color: 'text-[#775a19]' },
     { label: 'Threat Level', value: `${(metrics.threat_level * 100).toFixed(0)}%`, icon: <AlertTriangle className="w-3 h-3" />, color: metrics.threat_level > 0.1 ? 'text-amber-600' : 'text-slate-600' },
     { label: 'Connectivity', value: `${(metrics.connectivity_score * 100).toFixed(0)}%`, icon: <TrendingUp className="w-3 h-3" />, color: 'text-blue-600' },
     { label: 'Rainfall', value: `${metrics.rainfall_mm}mm`, icon: <BarChart3 className="w-3 h-3" />, color: 'text-cyan-600' },
-    { label: 'Vegetation', value: `${metrics.vegetation_cover}%`, icon: <Shield className="w-3 h-3" />, color: 'text-green-600' },
+    { label: 'Vegetation', value: `${metrics.vegetation_cover}%`, icon: <Shield className="w-3 h-3" />, color: 'text-[#775a19]' },
   ];
 
   return (
     <div className="grid grid-cols-5 gap-2 mb-4">
       {metricItems.map((metric, index) => (
         <div key={index} className="text-center">
-          <div className={`p-1 rounded-md bg-slate-50 mb-1 ${metric.color}`}>
+          <div className={`p-1 rounded-none bg-slate-50 mb-1 ${metric.color}`}>
             {metric.icon}
           </div>
           <div className="text-[8px] font-bold text-slate-700">{metric.value}</div>
@@ -386,8 +386,8 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         >
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Bot className="w-4 h-4 text-emerald-600" />
-              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              <Bot className="w-4 h-4 text-[#775a19]" />
+              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#775a19] rounded-none animate-pulse" />
             </div>
             <div>
               <h3 className="text-[10px] font-bold text-slate-800 uppercase tracking-[0.2em]">SekaNet Analyst</h3>
@@ -428,7 +428,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
                   Retry Connection
                 </button>
                 {!apiAvailable && (
-                  <div className="mt-2 p-2 bg-rose-50 rounded border border-rose-200">
+                  <div className="mt-2 p-2 bg-rose-50 rounded-none border border-rose-200">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="w-3 h-3 text-rose-600 flex-shrink-0 mt-0.5" />
                       <div>
@@ -469,7 +469,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
               ) : insight?.narrative ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-1 mb-1">
-                    <Shield className="w-3 h-3 text-emerald-500" />
+                    <Shield className="w-3 h-3 text-[#775a19]" />
                     <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Ecological Analysis</span>
                   </div>
                   <div 
@@ -480,17 +480,17 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
               ) : (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-2">
-                    <div className="flex gap-3 p-3 bg-white rounded-md items-start border border-emerald-200 shadow-sm">
-                      <div className="p-1.5 bg-emerald-50 rounded">
-                        <Shield className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="flex gap-3 p-3 bg-white rounded-none items-start border border-[#775a19]/20 shadow-sm">
+                      <div className="p-1.5 bg-[#775a19]/5 rounded-none">
+                        <Shield className="w-3.5 h-3.5 text-[#775a19]" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider mb-1">Neural Defense</p>
+                        <p className="text-[10px] font-bold text-[#775a19] uppercase tracking-wider mb-1">Neural Defense</p>
                         <p className="text-[11px] text-slate-800">Habitat suitability is currently optimal in the northern corridors. Human pressure remains below 0.1 trend threshold.</p>
                       </div>
                     </div>
-                    <div className="flex gap-3 p-3 bg-white rounded-md items-start border border-amber-200 shadow-sm">
-                      <div className="p-1.5 bg-amber-50 rounded">
+                    <div className="flex gap-3 p-3 bg-white rounded-none items-start border border-amber-200 shadow-sm">
+                      <div className="p-1.5 bg-amber-50 rounded-none">
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                       </div>
                       <div>
@@ -528,7 +528,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
                 <button
                   onClick={handleGenerateReport}
                   disabled={generatingReport}
-                  className="flex items-center gap-1 px-3 py-1.5 text-[9px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 px-3 py-1.5 text-[9px] font-bold text-white bg-[#775a19] hover:bg-[#4e3700] rounded-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {generatingReport ? (
                     <>
@@ -547,7 +547,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
               {/* Status Bar */}
               <div className="flex items-center justify-between text-[7px] text-slate-500">
                 <div className="flex items-center gap-1">
-                  <div className={`w-1.5 h-1.5 rounded-full ${error ? 'bg-rose-500' : loading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+                  <div className={`w-1.5 h-1.5 rounded-none ${error ? 'bg-rose-500' : loading ? 'bg-amber-500 animate-pulse' : 'bg-[#775a19]'}`} />
                   <span>{error ? 'Error' : loading ? 'Updating...' : 'Online'}</span>
                 </div>
                 <div className="flex items-center gap-2">
