@@ -445,7 +445,11 @@ function DashboardContent() {
         )}
 
         {visiblePanels.layers && (
-          <DraggablePanel id="layers_panel" defaultPosition={{ x: window.innerWidth - 380, y: 16 }} defaultSize={{ width: 340, height: 460 }}>
+          <DraggablePanel 
+            id="layers_panel" 
+            defaultPosition={{ x: (typeof window !== 'undefined' ? window.innerWidth : 1200) - 380, y: 16 }} 
+            defaultSize={{ width: 340, height: 460 }}
+          >
             <div className="bg-white/95 backdrop-blur-sm h-full flex flex-col">
               <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
                 <div className="flex items-center gap-2">
@@ -510,7 +514,11 @@ function DashboardContent() {
         )}
 
         {visiblePanels.trends && (
-          <DraggablePanel id="trends_panel" defaultPosition={{ x: window.innerWidth - 380, y: 500 }} defaultSize={{ width: 340, height: 320 }}>
+          <DraggablePanel 
+            id="trends_panel" 
+            defaultPosition={{ x: (typeof window !== 'undefined' ? window.innerWidth : 1200) - 380, y: 500 }} 
+            defaultSize={{ width: 340, height: 320 }}
+          >
              <div className="bg-white/95 backdrop-blur-sm h-full flex flex-col">
               <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
