@@ -214,16 +214,15 @@ async def get_landscape_summary(
     
     # 1. Fetch stats for context
     stats = db.get_landscape_stats(management_unit=management_unit, year=year)
-    
-    # 2. Mock a scenario request to reuse the narrative logic
-    class MockRequest:
+    # 2. Prepare a lightweight scenario-like object for the LLM prompt
+    class NarrativeContext:
         def __init__(self, query, mods):
             self.user_query = query
             self.feature_modifications = mods
             
     year_text = f"{year}" if year else "the present baseline"
-    mock_req = MockRequest(
-        query=f"Comprehensive ecological analysis of the {management_unit or 'Mara Ecosystem'} landscape in {year_text}. Include year-specific trends and projections.",
+    context_obj = NarrativeContext(
+        query=f"Comprehensive ecological analysis of the {management_unit or 'Mara Ecosystem'} landscape in {year_text}.",
         mods={}
     )
     
@@ -248,25 +247,20 @@ async def get_landscape_summary(
     # 3. Prepare results with real ecological context
     baseline_total = stats.get("total_lions", 0)
     
-    mock_results = {
+    results = {
+        "baseline_total": baseline_total,
         "delta_total": 0,
         "delta_percent_total": 0,
-        "baseline_total": baseline_total,
-        "unit_aggregation": {management_unit or "Regional": {"delta": 0, "delta_pct": 0}},
+        "unit_aggregation": {},
         "ecological_context": {
-            "avg_prey_density": avg_prey,
-            "avg_rainfall_mm": avg_rainfall,
-            "avg_nightlight": stats.get("avg_nightlight", 0),
-            "avg_hwc_risk": avg_hwc
-        },
-        "year_context": {
-            "selected_year": year,
-            "is_year_adjusted": year is not None
+            "avg_rainfall": avg_rainfall,
+            "avg_prey": avg_prey,
+            "avg_hwc": avg_hwc
         }
     }
     
     # 4. Generate narrative
-    narrative = await generate_narrative(mock_req, mock_results)
+    narrative = await generate_narrative(context_obj, results)
     
     return {"narrative": narrative}
 
@@ -1083,19 +1077,19 @@ async def submit_contact_form(
         # Try to send email using Gmail SMTP (Default)
         email_sent = False
         subject = f"Seka Kama Contact Form: {contact_data.name}"
-        email_body = f"""📨 NEW CONTACT FORM SUBMISSION
+        email_body = f"""NEW CONTACT FORM SUBMISSION
 
-👤 From: {contact_data.name}
-📧 Email: {contact_data.email}  ← REPLY TO THIS ADDRESS
-🏢 Organization: {contact_data.organization or 'Not specified'}
-📅 Submitted: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+From: {contact_data.name}
+Email: {contact_data.email}  (REPLY TO THIS ADDRESS)
+Organization: {contact_data.organization or 'Not specified'}
+Submitted: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
 
-💬 Message:
+Message:
 {contact_data.message}
 
 ---
-🔗 This message was sent via Seka Kama contact form.
-📝 You can reply directly to {contact_data.email} to respond to {contact_data.name}."""
+This message was sent via Seka Kama contact form.
+You can reply directly to {contact_data.email} to respond to {contact_data.name}."""
         
         # First try: Gmail SMTP (Default)
         try:

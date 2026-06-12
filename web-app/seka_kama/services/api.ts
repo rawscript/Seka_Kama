@@ -189,7 +189,7 @@ export const api = {
       if (errorMsg.includes('CORS') || errorMsg.includes('cors')) {
         corsErrorDetected = true;
         corsErrorStartTime = Date.now();
-        console.error('🔴 CORS Error detected - stopping API retries for 30 seconds', err);
+        console.error('CORS Error detected - stopping API retries for 30 seconds', err);
       }
       throw err;
     }
@@ -214,7 +214,7 @@ export const api = {
     // Success — reset CORS error flag if it was set
     if (corsErrorDetected) {
       corsErrorDetected = false;
-      console.log('✅ API recovered - CORS errors cleared');
+      console.log('API recovered - CORS errors cleared');
     }
 
     const ct = response.headers.get('content-type') ?? '';

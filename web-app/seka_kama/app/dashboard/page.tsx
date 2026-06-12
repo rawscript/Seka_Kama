@@ -12,6 +12,12 @@ import {  Download,
   HelpCircle,
   Lightbulb,
   History,
+  Bot,
+  Activity,
+  Layers,
+  MapPin,
+  TrendingUp,
+  Layout
 } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -76,6 +82,23 @@ function LayerToggle({
   );
 }
 
+function LayerToggleControl({ label, color, enabled, onToggle }: { label: string, color: string, enabled: boolean, onToggle: () => void }) {
+  return (
+    <button 
+      onClick={onToggle}
+      className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${enabled ? 'bg-slate-50 border border-slate-200 shadow-sm' : 'hover:bg-slate-50'}`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color, opacity: enabled ? 1 : 0.4 }} />
+        <span className={`text-xs font-bold transition-colors ${enabled ? 'text-slate-800' : 'text-slate-400'}`}>{label}</span>
+      </div>
+      <div className={`w-8 h-4 rounded-full relative transition-colors ${enabled ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+        <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${enabled ? 'left-[18px]' : 'left-0.5'}`} />
+      </div>
+    </button>
+  );
+}
+
 /** Single stat card used in the landscape summary strip */
 function StatCard({
   label, value, sub, accent = false,
@@ -128,8 +151,33 @@ function DashboardContent() {
   const [isWalkthroughOpen, setIsWalkthroughOpen]   = useState(false);
   const [isLiveMode, setIsLiveMode]                 = useState(false);
 
+  // Panel visibility state
+  const [visiblePanels, setVisiblePanels] = useState<Record<string, boolean>>({
+    'analyst': true,
+    'indicators': true,
+    'layers': true,
+    'history': false,
+    'trends': false
+  });
+
+  const togglePanel = (panelId: string) => {
+    setVisiblePanels(prev => ({ ...prev, [panelId]: !prev[panelId] }));
+  };
+
+  // ── Pages / Layout ──────────────────────────────────────────────────────────
+  const SideDock = dynamic(() => import('@/components/SideDock'), { ssr: false });
+
+  const dockPanels = [
+    { id: 'analyst', label: 'Analyst Insights', icon: <Bot className="w-4 h-4" />, isVisible: visiblePanels.analyst, onToggle: () => togglePanel('analyst') },
+    { id: 'indicators', label: 'Ecosystem Metrics', icon: <Activity className="w-4 h-4" />, isVisible: visiblePanels.indicators, onToggle: () => togglePanel('indicators') },
+    { id: 'layers', label: 'Map Layers', icon: <Layers className="w-4 h-4" />, isVisible: visiblePanels.layers, onToggle: () => togglePanel('layers') },
+    { id: 'history', label: 'Scenario History', icon: <History className="w-4 h-4" />, isVisible: visiblePanels.history, onToggle: () => togglePanel('history') },
+    { id: 'trends', label: 'Historical Trends', icon: <BarChart3 className="w-4 h-4" />, isVisible: visiblePanels.trends, onToggle: () => togglePanel('trends') },
+  ];
+
   // Temporal slider
   const [timeValue, setTimeValue] = useState(66);
+  // ... rest of the state ...
   const [isPlaying, setIsPlaying] = useState(false);
   const playRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const selectedYear = sliderToYear(timeValue);
@@ -282,6 +330,8 @@ function DashboardContent() {
       {/* Floating layer for draggable panels to escape flex wrappers */}
       <div id="floating-layer" className="fixed inset-0 pointer-events-none z-[9999]" />
 
+      <SideDock panels={dockPanels} />
+
       <div className="relative w-full h-full bg-[#dadada]">
 
         {/* ── Map ── */}
@@ -304,7 +354,7 @@ function DashboardContent() {
         </ErrorBoundary>
 
         {/* ── Status pill ── */}
-        <div className="absolute top-8 left-8 flex items-center gap-3 z-10">
+        <div className="absolute top-8 left-72 flex items-center gap-3 z-10 transition-all duration-300">
           <div className="flex items-center gap-3 px-4 py-2 bg-[#1a1c1c]/80 backdrop-blur-md rounded-full pointer-events-none">
             <div className="w-2 h-2 rounded-full bg-[#1db954]" />
             <span className="text-[10px] font-bold text-white uppercase tracking-widest">DIGITAL TWIN ACTIVE</span>
@@ -323,11 +373,11 @@ function DashboardContent() {
           
           <div className="relative">
             <button 
-              onClick={() => setIsScenarioHistoryOpen(!isScenarioHistoryOpen)}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isScenarioHistoryOpen ? 'bg-purple-600 text-white' : 'bg-white/80 text-secondary hover:bg-white backdrop-blur-md border border-outline-variant'}`}
+              onClick={() => togglePanel('history')}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${visiblePanels.history ? 'bg-purple-600 text-white' : 'bg-white/80 text-secondary hover:bg-white backdrop-blur-md border border-outline-variant'}`}
               title="Scenario History"
             >
-              <span className="material-symbols-outlined text-[18px]">history</span>
+              <History className="w-4.5 h-4.5" />
             </button>
           </div>
 
@@ -351,7 +401,7 @@ function DashboardContent() {
           </button>
         </div>
 
-        {/* ── Landscape stats strip (Gap 1) ── */}
+        {/* ── Landscape stats strip ── */}
         {!statsLoading && stats && !isMobile && (
           <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 flex gap-2 pointer-events-none">
             <StatCard
@@ -371,11 +421,6 @@ function DashboardContent() {
               sub="WDPA / OECM"
             />
             <StatCard
-              label="High-Risk Cells"
-              value={stats.high_risk_cell_count.toLocaleString()}
-              sub="density < 5 & trend ↑"
-            />
-            <StatCard
               label="Avg Density"
               value={stats.avg_lion_density.toFixed(3)}
               sub="lions / km²"
@@ -383,235 +428,127 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* ── Scenario result panel ── */}
-        {scenarioResult && (
-          <DraggablePanel id="scenario_result" defaultPosition={{ x: 20, y: 80 }} defaultPinned={false}>
-            <div className="w-[320px]">
-              <ErrorBoundary label="Scenario Panel">
-                <ScenarioResultPanel
-                  result={scenarioResult}
-                  onClose={() => setScenarioResult(null)}
-                />
-              </ErrorBoundary>
+        {/* ── Floating Primary Panels ── */}
+        {visiblePanels.analyst && (
+          <AnalystPanel 
+            selectedUnit={selectedUnit} 
+            year={selectedYear} 
+          />
+        )}
+        
+        {visiblePanels.indicators && (
+          <EcosystemIndicatorsPanel
+            selectedUnit={selectedUnit}
+            year={selectedYear}
+            isLiveMode={isLiveMode}
+          />
+        )}
+
+        {visiblePanels.layers && (
+          <DraggablePanel id="layers_panel" defaultPosition={{ x: window.innerWidth - 380, y: 16 }} defaultSize={{ width: 340, height: 460 }}>
+            <div className="bg-white/95 backdrop-blur-sm h-full flex flex-col">
+              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-blue-600" />
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Map Control Center</h4>
+                </div>
+              </div>
+              <div className="p-4 flex-1 overflow-auto space-y-6">
+                {/* Zone Selection within panel */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-primary">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Active Zone</span>
+                  </div>
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsZoneMenuOpen(!isZoneMenuOpen)}
+                      className="w-full text-left flex justify-between items-center border border-slate-200 rounded-lg p-3 text-sm font-bold text-slate-800 hover:border-primary transition-colors bg-white shadow-sm"
+                    >
+                      {selectedUnit || 'Regional Overview'}
+                      <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isZoneMenuOpen ? 'rotate-90' : ''}`} />
+                    </button>
+                    {isZoneMenuOpen && (
+                      <div className="absolute top-full left-0 w-full mt-2 bg-white border border-slate-200 shadow-xl z-50 py-2 rounded-lg max-h-48 overflow-y-auto">
+                        <button
+                          onClick={() => { setSelectedUnit(''); setIsZoneMenuOpen(false); }}
+                          className="w-full text-left px-4 py-2.5 text-xs text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors font-bold border-b border-slate-100"
+                        >
+                          Regional Overview
+                        </button>
+                        {availableUnits.map((u) => (
+                          <button
+                            key={u}
+                            onClick={() => { setSelectedUnit(u); setIsZoneMenuOpen(false); }}
+                            className="w-full text-left px-4 py-2.5 text-xs text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors font-medium"
+                          >
+                            {u}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Layer Toggles */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Visualization Layers</span>
+                  </div>
+                  <div className="space-y-1">
+                    <LayerToggleControl label="Lion Abundance" color="#fbbf24" enabled={!showPreyDensity} onToggle={() => setShowPreyDensity(false)} />
+                    <LayerToggleControl label="Prey Density" color="#10b981" enabled={showPreyDensity} onToggle={() => setShowPreyDensity(true)} />
+                    <LayerToggleControl label="Scenario Prediction" color="#f87171" enabled={showPrediction} onToggle={() => setShowPrediction(v => !v)} />
+                    <LayerToggleControl label="Human Encroachment" color="#f59e0b" enabled={showEncroachment} onToggle={() => setShowEncroachment(v => !v)} />
+                    <LayerToggleControl label="Protected Areas" color="#059669" enabled={showProtectedAreas} onToggle={() => setShowProtectedAreas(v => !v)} />
+                    <LayerToggleControl label="Biological Corridors" color="#8b5cf6" enabled={showCorridors} onToggle={() => setShowCorridors(v => !v)} />
+                  </div>
+                </div>
+              </div>
             </div>
           </DraggablePanel>
         )}
 
-        {/* ── Scenario History Panel ── */}
-        {isScenarioHistoryOpen && (
+        {visiblePanels.trends && (
+          <DraggablePanel id="trends_panel" defaultPosition={{ x: window.innerWidth - 380, y: 500 }} defaultSize={{ width: 340, height: 320 }}>
+             <div className="bg-white/95 backdrop-blur-sm h-full flex flex-col">
+              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-purple-600" />
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Historical Trends</h4>
+                </div>
+              </div>
+              <div className="p-4 flex-1 overflow-auto">
+                  {trendsLoading ? (
+                    <div className="flex items-center justify-center h-full gap-3">
+                      <div className="w-4 h-4 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+                      <span className="text-[11px] text-slate-500 uppercase tracking-widest">Loading...</span>
+                    </div>
+                  ) : trends.length === 0 ? (
+                    <p className="text-[12px] text-slate-600 text-center py-8">
+                      No historical data available.
+                    </p>
+                  ) : (
+                    <TrendChart trends={trends} unit={selectedUnit || 'Regional Total'} />
+                  )}
+              </div>
+            </div>
+          </DraggablePanel>
+        )}
+
+        {visiblePanels.history && (
           <ScenarioHistoryPanel
-            isOpen={isScenarioHistoryOpen}
-            onClose={() => setIsScenarioHistoryOpen(false)}
+            isOpen={visiblePanels.history}
+            onClose={() => togglePanel('history')}
             onLoadScenario={(scenarioId: number) => {
-              console.log('🗺️ Loading scenario #' + scenarioId + ' in Kepler.gl...');
-              
-              // Store scenario ID in sessionStorage for Kepler page to pick up
+              console.log('Loading scenario #' + scenarioId);
               sessionStorage.setItem('kepler_scenario_id', scenarioId.toString());
-              
-              // Navigate to existing Kepler page
               router.push('/dashboard/kepler?scenario=' + scenarioId);
             }}
           />
         )}
 
-        {/* -- Mobile Toggle -- */}
-        {isMobile && (
-           <button 
-             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-             className="absolute top-8 right-8 z-50 w-10 h-10 bg-[#1a1c1c] text-white rounded-full flex items-center justify-center shadow-2xl border border-white/10"
-           >
-              <span className="material-symbols-outlined">{isSidebarOpen ? 'close' : 'menu'}</span>
-           </button>
-        )}
-
-        {/* ── Clean Panel Layout (Non-draggable, organized) ── */}
-        <div className={`absolute top-8 right-8 w-[380px] max-h-[calc(100vh-180px)] z-20 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-[420px] opacity-0 pointer-events-none'}`}>
-          
-          {/* Search and Zone Selection */}
-          <div className="space-y-4 mb-6">
-            {/* Search Bar */}
-            <div className="map-overlay-card p-4 shadow-sm rounded-sm">
-              <form onSubmit={handleSearch} className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input 
-                  type="text"
-                  placeholder="Search coords or landmark..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-white/5 border border-outline-variant rounded p-2 pl-10 text-xs font-medium text-on-surface focus:outline-none focus:border-primary transition-colors"
-                />
-                <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary">
-                  <Crosshair className="w-3.5 h-3.5" />
-                </button>
-              </form>
-            </div>
-
-            {/* Zone Selection */}
-            <div className={`map-overlay-card p-6 shadow-sm rounded-sm relative ${isZoneMenuOpen ? 'z-50' : 'z-20'}`}>
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-2 text-primary font-bold">
-                  <span className="material-symbols-outlined text-[20px]">location_on</span>
-                  <h4 className="text-[12px] uppercase tracking-[0.15em] text-on-surface">ZONE SELECTION</h4>
-                </div>
-              </div>
-              <div className="relative">
-                <button
-                  onClick={() => setIsZoneMenuOpen(!isZoneMenuOpen)}
-                  className="w-full text-left flex justify-between items-center border-b border-outline-variant pb-2 text-[24px] headline-font font-medium text-on-surface hover:text-primary transition-colors"
-                >
-                  {selectedUnit || 'Regional Overview'}
-                  <span className={`material-symbols-outlined text-outline transition-transform ${isZoneMenuOpen ? 'rotate-180' : ''}`}>
-                    keyboard_arrow_down
-                  </span>
-                </button>
-                {isZoneMenuOpen && (
-                  <div className="absolute top-full left-0 w-full mt-2 bg-white/95 backdrop-blur-md border border-outline-variant shadow-xl z-50 py-2 rounded-sm animate-in fade-in slide-in-from-top-2">
-                    <button
-                      onClick={() => { setSelectedUnit(''); setIsZoneMenuOpen(false); }}
-                      className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium border-b border-outline-variant/30"
-                    >
-                      Regional Overview
-                    </button>
-                    {availableUnits.map((u) => (
-                      <button
-                        key={u}
-                        onClick={() => { setSelectedUnit(u); setIsZoneMenuOpen(false); }}
-                        className="w-full text-left px-4 py-2 text-sm text-secondary hover:bg-surface-container-low hover:text-primary transition-colors font-medium"
-                      >
-                        {u}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          {/* Main Sidebar Panels Container */}
-          <div className="space-y-4 max-h-[calc(100vh-320px)] overflow-y-auto custom-scrollbar pr-2 pb-4 no-drag">
-            
-            {/* Layer Controls Panel */}
-            <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px] text-blue-600">layers</span>
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">LAYER CONTROLS</h4>
-                </div>
-              </div>
-              <div className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-amber-400" />
-                    <span className="text-sm text-slate-700 font-medium">Lion Abundance (XGB)</span>
-                  </div>
-                  <button 
-                    onClick={() => setShowPreyDensity(false)}
-                    className={`w-10 h-5 rounded-full relative transition-colors ${!showPreyDensity ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                  >
-                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${!showPreyDensity ? 'left-6' : 'left-1'}`} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                    <span className="text-sm text-slate-700 font-medium">Ecological Base (Prey)</span>
-                  </div>
-                  <button 
-                    onClick={() => setShowPreyDensity(true)}
-                    className={`w-10 h-5 rounded-full relative transition-colors ${showPreyDensity ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                  >
-                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showPreyDensity ? 'left-6' : 'left-1'}`} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-400" />
-                    <span className="text-sm text-slate-700 font-medium">Neural Landscape Projection</span>
-                  </div>
-                  <button 
-                    onClick={() => setShowPrediction((v) => !v)}
-                    className={`w-10 h-5 rounded-full relative transition-colors ${showPrediction ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                  >
-                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showPrediction ? 'left-6' : 'left-1'}`} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-amber-500" />
-                    <span className="text-sm text-slate-700 font-medium">Human Encroachment (Nightlight)</span>
-                  </div>
-                  <button 
-                    onClick={() => setShowEncroachment((v) => !v)}
-                    className={`w-10 h-5 rounded-full relative transition-colors ${showEncroachment ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                  >
-                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showEncroachment ? 'left-6' : 'left-1'}`} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-emerald-600" />
-                    <span className="text-sm text-slate-700 font-medium">Protected Wildlife Zones</span>
-                  </div>
-                  <button 
-                    onClick={() => setShowProtectedAreas((v) => !v)}
-                    className={`w-10 h-5 rounded-full relative transition-colors ${showProtectedAreas ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                  >
-                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showProtectedAreas ? 'left-6' : 'left-1'}`} />
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-purple-500" />
-                    <span className="text-sm text-slate-700 font-medium">Biological Corridors</span>
-                  </div>
-                  <button 
-                    onClick={() => setShowCorridors((v) => !v)}
-                    className={`w-10 h-5 rounded-full relative transition-colors ${showCorridors ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                  >
-                    <div className={`absolute w-3 h-3 bg-white rounded-full shadow transition-transform top-1 ${showCorridors ? 'left-6' : 'left-1'}`} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Historical Trends panel */}
-            <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-              <button
-                onClick={() => setShowTrends((v) => !v)}
-                className="w-full flex items-center justify-between p-5 text-left hover:bg-slate-50 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px] text-purple-600">show_chart</span>
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">HISTORICAL TRENDS</h4>
-                </div>
-                <span className={`material-symbols-outlined text-slate-600 transition-transform duration-200 ${showTrends ? 'rotate-180' : ''}`}>
-                  keyboard_arrow_down
-                </span>
-              </button>
-
-              {showTrends && (
-                <div className="px-4 pb-5">
-                  {trendsLoading ? (
-                    <div className="flex items-center justify-center py-10 gap-3">
-                      <div className="w-4 h-4 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
-                      <span className="text-[11px] text-slate-500 uppercase tracking-widest">Loading trends…</span>
-                    </div>
-                  ) : trends.length === 0 ? (
-                    <p className="text-[12px] text-slate-600 text-center py-8">
-                      No historical data available for {selectedUnit || 'Regional Total'}.
-                    </p>
-                  ) : (
-                    <ErrorBoundary label="Trend Chart">
-                      <TrendChart
-                        trends={trends}
-                        unit={selectedUnit || 'Regional Total'}
-                      />
-                    </ErrorBoundary>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* ── Scenario result panel ── */}
 
         {/* ── Temporal Controls ── */}
         <div className={`absolute bottom-8 right-[420px] w-[500px] z-30 transition-all duration-300 ${isSidebarOpen && !isMobile ? 'right-[420px]' : 'right-8'} ${isMobile && !isSidebarOpen ? 'opacity-0 translate-y-10' : ''}`}>

@@ -490,7 +490,7 @@ function SekaMapContent({
 
         <ScenarioDrawer
           onScenarioRun={(res) => {
-            console.log('✓ Scenario execution completed with predictions:', {
+            console.log('Scenario execution completed with predictions:', {
               baseline: res.baseline_total_lions,
               predicted: res.predicted_total_lions,
               delta: res.delta_lions,
@@ -507,7 +507,7 @@ function SekaMapContent({
           <button
             onClick={() => {
               setScenarioResult(null);
-              console.log('✓ Scenario results cleared from map');
+              console.log('Scenario results cleared from map');
             }}
             className="absolute bottom-32 left-1/2 -translate-x-1/2 z-40 px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-full shadow-lg transition-all flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4"
             title="Clear scenario visualization"
