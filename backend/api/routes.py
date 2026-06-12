@@ -210,7 +210,7 @@ async def get_landscape_summary(
     Generate a qualitative ecological summary for the current landscape view.
     """
     from services.llm_service import generate_narrative
-    from services.ecological_data_service import fetch_rainfall_for_points
+    from services.ecological_data_service import fetch_rainfall_for_prompt
     
     # 1. Fetch stats for context
     stats = db.get_landscape_stats(management_unit=management_unit, year=year)
@@ -232,7 +232,7 @@ async def get_landscape_summary(
     try:
         from services.ecological_data_service import enrich_cells_with_live_data
         # We need grid cells for the management unit to enrich them
-        cells = db.get_management_unit_cells(management_unit) if management_unit else []
+        cells = db.get_grid_cells(management_unit=management_unit) if management_unit else []
         if cells:
             enriched_cells = await enrich_cells_with_live_data(cells, year)
             # Use enriched metrics for the summary context
@@ -924,6 +924,43 @@ async def get_environmental_conditions(
             "timestamp": datetime.now().isoformat(),
             "error": str(e)
         }
+
+
+@router.get("/ecosystem/trends")
+async def get_ecosystem_trends(
+    management_unit: Optional[str] = Query(None),
+    indicator_ids: Optional[str] = Query(None),
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Get historical trends for ecosystem indicators.
+    """
+    try:
+        from services.ecological_data_service import get_ecosystem_trends
+        ids = indicator_ids.split(",") if indicator_ids else None
+        trends = await get_ecosystem_trends(management_unit, ids)
+        return trends
+    except Exception as e:
+        logger.error(f"Failed to fetch ecosystem trends: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch trends: {str(e)}")
+
+
+@router.get("/ecosystem/indicator/{indicator_id}/history")
+async def get_indicator_history(
+    indicator_id: str,
+    management_unit: Optional[str] = Query(None),
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Get detailed history for a specific ecosystem indicator.
+    """
+    try:
+        from services.ecological_data_service import get_indicator_history
+        history = await get_indicator_history(indicator_id, management_unit)
+        return history
+    except Exception as e:
+        logger.error(f"Failed to fetch scenario history: {e}")
+        return {"scenarios": [], "count": 0}
 
 
 # ============================================================

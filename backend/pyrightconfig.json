@@ -1,0 +1,23 @@
+{
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Windows",
+  "venvPath": ".",
+  "venv": "venv",
+  "pythonPath": "./venv/Scripts/python.exe",
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "venv/**",
+    "__pycache__/**",
+    ".pytest_cache/**"
+  ],
+  "extraPaths": [
+    ".",
+    "./venv/Lib/site-packages"
+  ],
+  "typeCheckingMode": "basic",
+  "useLibraryCodeForTypes": true,
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "none"
+}

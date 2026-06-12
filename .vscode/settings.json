@@ -1,2 +1,19 @@
 {
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+  "python.analysis.pythonPath": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+  "python.analysis.venvPath": "${workspaceFolder}/backend",
+  "python.analysis.venvFolders": ["venv"],
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend",
+    "${workspaceFolder}/backend/venv/Lib/site-packages"
+  ],
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoSearchPaths": true,
+  "python.analysis.useLibraryCodeForTypes": true,
+  "pylance.insidersChannel": "off",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "typescript.tsdk": "web-app/seka_kama/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }
