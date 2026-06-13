@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMap, Source, Layer } from 'react-map-gl/maplibre';
+import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
 import { 
   Play, 
@@ -14,8 +15,10 @@ import {
   Dna,
   Cpu,
   ShieldAlert,
-  Activity,
-  History
+  History,
+  CheckCircle2,
+  Layers,
+  ArrowRight
 } from 'lucide-react';
 
 interface ScenarioDrawerProps {
@@ -32,7 +35,16 @@ const DEFAULT_MODIFICATIONS = {
   simulation_years: 0,
 };
 
+interface ScenarioResult {
+  scenario_id: number;
+  delta_lions: number;
+  delta_percent: number;
+  baseline_total_lions: number;
+  predicted_total_lions: number;
+}
+
 export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: ScenarioDrawerProps) {
+  const router = useRouter();
   const { 'main-map': map } = useMap();
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [points, setPoints] = useState<[number, number][]>([]);
@@ -40,6 +52,7 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
   const [modifications, setModifications] = useState(DEFAULT_MODIFICATIONS);
   const [userQuery, setUserQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [completedResult, setCompletedResult] = useState<ScenarioResult | null>(null);
 
   // -- Drawing handlers --
   const handleMapClick = useCallback((e: any) => {
@@ -55,7 +68,6 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
     setPoints(prev => {
       if (prev.length < 3) return prev;
       
-      // Filter out points that are too close (common in double clicks)
       const uniquePoints: [number, number][] = [];
       prev.forEach(p => {
         if (uniquePoints.length === 0) {
@@ -63,7 +75,7 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
         } else {
           const last = uniquePoints[uniquePoints.length - 1];
           const dist = Math.sqrt(Math.pow(p[0] - last[0], 2) + Math.pow(p[1] - last[1], 2));
-          if (dist > 0.00001) { // Very small threshold
+          if (dist > 0.00001) {
             uniquePoints.push(p);
           }
         }
@@ -124,6 +136,7 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
     setPoints([]);
     setDrawnGeometry(null);
     setIsDrawingMode(true);
+    setCompletedResult(null);
   };
 
   const cancelDrawing = () => {
@@ -131,6 +144,7 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
     setDrawnGeometry(null);
     setIsDrawingMode(false);
     setUserQuery('');
+    setCompletedResult(null);
   };
 
   const handleRun = async () => {
@@ -166,8 +180,16 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
         ecological_context: result.ecological_context
       });
       
+      // Show success state with routing options
+      setCompletedResult({
+        scenario_id: result.scenario_id,
+        delta_lions: result.delta_lions,
+        delta_percent: result.delta_percent,
+        baseline_total_lions: result.baseline_total_lions,
+        predicted_total_lions: result.predicted_total_lions,
+      });
+      
       onScenarioRun?.(result);
-      cancelDrawing();
     } catch (error) {
       console.error('❌ Scenario execution failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -175,6 +197,14 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
     } finally {
       setLoading(false);
     }
+  };
+
+  const navigateToKepler = (scenarioId: number) => {
+    router.push(`/dashboard/kepler?scenario=${scenarioId}`);
+  };
+
+  const navigateToHistory = () => {
+    router.push('/dashboard/scenarios');
   };
 
   return (
@@ -229,7 +259,71 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
 
       {/* Control Surface */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[30] w-full max-w-2xl px-6 pointer-events-none">
-        {isDrawingMode ? (
+        {/* ── Success State ── */}
+        {completedResult ? (
+          <div className="glass-effect-heavy p-8 rounded-none border border-emerald-500/20 shadow-[0_30px_100px_rgba(0,0,0,0.8)] pointer-events-auto animate-in slide-in-from-bottom-8">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 bg-emerald-500/15 rounded-none border border-emerald-500/20">
+                <CheckCircle2 className="w-7 h-7 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-white tracking-tight leading-none mb-1">Simulation Complete</h3>
+                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">
+                  Scenario #{completedResult.scenario_id} · Saved to History
+                </span>
+              </div>
+            </div>
+
+            {/* Metrics Row */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-black/30 p-4 border border-white/5">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Baseline</span>
+                <span className="text-lg font-bold text-white">{completedResult.baseline_total_lions.toFixed(1)}</span>
+                <span className="text-[10px] text-slate-500 ml-1">lions</span>
+              </div>
+              <div className="bg-black/30 p-4 border border-white/5">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Predicted</span>
+                <span className="text-lg font-bold text-white">{completedResult.predicted_total_lions.toFixed(1)}</span>
+                <span className="text-[10px] text-slate-500 ml-1">lions</span>
+              </div>
+              <div className={`p-4 border ${completedResult.delta_lions >= 0 ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-rose-500/5 border-rose-500/10'}`}>
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Delta</span>
+                <span className={`text-lg font-bold ${completedResult.delta_lions >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {completedResult.delta_lions >= 0 ? '+' : ''}{completedResult.delta_lions.toFixed(1)}
+                </span>
+                <span className={`text-[10px] ml-1 ${completedResult.delta_lions >= 0 ? 'text-emerald-400/60' : 'text-rose-400/60'}`}>
+                  ({completedResult.delta_percent >= 0 ? '+' : ''}{completedResult.delta_percent.toFixed(1)}%)
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={() => navigateToKepler(completedResult.scenario_id)}
+                className="flex items-center justify-center gap-2 py-4 bg-[#775a19] text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#4e3700] transition-all col-span-2"
+              >
+                <Layers className="w-4 h-4" />
+                Analyze in Kepler
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={navigateToHistory}
+                className="flex items-center justify-center gap-2 py-4 border border-white/10 text-slate-300 text-[10px] font-bold uppercase tracking-widest hover:bg-white/5 transition-all"
+              >
+                <History className="w-3.5 h-3.5" />
+                History
+              </button>
+            </div>
+
+            <button
+              onClick={cancelDrawing}
+              className="w-full mt-3 py-2 text-[9px] text-slate-500 hover:text-slate-300 uppercase tracking-widest font-bold transition-colors"
+            >
+              Dismiss & Start New
+            </button>
+          </div>
+        ) : isDrawingMode ? (
           <div className="glass-effect-heavy p-5 rounded-none border-[#775a19]/40 border-2 shadow-2xl animate-in fade-in slide-in-from-bottom-4 pointer-events-auto text-center">
             <div className="flex items-center justify-center gap-3 mb-3">
               <div className="relative">

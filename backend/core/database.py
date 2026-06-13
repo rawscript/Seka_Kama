@@ -221,10 +221,13 @@ class SupabaseService:
         delta_percent: float,
         affected_cells: int,
         llm_narrative: str,
-        request_data: Optional[Dict[str, Any]] = None
+        request_data: Optional[Dict[str, Any]] = None,
+        scenario_geojson: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Save a scenario to history with full metrics.
+        Save a scenario to history with full metrics and optional GeoJSON.
+        The scenario_geojson is persisted so it can be loaded into Kepler.gl
+        for deep analysis from the Scenario History view.
         """
         from datetime import datetime, timezone
         
@@ -241,6 +244,8 @@ class SupabaseService:
             "request_data": request_data,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
+        if scenario_geojson is not None:
+            scenario_data["scenario_geojson"] = scenario_geojson
         result = self.client.table("scenario_history").insert(scenario_data).execute()
         return result.data[0] if result.data else {}
     

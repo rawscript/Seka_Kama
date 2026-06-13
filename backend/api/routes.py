@@ -481,7 +481,30 @@ async def run_scenario(
         logger.warning(f"Narrative generation failed: {str(e)}")
         narrative = "The simulation completed successfully, but narrative interpretation is currently unavailable. Total predicted change is listed below."
     
-    # 4. Persist to Supabase for RAG memory and audit trail
+    # 4. Build scenario GeoJSON for persistence and response
+    scenario_geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": cell.get("geom") if isinstance(cell.get("geom"), dict) else json.loads(cell.get("geom", "{}")),
+                "properties": {
+                    "cell_id": cell.get("cell_id"),
+                    "baseline_density": float(baseline),
+                    "scenario_density": float(scenario_density),
+                    "delta": float(delta)
+                }
+            }
+            for cell, baseline, scenario_density, delta in zip(
+                affected_cells, 
+                results["baseline_total_per_cell"], 
+                results["scenario_total_per_cell"],
+                results["per_cell_deltas"]
+            )
+        ]
+    }
+
+    # 5. Persist to Supabase for RAG memory and audit trail
     try:
         stored = db.save_scenario(
             user_id=current_user.user_id,
@@ -497,14 +520,15 @@ async def run_scenario(
                 "geometry": scenario.geometry,
                 "feature_modifications": scenario.feature_modifications,
                 "simulation_years": scenario.simulation_years
-            }
+            },
+            scenario_geojson=scenario_geojson
         )
     except Exception as e:
         logger.error(f"Failed to save scenario history for user {current_user.user_id}: {str(e)}")
         # We still return the results even if save fails, but with a warning
         stored = {"id": -1, "error": str(e)}
     
-    # 5. Log audit action
+    # 6. Log audit action
     await audit_service.log(
         action="Intelligence Scenario Executed",
         resource_type="Intelligence",
@@ -530,27 +554,7 @@ async def run_scenario(
         llm_narrative=narrative,
         map_visualization_url=f"/api/maps/scenario/{stored.get('id', -1)}",
         ecological_context=results.get("ecological_context", {}),
-        scenario_geojson={
-            "type": "FeatureCollection",
-            "features": [
-                {
-                    "type": "Feature",
-                    "geometry": cell.get("geom") if isinstance(cell.get("geom"), dict) else json.loads(cell.get("geom", "{}")),
-                    "properties": {
-                        "cell_id": cell.get("cell_id"),
-                        "baseline_density": float(baseline),
-                        "scenario_density": float(scenario),
-                        "delta": float(delta)
-                    }
-                }
-                for cell, baseline, scenario, delta in zip(
-                    affected_cells, 
-                    results["baseline_total_per_cell"], 
-                    results["scenario_total_per_cell"],
-                    results["per_cell_deltas"]
-                )
-            ]
-        }
+        scenario_geojson=scenario_geojson
     )
 
 

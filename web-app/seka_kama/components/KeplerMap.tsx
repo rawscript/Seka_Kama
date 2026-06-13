@@ -45,19 +45,23 @@ function KeplerMapInner({ managementUnit, scenarioData, onCellSelect, onScenario
       let baselineResponse, protectedResponse, scenarioGeojson;
       
       if (scenarioData) {
-        // Load specific scenario from history
-        console.log('Loading scenario into Kepler.gl:', scenarioData);
+        // Use scenario data provided directly (already fetched by the parent page)
+        console.log('Loading scenario into Kepler.gl:', {
+          id: scenarioData.scenario_id ?? scenarioData.id,
+          has_geojson: !!scenarioData.scenario_geojson,
+          description: scenarioData.user_description
+        });
         
-        // Fetch the full scenario details including GeoJSON
-        const fullScenario = await api.getScenarioById(scenarioData.id);
-        
-        // Get baseline data for comparison
+        // Get baseline data for comparison layer
         baselineResponse = await api.getBaseline(managementUnit);
         protectedResponse = await api.getProtectedAreas();
-        // The scenario_geojson is located at the top level of the Scenario response
-        scenarioGeojson = fullScenario.scenario_geojson;
         
-        console.log('Scenario GeoJSON loaded:', scenarioGeojson);
+        // Use the GeoJSON already present on the scenario object
+        scenarioGeojson = scenarioData.scenario_geojson;
+        
+        console.log('Scenario GeoJSON loaded:', {
+          features_count: scenarioGeojson?.features?.length ?? 0
+        });
       } else {
         // Load default baseline view
         [baselineResponse, protectedResponse] = await Promise.all([

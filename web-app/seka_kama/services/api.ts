@@ -58,6 +58,7 @@ export interface ProtectedArea {
 }
 
 export interface Scenario extends ScenarioResponse {
+  id?: number; // Supabase primary key (may differ from scenario_id)
   created_at: string;
   request_data: ScenarioRequest;
   scenario_geojson?: any; // GeoJSON FeatureCollection with prediction results
