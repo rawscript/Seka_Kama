@@ -10,6 +10,24 @@
 
   /* The Fixed Shadow Token */
   --shadow-enterprise: 0 12px 32px rgba(127, 118, 103, 0.08);
+
+  /* Glassmorphism Tokens */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-bg-heavy: rgba(0, 0, 0, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 16px;
+}
+
+@utility glass-effect {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+}
+
+@utility glass-effect-heavy {
+  background: var(--glass-bg-heavy);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
 }
 
 /* Custom Base Utility Classes */

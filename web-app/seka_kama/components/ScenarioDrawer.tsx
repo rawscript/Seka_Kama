@@ -111,6 +111,15 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
     geometry: drawnGeometry,
   } : null;
 
+  const nodesGeoJSON: GeoJSON.FeatureCollection | null = points.length > 0 ? {
+    type: 'FeatureCollection',
+    features: points.map((p, i) => ({
+      type: 'Feature',
+      properties: { index: i },
+      geometry: { type: 'Point', coordinates: p }
+    }))
+  } : null;
+
   const startDrawing = () => {
     setPoints([]);
     setDrawnGeometry(null);
@@ -194,6 +203,29 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
           />
         </Source>
       )}
+      {nodesGeoJSON && (
+        <Source id="draw-nodes" type="geojson" data={nodesGeoJSON}>
+          <Layer
+            id="draw-nodes-outer"
+            type="circle"
+            paint={{
+              'circle-radius': 6,
+              'circle-color': '#775a19',
+              'circle-opacity': 0.8,
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#ffffff'
+            }}
+          />
+          <Layer
+            id="draw-nodes-inner"
+            type="circle"
+            paint={{
+              'circle-radius': 2,
+              'circle-color': '#ffffff'
+            }}
+          />
+        </Source>
+      )}
 
       {/* Control Surface */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[30] w-full max-w-2xl px-6 pointer-events-none">
@@ -242,12 +274,13 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
                 </div>
                 <div>
                    <h3 className="text-xl font-extrabold text-white tracking-tight leading-none mb-1">Scenario Parameters</h3>
-                   <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest flex items-center gap-2">
-                     <span className="w-1.5 h-1.5 rounded-none bg-[#775a19]" /> Defining Logic for {points.length} Node Segment
+                   <div className="text-[10px] text-slate-400 uppercase font-bold tracking-widest flex items-center gap-2">
+                     <span className="w-1.5 h-1.5 rounded-none bg-[#775a19]" /> Logic Delineation: {points.length} Boundary Nodes
                    </div>
+                   <p className="text-[9px] text-slate-500 mt-1 italic font-medium">Nodes (displayed as golden points) define the spatial limits of this simulation.</p>
                 </div>
               </div>
-              <button onClick={cancelDrawing} className="p-2.5 hover:bg-white/5 rounded-none text-slate-500 hover:text-white transition-all">
+              <button onClick={cancelDrawing} className="p-2.5 hover:bg-white/10 rounded-none text-slate-400 hover:text-white transition-all">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -268,135 +301,112 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
                 </label>
               </div>
 
-              <div className="space-y-8">
+              <div className="space-y-6">
+                {/* Nightlight Trend */}
                 <div>
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-amber-500" />
-                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Nightlight Trend</span>
+                      <TrendingUp className="w-4 h-4 text-[#c5a059]" />
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Urban Dynamics (Nightlight)</span>
                     </div>
-                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
+                    <div className={`px-2 py-0.5 rounded-none border text-[10px] font-mono font-bold ${modifications.longterm_slope_mean > 0 ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
                       {modifications.longterm_slope_mean > 0 ? '+' : ''}
-                      {(modifications.longterm_slope_mean * 100).toFixed(0)}%
+                      {(modifications.longterm_slope_mean * 100).toFixed(0)}% Shift
                     </div>
                   </div>
                   <input
                     type="range" min="-0.5" max="0.5" step="0.01"
                     value={modifications.longterm_slope_mean || 0}
                     onChange={(e) => setModifications({ ...modifications, longterm_slope_mean: parseFloat(e.target.value) })}
-                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                    className="w-full h-1 bg-white/10 rounded-none appearance-none cursor-pointer accent-[#775a19]"
                   />
-                  <div className="flex justify-between mt-3 text-[9px] text-slate-600 font-bold uppercase tracking-tighter">
-                    <span>Diminished</span>
-                    <span>Stable</span>
-                    <span>Intense</span>
+                  <div className="flex justify-between mt-2 text-[9px] text-slate-500 font-bold uppercase tracking-widest overflow-hidden">
+                    <span className={modifications.longterm_slope_mean < -0.1 ? 'text-blue-400' : ''}>Contraction</span>
+                    <span className={Math.abs(modifications.longterm_slope_mean) <= 0.1 ? 'text-white' : ''}>Baseline</span>
+                    <span className={modifications.longterm_slope_mean > 0.1 ? 'text-amber-400' : ''}>Expansion</span>
                   </div>
                 </div>
 
+                {/* Protected Proximity */}
                 <div>
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <ShieldAlert className="w-4 h-4 text-emerald-500" />
-                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Protected Proximity</span>
+                      <ShieldAlert className="w-4 h-4 text-[#c5a059]" />
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Conservation Buffer Zone</span>
                     </div>
-                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
+                    <div className={`px-2 py-0.5 rounded-none border text-[10px] font-mono font-bold ${modifications.dist_to_protected_km < 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
                       {modifications.dist_to_protected_km > 0 ? '+' : ''}
-                      {(modifications.dist_to_protected_km * 100).toFixed(0)}%
+                      {(modifications.dist_to_protected_km * 10).toFixed(1)} km Offset
                     </div>
                   </div>
                   <input
                     type="range" min="-0.5" max="0.5" step="0.01"
                     value={modifications.dist_to_protected_km || 0}
                     onChange={(e) => setModifications({ ...modifications, dist_to_protected_km: parseFloat(e.target.value) })}
-                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                    className="w-full h-1 bg-white/10 rounded-none appearance-none cursor-pointer accent-[#775a19]"
                   />
-                  <div className="flex justify-between mt-3 text-[9px] text-slate-600 font-bold uppercase tracking-tighter">
-                    <span>Closer</span>
-                    <span>No Change</span>
-                    <span>Farther</span>
+                  <div className="flex justify-between mt-2 text-[9px] text-slate-500 font-bold uppercase tracking-widest">
+                    <span className={modifications.dist_to_protected_km < -0.1 ? 'text-emerald-400' : ''}>Encroaching</span>
+                    <span className={Math.abs(modifications.dist_to_protected_km) <= 0.1 ? 'text-white' : ''}>Sustain</span>
+                    <span className={modifications.dist_to_protected_km > 0.1 ? 'text-blue-400' : ''}>Withdraw</span>
                   </div>
                 </div>
 
+                {/* Projection Horizon */}
                 <div>
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <History className="w-4 h-4 text-emerald-500" />
-                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Projection Horizon</span>
+                      <History className="w-4 h-4 text-[#c5a059]" />
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Simulation Temporal Depth</span>
                     </div>
-                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
-                      {modifications.simulation_years || 0} Years
+                    <div className="px-2 py-0.5 rounded-none border border-white/20 bg-white/5 text-[10px] font-mono font-bold text-white">
+                      {modifications.simulation_years || 0} Earth Years
                     </div>
                   </div>
                   <input
                     type="range" min="0" max="10" step="1"
                     value={modifications.simulation_years || 0}
                     onChange={(e) => setModifications({ ...modifications, simulation_years: parseInt(e.target.value) })}
-                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                    className="w-full h-1 bg-white/10 rounded-none appearance-none cursor-pointer accent-[#775a19]"
                   />
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-blue-500" />
-                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Spatial Variation</span>
+                {/* Other Parameters (Cheetah & Population) - Compact */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Cheetah Density</span>
+                      <span className={`text-[9px] font-mono ${modifications.cheetah_abundance > 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                        {modifications.cheetah_abundance > 0 ? '+' : ''}{(modifications.cheetah_abundance * 100).toFixed(0)}%
+                      </span>
                     </div>
-                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
-                      {modifications.all_skew_mean > 0 ? '+' : ''}
-                      {(modifications.all_skew_mean * 100).toFixed(0)}%
-                    </div>
+                    <input
+                      type="range" min="-0.5" max="0.5" step="0.05"
+                      value={modifications.cheetah_abundance || 0}
+                      onChange={(e) => setModifications({ ...modifications, cheetah_abundance: parseFloat(e.target.value) })}
+                      className="w-full h-1 bg-white/5 rounded-none appearance-none cursor-pointer accent-[#775a19]"
+                    />
                   </div>
-                  <input
-                    type="range" min="-0.5" max="0.5" step="0.01"
-                    value={modifications.all_skew_mean || 0}
-                    onChange={(e) => setModifications({ ...modifications, all_skew_mean: parseFloat(e.target.value) })}
-                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                       <Dna className="w-4 h-4 text-pink-500" />
-                       <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Cheetah Abundance</span>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Human Pop Index</span>
+                      <span className={`text-[9px] font-mono ${modifications.pop2018_mean > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                        {modifications.pop2018_mean > 0 ? '+' : ''}{(modifications.pop2018_mean * 100).toFixed(0)}%
+                      </span>
                     </div>
-                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
-                      {modifications.cheetah_abundance > 0 ? '+' : ''}
-                      {(modifications.cheetah_abundance * 100).toFixed(0)}%
-                    </div>
+                    <input
+                      type="range" min="-0.5" max="0.5" step="0.05"
+                      value={modifications.pop2018_mean || 0}
+                      onChange={(e) => setModifications({ ...modifications, pop2018_mean: parseFloat(e.target.value) })}
+                      className="w-full h-1 bg-white/5 rounded-none appearance-none cursor-pointer accent-[#775a19]"
+                    />
                   </div>
-                  <input
-                    type="range" min="-0.5" max="0.5" step="0.01"
-                    value={modifications.cheetah_abundance || 0}
-                    onChange={(e) => setModifications({ ...modifications, cheetah_abundance: parseFloat(e.target.value) })}
-                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
-                  />
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                       <MapPin className="w-4 h-4 text-orange-500" />
-                       <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Human Population Density</span>
-                    </div>
-                    <div className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-bold text-emerald-400">
-                      {modifications.pop2018_mean > 0 ? '+' : ''}
-                      {(modifications.pop2018_mean * 100).toFixed(0)}%
-                    </div>
-                  </div>
-                  <input
-                    type="range" min="-0.5" max="0.5" step="0.01"
-                    value={modifications.pop2018_mean || 0}
-                    onChange={(e) => setModifications({ ...modifications, pop2018_mean: parseFloat(e.target.value) })}
-                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none cursor-pointer accent-emerald-500"
-                  />
-                </div>
-
-
-                <div className="p-5 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex gap-4">
-                  <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0" />
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Higher intensity values correlate with <span className="text-slate-200">urban encroachment</span> and <span className="text-slate-200">habitat fragmentation</span> within the SekaNet predictive engine.
+                <div className="p-4 bg-[#775a19]/5 border border-[#775a19]/10 rounded-none flex gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                  <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
+                    Adjustments directly influence the <span className="text-white font-bold">XGBoost Digital Twin</span> logic to project population shifts and ecological stability within the delineated segment.
                   </p>
                 </div>
 
@@ -405,17 +415,17 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
                   disabled={loading}
                   className="w-full relative group"
                 >
-                  <div className="absolute inset-0 bg-[#775a19] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity" />
-                  <div className={`relative w-full h-16 rounded-none bg-[#775a19] flex items-center justify-center gap-3 transition-all ${loading ? 'opacity-80' : 'hover:-translate-y-1 active:translate-y-0 shadow-2xl shadow-[#775a19]/20'}`}>
+                  <div className="absolute inset-0 bg-[#775a19] blur-2xl opacity-10 group-hover:opacity-30 transition-opacity" />
+                  <div className={`relative w-full h-14 rounded-none bg-[#775a19] flex items-center justify-center gap-3 transition-all ${loading ? 'opacity-80' : 'hover:bg-[#4e3700] active:scale-[0.98] shadow-2xl shadow-[#775a19]/20'}`}>
                     {loading ? (
                       <div className="flex items-center gap-3">
-                         <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-none animate-spin" />
-                         <span className="text-sm font-black uppercase tracking-[0.2em] text-white">Synthesizing Digital Twin</span>
+                         <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-none animate-spin" />
+                         <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Synthesizing Twin</span>
                       </div>
                     ) : (
                       <>
-                        <Play className="w-5 h-5 fill-current text-white" />
-                        <span className="text-sm font-black uppercase tracking-[0.2em] text-white">Execute Simulation</span>
+                        <Play className="w-4 h-4 fill-current text-white" />
+                        <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Execute Simulation</span>
                       </>
                     )}
                   </div>
