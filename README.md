@@ -1,4 +1,4 @@
-# Seka Kama: Modeling Land Use & Lion Population Dynamics
+# Seka Kama:
 
 *An open-source research initiative investigating the spatial relationship between human expansion and apex predator viability.*
 
