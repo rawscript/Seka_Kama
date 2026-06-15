@@ -81,6 +81,15 @@ async def lifespan(app: FastAPI):
     app.state.scaler = joblib.load(settings.SCALER_PATH)
     app.state.feature_names = joblib.load(settings.FEATURE_NAMES_PATH)
     app.state.supabase = init_supabase()
+    
+    # 3. Initialize prediction service
+    from services.prediction_service import PredictionService
+    app.state.prediction_service = PredictionService(
+        app.state.model,
+        app.state.scaler,
+        app.state.feature_names
+    )
+    
     logger.info(
         "SekaNet ready — model v%s, %d features.",
         "2.0.0",

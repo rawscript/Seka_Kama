@@ -200,6 +200,9 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
   };
 
   const navigateToKepler = (scenarioId: number) => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('kepler_scenario_id', scenarioId.toString());
+    }
     router.push(`/dashboard/kepler?scenario=${scenarioId}`);
   };
 

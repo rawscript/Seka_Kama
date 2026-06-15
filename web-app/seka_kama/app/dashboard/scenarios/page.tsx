@@ -58,6 +58,9 @@ export default function ScenariosPage() {
   const toggle = (id: number) => setExpanded(prev => (prev === id ? null : id));
 
   const analyzeInKepler = (id: number) => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('kepler_scenario_id', id.toString());
+    }
     router.push(`/dashboard/kepler?scenario=${id}`);
   };
 

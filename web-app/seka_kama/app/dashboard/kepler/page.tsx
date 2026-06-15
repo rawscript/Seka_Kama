@@ -47,9 +47,9 @@ function KeplerContent() {
           setScenarioData(normalized);
           setScenarioMeta({ id: scenarioId, description: scenario.user_description });
           
-          // Clear sessionStorage after loading
+          // Persist the scenario in sessionStorage so it doesn't get cleared on refresh
           if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('kepler_scenario_id');
+            sessionStorage.setItem('kepler_scenario_id', scenarioId);
           }
         })
         .catch(err => {
@@ -59,6 +59,13 @@ function KeplerContent() {
         .finally(() => {
           setLoading(false);
         });
+    } else {
+      // Clear sessionStorage only if navigating directly to Kepler Explorer without context
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('kepler_scenario_id');
+      }
+      setScenarioData(null);
+      setScenarioMeta(null);
     }
   }, [searchParams]);
 
