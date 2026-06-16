@@ -48,6 +48,7 @@ async def get_baseline_grid(
             "properties": {
                 "cell_id": row['cell_id'],
                 "management_unit": row.get('management_unit'),
+                "year": row.get('year'),
                 "lion_density": float(row.get('baseline_lion_density') or 0),
                 "nightlight_intensity": float(row.get('all_mean_mean') or 0),
                 "nightlight_trend": float(row.get('longterm_slope_mean') or 0),
@@ -61,50 +62,75 @@ async def get_baseline_grid(
 async def get_affected_cells(
     supabase: Client,
     geometry_geojson: Dict,
-    management_units: Optional[List[str]] = None
+    management_units: Optional[List[str]] = None,
+    year: Optional[int] = None
 ) -> List[Dict]:
     """
     Find grid cells that intersect a drawn polygon using PostGIS RPC.
     Much faster than in-memory intersection for large polygons.
     """
     try:
-        # Normalize GeoJSON if it's a Feature (common from frontend)
+        # Normalize GeoJSON — unwrap Feature wrapper if present (common from frontend)
         if geometry_geojson.get("type") == "Feature":
             geometry_geojson = geometry_geojson["geometry"]
-            
-        result = supabase.rpc(
+        if geometry_geojson.get("type") == "FeatureCollection":
+            # Take the first geometry if a collection was passed
+            feats = geometry_geojson.get("features", [])
+            if feats:
+                geometry_geojson = feats[0].get("geometry", geometry_geojson)
+
+        logger.debug("RPC get_cells_in_geometry payload: %s units=%s", geometry_geojson.get("type"), management_units)
+
+        # Pass the raw geometry object directly — the SQL function calls
+        # ST_GeomFromGeoJSON(geom_geojson::text) on it without extra nesting.
+        rpc_result = supabase.rpc(
             "get_cells_in_geometry",
             {
-                "geom_geojson": {"geometry": geometry_geojson},
+                "geom_geojson": geometry_geojson,
                 "units": management_units or []
             }
         ).execute()
-        
-        return result.data or []
+
+        cells = rpc_result.data or []
+        logger.info("get_cells_in_geometry returned %d cells", len(cells))
+
+        # Apply year filter on the returned rows when a year is requested
+        if year and cells:
+            cells = [c for c in cells if c.get("year") == year]
+            logger.debug("After year=%d filter: %d cells remain", year, len(cells))
+
+        return cells
         
     except Exception as e:
-        logger.error(f"PostGIS RPC failure: {e}. Falling back to in-memory filter.")
-        # Fallback to standard table fetch and in-memory filter if RPC fails
+        logger.error("PostGIS RPC failure: %s — falling back to in-memory filter.", e)
+        # Fallback: table scan + Python-side intersection (no row limit on the
+        # initial fetch so we don't silently miss cells outside the first 1000).
         query = supabase.table("grid_cells").select("*")
         if management_units:
             query = query.in_("management_unit", management_units)
-        query = query.limit(1000) # Safety limit for fallback
-        
+        if year:
+            query = query.eq("year", year)
         result = query.execute()
         candidates = result.data or []
-        
+
         import shapely.geometry as sg
-        poly = sg.shape(geometry_geojson)
+        try:
+            poly = sg.shape(geometry_geojson)
+        except Exception as shape_err:
+            logger.error("Could not parse fallback geometry: %s", shape_err)
+            return []
+
         affected_cells = []
         for cell in candidates:
             try:
-                geom_data = cell.get('geom')
+                geom_data = cell.get("geom")
                 if isinstance(geom_data, str):
                     geom_data = json.loads(geom_data)
                 if geom_data and poly.intersects(sg.shape(geom_data)):
                     affected_cells.append(cell)
             except Exception:
                 continue
+        logger.info("Fallback in-memory filter returned %d cells", len(affected_cells))
         return affected_cells
 
 
