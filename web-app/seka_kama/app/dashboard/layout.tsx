@@ -6,6 +6,18 @@ import Link from 'next/link';
 import { getApiUrl } from '@/services/config';
 import NotificationPanel from '@/components/NotificationPanel';
 import { DashboardUiProvider, useDashboardUi } from '@/contexts/DashboardUiContext';
+import { 
+  Map, 
+  BarChart3, 
+  History, 
+  FileText, 
+  Key, 
+  Settings,
+  TrendingUp,
+  Layers,
+  Activity,
+  Eye
+} from 'lucide-react';
 
 interface User {
   id: number;
@@ -83,15 +95,15 @@ function DashboardLayoutContent({
   };
 
   const navLinks = [
-    { href: '/dashboard', label: 'Spatial Analysis', icon: 'map' },
-    { href: '/dashboard/kepler', label: 'Kepler Explorer', icon: 'analytics' },
-    { href: '/dashboard/scenarios', label: 'Scenario History', icon: 'history' },
-    { href: '/dashboard/reports', label: 'Reports', icon: 'description' },
+    { href: '/dashboard', label: 'Spatial Analysis', icon: Map, iconName: 'map' },
+    { href: '/dashboard/kepler', label: 'Kepler Explorer', icon: BarChart3, iconName: 'analytics' },
+    { href: '/dashboard/scenarios', label: 'Scenario History', icon: History, iconName: 'history' },
+    { href: '/dashboard/reports', label: 'Reports', icon: FileText, iconName: 'description' },
   ];
 
   const adminLinks = [
-    { href: '/dashboard/api-keys', label: 'API Management', icon: 'api' },
-    { href: '/dashboard/profile', label: 'Account Settings', icon: 'settings' },
+    { href: '/dashboard/api-keys', label: 'API Management', icon: Key, iconName: 'api' },
+    { href: '/dashboard/profile', label: 'Account Settings', icon: Settings, iconName: 'settings' },
   ];
 
   const initials = user?.full_name
@@ -103,7 +115,6 @@ function DashboardLayoutContent({
       <style dangerouslySetInnerHTML={{
         __html: `
         @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
         :root {
           --primary: #775a19;
@@ -131,11 +142,6 @@ function DashboardLayoutContent({
 
         .headline-font {
           font-family: 'Playfair Display', serif;
-        }
-
-        .material-symbols-outlined {
-          font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
-          vertical-align: middle;
         }
 
         .glass-header {
@@ -177,6 +183,7 @@ function DashboardLayoutContent({
               <nav className="space-y-1">
                 {navLinks.map((link) => {
                   const isActive = pathname === link.href;
+                  const Icon = link.icon;
                   return (
                     <Link
                       key={link.href}
@@ -187,7 +194,7 @@ function DashboardLayoutContent({
                           : 'text-secondary hover:text-primary hover:bg-surface-container-low'
                       }`}
                     >
-                      <span className="material-symbols-outlined">{link.icon}</span>
+                      <Icon className="w-5 h-5" />
                       <span className="text-[16px] tracking-tight">{link.label}</span>
                     </Link>
                   );
@@ -202,28 +209,28 @@ function DashboardLayoutContent({
                   onClick={() => togglePanel('analyst')}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.analyst ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
                 >
-                  <span className="material-symbols-outlined">analytics</span>
+                  <BarChart3 className="w-5 h-5" />
                   <span className="text-[16px] tracking-tight">Analyst Insights</span>
                 </button>
                 <button 
                   onClick={() => togglePanel('indicators')}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.indicators ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
                 >
-                  <span className="material-symbols-outlined">monitoring</span>
+                  <Activity className="w-5 h-5" />
                   <span className="text-[16px] tracking-tight">Ecosystem Metrics</span>
                 </button>
                 <button 
                   onClick={() => togglePanel('layers')}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.layers ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
                 >
-                  <span className="material-symbols-outlined">layers</span>
+                  <Layers className="w-5 h-5" />
                   <span className="text-[16px] tracking-tight">Map Layers</span>
                 </button>
                 <button 
                   onClick={() => togglePanel('trends')}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.trends ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
                 >
-                  <span className="material-symbols-outlined">trending_up</span>
+                  <TrendingUp className="w-5 h-5" />
                   <span className="text-[16px] tracking-tight">Historical Trends</span>
                 </button>
               </nav>
@@ -234,6 +241,7 @@ function DashboardLayoutContent({
               <nav className="space-y-1">
                 {adminLinks.map((link) => {
                   const isActive = pathname === link.href;
+                  const Icon = link.icon;
                   return (
                     <Link
                       key={link.href}
@@ -244,7 +252,7 @@ function DashboardLayoutContent({
                           : 'text-secondary hover:text-primary hover:bg-surface-container-low'
                       }`}
                     >
-                      <span className="material-symbols-outlined">{link.icon}</span>
+                      <Icon className="w-5 h-5" />
                       <span className="text-[16px] tracking-tight">{link.label}</span>
                     </Link>
                   );

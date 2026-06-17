@@ -17,7 +17,12 @@ import {  Download,
   Layers,
   MapPin,
   TrendingUp,
-  Layout
+  Layout,
+  Bell,
+  RefreshCw,
+  X,
+  Plus,
+  Minus
 } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -356,7 +361,7 @@ function DashboardContent() {
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isNotificationsOpen ? 'bg-primary text-white' : 'bg-white/80 text-secondary hover:bg-white backdrop-blur-md border border-outline-variant'}`}
             >
-              <span className="material-symbols-outlined text-[18px]">notifications</span>
+              <Bell className="w-4 h-4" />
               <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
             </button>
             <NotificationPanel isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
@@ -605,11 +610,11 @@ function DashboardContent() {
           {/* Zoom controls */}
           <div className="map-overlay-card p-2 flex flex-col gap-2 rounded-lg">
             <button onClick={handleZoomIn} className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
-              <span className="material-symbols-outlined text-[20px]">add</span>
+              <Plus className="w-5 h-5" />
             </button>
             <div className="w-full h-[1px] bg-outline-variant" />
             <button onClick={handleZoomOut} className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
-              <span className="material-symbols-outlined text-[20px]">remove</span>
+              <Minus className="w-5 h-5" />
             </button>
           </div>
           
@@ -654,7 +659,7 @@ function DashboardContent() {
                         <h2 className="text-3xl font-black text-white tracking-tight">Master the Digital Twin</h2>
                       </div>
                       <button onClick={() => setIsWalkthroughOpen(false)} className="text-slate-500 hover:text-white transition-colors">
-                         <span className="material-symbols-outlined text-[32px]">close</span>
+                         <X className="w-6 h-6" />
                       </button>
                    </div>
 
