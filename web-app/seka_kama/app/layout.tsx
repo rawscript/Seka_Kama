@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
+import GlobalErrorBoundary from '@/components/GlobalErrorBoundary';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -20,14 +21,16 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className={`${inter.className} min-h-full flex flex-col bg-[#f9f9f9] text-[#1a1c1c]`}>
-        {/* Floating layer for draggable panels */}
-        <div id="floating-layer" className="fixed inset-0 pointer-events-none z-[9999]" />
-        
-        {/* The min-h-full and flex-col ensures your map dashboard fills the screen properly */}
-        <main className="flex-grow">
-          {children}
-        </main>
-        <Analytics />
+        <GlobalErrorBoundary>
+          {/* Floating layer for draggable panels */}
+          <div id="floating-layer" className="fixed inset-0 pointer-events-none z-[9999]" />
+          
+          {/* The min-h-full and flex-col ensures your map dashboard fills the screen properly */}
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Analytics />
+        </GlobalErrorBoundary>
       </body>
     </html>
   );
