@@ -15,6 +15,7 @@ from api.key_routes import router as keys_router
 from core.config import settings
 from core.database import init_supabase
 from core.logging_config import setup_logging
+from core.resilience import CircuitBreaker, retry_with_backoff, timeout
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -37,23 +38,20 @@ logger = logging.getLogger(__name__)
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
+# Initialize circuit breakers for external services
+supabase_breaker = CircuitBreaker("supabase", failure_threshold=5)
+model_breaker = CircuitBreaker("ml_model", failure_threshold=3)
 
 # ─── Startup environment validator ───────────────────────────────────────────
 
-# These must match the exact variable names set in Railway / your .env file.
-# config.py reads SUPABASE_SERVICE_ROLE_KEY (the standard Supabase service role key name).
 CRITICAL_ENV_VARS = [
     "SUPABASE_URL",
-    "SUPABASE_SERVICE_ROLE_KEY",  # was incorrectly "SUPABASE_SERVICE_KEY"
+    "SUPABASE_SERVICE_ROLE_KEY",
     "JWT_SECRET_KEY",
 ]
 
 def _validate_env() -> None:
-    """
-    Check that all critical environment variables are set before the server
-    starts accepting traffic. Raises RuntimeError in production; logs warnings
-    in development so local iteration is not blocked.
-    """
+    """Check that all critical environment variables are set."""
     import os
     missing = [k for k in CRITICAL_ENV_VARS if not os.getenv(k)]
     if not missing:
@@ -75,12 +73,16 @@ async def lifespan(app: FastAPI):
     # 1. Fail fast if critical secrets are absent
     _validate_env()
 
-    # 2. Load SekaNet ML artefacts
+    # 2. Load SekaNet ML artefacts with circuit breaker
     logger.info("Loading SekaNet models…")
-    app.state.model = joblib.load(settings.MODEL_PATH)
-    app.state.scaler = joblib.load(settings.SCALER_PATH)
-    app.state.feature_names = joblib.load(settings.FEATURE_NAMES_PATH)
-    app.state.supabase = init_supabase()
+    try:
+        app.state.model = joblib.load(settings.MODEL_PATH)
+        app.state.scaler = joblib.load(settings.SCALER_PATH)
+        app.state.feature_names = joblib.load(settings.FEATURE_NAMES_PATH)
+        app.state.supabase = init_supabase()
+    except Exception as e:
+        logger.error(f"Failed to load models: {str(e)}", exc_info=True)
+        raise RuntimeError("Critical: Could not load ML models on startup") from e
     
     # 3. Initialize prediction service
     from services.prediction_service import PredictionService
@@ -89,6 +91,10 @@ async def lifespan(app: FastAPI):
         app.state.scaler,
         app.state.feature_names
     )
+    
+    # Store circuit breakers in app state
+    app.state.supabase_breaker = supabase_breaker
+    app.state.model_breaker = model_breaker
     
     logger.info(
         "SekaNet ready — model v%s, %d features.",
@@ -137,24 +143,19 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
-# Initialize Prometheus instrumentation — only expose in debug/dev
+# Initialize Prometheus instrumentation
 instrumentator = Instrumentator().instrument(app)
 if settings.DEBUG:
     instrumentator.expose(app)
 
-# ---------------------------------------------------------------------------
-# CORS Setup - Using FastAPI's built-in CORSMiddleware
-# ---------------------------------------------------------------------------
-# Build comprehensive allowed origins list
+# CORS Setup
 allowed_origins = list(settings.allowed_origins_list)
 
-# Add any VERCEL_URL if set
 if os.getenv("VERCEL_URL"):
     vercel_url = f"https://{os.getenv('VERCEL_URL')}"
     if vercel_url not in allowed_origins:
         allowed_origins.append(vercel_url)
 
-# Add localhost variants for development
 for localhost_port in [3000, 3001, 8000]:
     localhost_url = f"http://localhost:{localhost_port}"
     if localhost_url not in allowed_origins:
@@ -172,9 +173,7 @@ app.add_middleware(
     max_age=600,
 )
 
-
-# Allowlist of trusted domains for the GeoJSON proxy.
-# Only requests to these hosts will be forwarded.
+# GeoJSON Proxy allowlist
 _PROXY_ALLOWED_HOSTS = {
     "drive.google.com",
     "docs.google.com",
@@ -189,10 +188,7 @@ _PROXY_ALLOWED_HOSTS = {
 }
 
 def _validate_proxy_url(url: str) -> None:
-    """
-    Raise HTTPException if the URL is not from a trusted host.
-    Prevents SSRF attacks against internal services.
-    """
+    """Validate proxy URL to prevent SSRF attacks."""
     try:
         parsed = urllib.parse.urlparse(url)
     except Exception:
@@ -202,14 +198,12 @@ def _validate_proxy_url(url: str) -> None:
         raise HTTPException(status_code=400, detail="Only http/https URLs are allowed")
 
     host = parsed.hostname or ""
-    # Allow exact match or subdomain of an allowed host
     if not any(host == h or host.endswith(f".{h}") for h in _PROXY_ALLOWED_HOSTS):
         raise HTTPException(
             status_code=403,
             detail=f"Host '{host}' is not in the proxy allowlist. "
                    "Contact the administrator to add trusted GeoJSON sources."
         )
-
 
 @app.get("/api/proxy-geojson")
 async def proxy_geojson(url: str):
@@ -242,14 +236,10 @@ async def proxy_geojson(url: str):
             
             content_type = response.headers.get("Content-Type", "")
             
-            # Check if it's actually JSON or if it's a Google Drive warning page (text/html)
             if "text/html" in content_type:
-                # Try to extract the direct download link from the warning page if it's Google Drive
                 if "drive.google.com" in url and "confirm=" not in url:
-                    # Look for a confirm token in the HTML (more robust regex)
                     match = re.search(r'confirm=([a-zA-Z0-9_-]+)', response.text)
                     if not match:
-                        # Alternative location for confirm token in some GD pages
                         match = re.search(r'id="confirm-token" value="([a-zA-Z0-9_-]+)"', response.text)
                     
                     if match:
@@ -285,9 +275,8 @@ async def health_check(request: Request):
     try:
         supabase = request.app.state.supabase
         result = supabase.table("grid_cells").select("cell_id").limit(1).execute()
-        # Any response (even empty) means the client is healthy
         db_status = "connected"
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         db_status = f"error: {exc}"
 
     model_loaded = (
