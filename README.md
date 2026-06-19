@@ -1,4 +1,4 @@
-# Seka Kama:
+# Seka Kama 
 
 *An open-source research initiative investigating the spatial relationship between human expansion and apex predator viability.*
 
