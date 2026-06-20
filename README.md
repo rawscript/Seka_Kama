@@ -2,7 +2,7 @@
 
 *An open-source research initiative investigating the spatial relationship between human expansion and apex predator viability.*
 
-## 1. The Challenge
+## 1. Challenge
 ![Logo](https://res.cloudinary.com/dp7vwr0av/image/upload/v1778346341/Seka_Kama_qxf0dm.png)
 
 The ecosystem is undergoing rapid transition. As human footprints expand through increased settlement, infrastructure, and agriculture, available habitat for wide‑ranging species becomes increasingly fragmented.
