@@ -9,7 +9,7 @@ The ecosystem is undergoing rapid transition. As human footprints expand through
 
 This project addresses the critical gap between land‑use planning and wildlife conservation. Currently, it is difficult to quantify how a specific change in land utility—e.g., a new barrier or conversion of wild land to seasonal farming—affects the long‑term survival of lion populations.
 
-### The Problem
+### Problem
 
 Seka Kama bridges human development and ecological stability. Without the ability to simulate future outcomes, land‑use decisions often overlook long‑term biodiversity impacts. Seka Kama provides a predictive environment where different development scenarios can be tested for their direct effect on predator movement and population health.
 
