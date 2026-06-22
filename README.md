@@ -13,7 +13,7 @@ This project addresses the critical gap between land‑use planning and wildlife
 
 Seka Kama bridges human development and ecological stability. Without the ability to simulate future outcomes, land‑use decisions often overlook long‑term biodiversity impacts. Seka Kama provides a predictive environment where different development scenarios can be tested for their direct effect on predator movement and population health.
 
-## 2. Project Vision
+## 2. Vision
 
 Seka Kama utilizes a robust spatial model that integrates human activity data with the known biological requirements of lions. By establishing statistical relationships between land fragmentation and habitat use, the system can answer questions such as: *“If human activity increases by X% in this specific corridor, what is the impact on population viability over the next decade?”*
 
