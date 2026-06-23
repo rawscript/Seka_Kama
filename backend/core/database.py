@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 # Supabase client singleton
 _supabase_client: Optional[Client] = None
+_circuit_breaker: Optional[Any] = None  # Will be set by FastAPI app state
 
 def get_supabase_client() -> Client:
     """
