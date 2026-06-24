@@ -19,7 +19,7 @@ Seka Kama utilizes a robust spatial model that integrates human activity data wi
 
 The final output is a simulation tool that visualizes these “what‑if” scenarios, clarifying the trade‑offs involved in regional development.
 
-## 3. Core Documentation and Resources
+## 3. Documentation and Resources
 
 The following documents provide the foundational logic, raw data parameters, and research methodology:
 
