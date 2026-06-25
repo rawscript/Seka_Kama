@@ -297,7 +297,8 @@ function DashboardContent() {
           background: linear-gradient(to right, #775a19 0%, #ffdea5 50%, #ba1a1a 100%);
         }
         .time-slider-track {
-          background: linear-gradient(to right, #e2dfde 0%, #775a19 100%);
+          background: linear-gradient(to right, #775a19 0%, #ffdea5 50%, #775a19 100%);
+          border-radius: 9999px;
         }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -535,7 +536,7 @@ function DashboardContent() {
 
         {/* ── Temporal Controls ── */}
         <div className={`absolute bottom-8 right-[420px] w-[500px] z-30 transition-all duration-300 ${isSidebarOpen && !isMobile ? 'right-[420px]' : 'right-8'} ${isMobile && !isSidebarOpen ? 'opacity-0 translate-y-10' : ''}`}>
-          <div className="map-overlay-card p-4 shadow-lg rounded-sm">
+          <div className="bg-white/95 backdrop-blur-sm border border-slate-200 p-4 shadow-xl rounded-lg">
             <div className="flex justify-between items-center mb-3">
               <div className="flex items-center gap-2 text-primary font-bold">
                 <span className="material-symbols-outlined text-[18px]">schedule</span>
@@ -555,18 +556,29 @@ function DashboardContent() {
             </div>
 
             <div className="relative pt-1">
-              <div className="h-1 w-full bg-surface-container rounded-full overflow-hidden relative">
+              <div className="h-1 w-full bg-slate-200 rounded-full overflow-hidden relative">
                 <div className="absolute left-0 top-0 h-full time-slider-track" style={{ width: `${timeValue}%` }} />
               </div>
               <input
-                type="range" min="0" max="100" value={timeValue}
+                type="range" 
+                id="year-slider"
+                min="0" 
+                max="100" 
+                value={timeValue}
+                aria-label="Year timeline slider from 2020 to 2026"
+                aria-valuetext={`Year ${selectedYear}`}
                 onChange={(e) => { stopPlayback(); setTimeValue(parseInt(e.target.value)); }}
-                className="absolute top-[-5px] left-0 w-full opacity-0 cursor-pointer h-4 z-40"
+                className="absolute top-[-5px] left-0 w-full opacity-0 cursor-pointer h-6 z-40"
               />
               <div
-                className="absolute top-[-5px] w-3.5 h-3.5 bg-primary border-2 border-white rounded-full shadow-md pointer-events-none transition-all"
-                style={{ left: `calc(${timeValue}% - 7px)` }}
-              />
+                className="absolute top-[-8px] w-4 h-4 bg-primary border-2 border-white rounded-full shadow-lg pointer-events-none transition-all z-30 group"
+                style={{ left: `calc(${timeValue}% - 8px)` }}
+                aria-hidden="true"
+              >
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Year {selectedYear}
+                </div>
+              </div>
               <div className="flex justify-between mt-3 px-1">
                 {[2020, 2021, 2022, 2023, 2024, 2025, 2026].map((yr) => {
                   const pct = ((yr - MIN_YEAR) / (MAX_YEAR - MIN_YEAR)) * 100;
@@ -575,15 +587,21 @@ function DashboardContent() {
                     <button
                       key={yr}
                       title={`Jump to ${yr}`}
+                      aria-label={`Set year to ${yr}`}
                       onClick={() => { stopPlayback(); setTimeValue(Math.round(pct)); }}
-                      className={`text-center transition-all ${isActive ? 'bg-[#c5a059]/10 px-1 py-0.5 rounded-sm' : 'hover:opacity-70'}`}
+                      className={`text-center transition-all ${isActive ? 'bg-primary/10 px-1 py-0.5 rounded-sm ring-1 ring-primary/20' : 'hover:opacity-70 hover:bg-slate-100'}`}
                     >
-                      <p className={`text-[8px] font-bold uppercase tracking-widest leading-none ${isActive ? 'text-primary' : 'text-outline'}`}>
+                      <p className={`text-[8px] font-bold uppercase tracking-widest leading-none ${isActive ? 'text-primary' : 'text-slate-600'}`}>
                         {yr}
                       </p>
                     </button>
                   );
                 })}
+              </div>
+              <div className="mt-2 text-center">
+                <span className="text-[10px] font-medium text-slate-700 bg-slate-50 px-2 py-1 rounded inline-block">
+                  Selected: <strong className="text-primary font-bold">{selectedYear}</strong>
+                </span>
               </div>
             </div>
           </div>
