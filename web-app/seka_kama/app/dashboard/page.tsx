@@ -537,19 +537,31 @@ function DashboardContent() {
         {/* ── Temporal Controls ── */}
         <div className={`absolute bottom-8 right-[420px] w-[500px] z-30 transition-all duration-300 ${isSidebarOpen && !isMobile ? 'right-[420px]' : 'right-8'} ${isMobile && !isSidebarOpen ? 'opacity-0 translate-y-10' : ''}`}>
           <div className="bg-white/95 backdrop-blur-sm border border-slate-200 p-4 shadow-xl rounded-lg">
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-2 text-primary font-bold">
-                <span className="material-symbols-outlined text-[18px]">schedule</span>
-                <span className="text-[10px] uppercase tracking-[0.15em] text-on-surface">TEMPORAL ANALYSIS</span>
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[20px] text-primary">schedule</span>
+                <span className="text-[11px] uppercase tracking-[0.2em] font-bold text-slate-800">TEMPORAL ANALYSIS</span>
               </div>
-              <div className="flex items-center gap-3">
-                <button title="Rewind to 2020" onClick={() => { stopPlayback(); setTimeValue(0); }} className="text-secondary hover:text-primary transition-colors">
+              <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
+                <button 
+                  title="Rewind to 2020" 
+                  onClick={() => { stopPlayback(); setTimeValue(0); }} 
+                  className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-600 hover:text-primary"
+                >
                   <span className="material-symbols-outlined text-[18px]">fast_rewind</span>
                 </button>
-                <button title={isPlaying ? 'Pause' : 'Play timeline'} onClick={togglePlayback} className="text-primary hover:opacity-80 transition-opacity">
-                  <span className="material-symbols-outlined text-[24px]">{isPlaying ? 'pause_circle' : 'play_circle'}</span>
+                <button 
+                  title={isPlaying ? 'Pause timeline' : 'Play timeline'} 
+                  onClick={togglePlayback} 
+                  className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-primary"
+                >
+                  <span className="material-symbols-outlined text-[22px]">{isPlaying ? 'pause_circle' : 'play_circle'}</span>
                 </button>
-                <button title="Jump to 2026" onClick={() => { stopPlayback(); setTimeValue(100); }} className="text-secondary hover:text-primary transition-colors">
+                <button 
+                  title="Jump to 2026" 
+                  onClick={() => { stopPlayback(); setTimeValue(100); }} 
+                  className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-600 hover:text-primary"
+                >
                   <span className="material-symbols-outlined text-[18px]">fast_forward</span>
                 </button>
               </div>
