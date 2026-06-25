@@ -7,7 +7,7 @@
 
 The ecosystem is undergoing rapid transition. As human footprints expand through increased settlement, infrastructure, and agriculture, available habitat for wide‑ranging species becomes increasingly fragmented.
 
-This project addresses the critical gap between land‑use planning and wildlife conservation. Currently, it is difficult to quantify how a specific change in land utility—e.g., a new barrier or conversion of wild land to seasonal farming—affects the long‑term survival of lion populations.
+This project addresses the critical gap between land‑use planning and wildlife conservation. Currently, it is difficult to quantify how a specific change in land utility , a new barrier or conversion of wild land to seasonal farming—affects the long‑term survival of lion populations.
 
 ### Problem
 
