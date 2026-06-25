@@ -7,7 +7,7 @@
 
 The ecosystem is undergoing rapid transition. As human footprints expand through increased settlement, infrastructure, and agriculture, available habitat for wide‑ranging species becomes increasingly fragmented.
 
-This project addresses the critical gap between land‑use planning and wildlife conservation. Currently, it is difficult to quantify how a specific change in land utility—e.g., a new barrier or conversion of wild land to seasonal farming—affects the long‑term survival of lion populations.
+This project addresses the critical gap between land‑use planning and wildlife conservation. Currently, it is difficult to quantify how a specific change in land utility , a new barrier or conversion of wild land to seasonal farming—affects the long‑term survival of lion populations.
 
 ### Problem
 
@@ -19,7 +19,7 @@ Seka Kama utilizes a robust spatial model that integrates human activity data wi
 
 The final output is a simulation tool that visualizes these “what‑if” scenarios, clarifying the trade‑offs involved in regional development.
 
-## 3. Core Documentation and Resources
+## 3. Documentation and Resources
 
 The following documents provide the foundational logic, raw data parameters, and research methodology:
 
