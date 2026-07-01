@@ -11,7 +11,7 @@ This project addresses the critical gap between land‑use planning and wildlife
 
 ### Problem
 
-Seka Kama bridges human development and ecological stability. Without the ability to simulate future outcomes, land‑use decisions often overlook long‑term biodiversity impacts. Seka Kama provides a predictive environment where different development scenarios can be tested for their direct effect on predator movement and population health.
+Seka Kama is designed to bridg human development and ecological stability. Without the ability to simulate future outcomes, land‑use decisions often overlook long‑term biodiversity impacts. Seka Kama provides a predictive environment where different development scenarios can be tested for their direct effect on predator movement and population health.
 
 ## 2. Vision
 
