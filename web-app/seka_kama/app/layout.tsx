@@ -6,6 +6,9 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
+// Material Symbols configuration
+const MATERIAL_SYMBOLS_URL = 'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap';
+
 export const metadata: Metadata = {
   title: 'Seka Kama Digital Twin',
   description: 'Advanced geospatial analytics for lion conservation in the Greater Mara ecosystem',
@@ -20,6 +23,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full antialiased">
+      <head>
+        <link rel="stylesheet" href={MATERIAL_SYMBOLS_URL} />
+      </head>
       <body className={`${inter.className} min-h-full flex flex-col bg-[#f9f9f9] text-[#1a1c1c]`}>
         <GlobalErrorBoundary>
           {/* Floating layer for draggable panels */}

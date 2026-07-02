@@ -15,7 +15,6 @@ import {  Download,
   Bot,
   Activity,
   Layers,
-  MapPin,
   TrendingUp,
   Layout,
   Bell,
@@ -434,42 +433,6 @@ function DashboardContent() {
                 </div>
               </div>
               <div className="p-4 flex-1 overflow-auto space-y-6">
-                {/* Zone Selection within panel */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-primary">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Active Zone</span>
-                  </div>
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsZoneMenuOpen(!isZoneMenuOpen)}
-                      className="w-full text-left flex justify-between items-center border border-slate-200 rounded-lg p-3 text-sm font-bold text-slate-800 hover:border-primary transition-colors bg-white shadow-sm"
-                    >
-                      {selectedUnit || 'Regional Overview'}
-                      <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isZoneMenuOpen ? 'rotate-90' : ''}`} />
-                    </button>
-                    {isZoneMenuOpen && (
-                      <div className="absolute top-full left-0 w-full mt-2 bg-white border border-slate-200 shadow-xl z-50 py-2 rounded-lg max-h-48 overflow-y-auto">
-                        <button
-                          onClick={() => { setSelectedUnit(''); setIsZoneMenuOpen(false); }}
-                          className="w-full text-left px-4 py-2.5 text-xs text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors font-bold border-b border-slate-100"
-                        >
-                          Regional Overview
-                        </button>
-                        {availableUnits.map((u) => (
-                          <button
-                            key={u}
-                            onClick={() => { setSelectedUnit(u); setIsZoneMenuOpen(false); }}
-                            className="w-full text-left px-4 py-2.5 text-xs text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors font-medium"
-                          >
-                            {u}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
                 {/* Layer Toggles */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
@@ -534,86 +497,133 @@ function DashboardContent() {
 
         {/* ── Scenario result panel ── */}
 
-        {/* ── Temporal Controls ── */}
+        {/* ── Map Controls Panel ── */}
         <div className={`absolute bottom-8 right-[420px] w-[500px] z-30 transition-all duration-300 ${isSidebarOpen && !isMobile ? 'right-[420px]' : 'right-8'} ${isMobile && !isSidebarOpen ? 'opacity-0 translate-y-10' : ''}`}>
-          <div className="bg-white/95 backdrop-blur-sm border border-slate-200 p-4 shadow-xl rounded-lg">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px] text-primary">schedule</span>
-                <span className="text-[11px] uppercase tracking-[0.2em] font-bold text-slate-800">TEMPORAL ANALYSIS</span>
+          <div className="bg-white/95 backdrop-blur-sm border border-slate-200 p-4 shadow-xl rounded-lg space-y-4">
+            
+            {/* Regional Overview Dropdown */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="material-symbols-outlined text-[18px] text-primary">map</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">REGIONAL OVERVIEW</span>
               </div>
-              <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
-                <button 
-                  title="Rewind to 2020" 
-                  onClick={() => { stopPlayback(); setTimeValue(0); }} 
-                  className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-600 hover:text-primary"
+              <div className="relative">
+                <button
+                  onClick={() => setIsZoneMenuOpen(!isZoneMenuOpen)}
+                  className="w-full text-left flex justify-between items-center border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-800 hover:border-primary transition-colors bg-white shadow-sm"
                 >
-                  <span className="material-symbols-outlined text-[18px]">fast_rewind</span>
+                  <span className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[16px] text-slate-600">
+                      {selectedUnit ? 'location_on' : 'public'}
+                    </span>
+                    {selectedUnit || 'All Management Units'}
+                  </span>
+                  <span className="material-symbols-outlined text-[18px] text-slate-400 transition-transform" style={{ transform: isZoneMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                    expand_more
+                  </span>
                 </button>
-                <button 
-                  title={isPlaying ? 'Pause timeline' : 'Play timeline'} 
-                  onClick={togglePlayback} 
-                  className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-primary"
-                >
-                  <span className="material-symbols-outlined text-[22px]">{isPlaying ? 'pause_circle' : 'play_circle'}</span>
-                </button>
-                <button 
-                  title="Jump to 2026" 
-                  onClick={() => { stopPlayback(); setTimeValue(100); }} 
-                  className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-600 hover:text-primary"
-                >
-                  <span className="material-symbols-outlined text-[18px]">fast_forward</span>
-                </button>
+                {isZoneMenuOpen && (
+                  <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 shadow-xl z-50 py-1 rounded-lg max-h-48 overflow-y-auto">
+                    <button
+                      onClick={() => { setSelectedUnit(''); setIsZoneMenuOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-primary/10 hover:text-primary transition-colors font-medium flex items-center gap-2 border-b border-slate-100"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">public</span>
+                      All Management Units
+                    </button>
+                    {availableUnits.map((u) => (
+                      <button
+                        key={u}
+                        onClick={() => { setSelectedUnit(u); setIsZoneMenuOpen(false); }}
+                        className="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-primary/10 hover:text-primary transition-colors font-medium flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">location_on</span>
+                        {u}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="relative pt-1">
-              <div className="h-1 w-full bg-slate-200 rounded-full overflow-hidden relative">
-                <div className="absolute left-0 top-0 h-full time-slider-track" style={{ width: `${timeValue}%` }} />
-              </div>
-              <input
-                type="range" 
-                id="year-slider"
-                min="0" 
-                max="100" 
-                value={timeValue}
-                aria-label="Year timeline slider from 2020 to 2026"
-                aria-valuetext={`Year ${selectedYear}`}
-                onChange={(e) => { stopPlayback(); setTimeValue(parseInt(e.target.value)); }}
-                className="absolute top-[-5px] left-0 w-full opacity-0 cursor-pointer h-6 z-40"
-              />
-              <div
-                className="absolute top-[-8px] w-4 h-4 bg-primary border-2 border-white rounded-full shadow-lg pointer-events-none transition-all z-30 group"
-                style={{ left: `calc(${timeValue}% - 8px)` }}
-                aria-hidden="true"
-              >
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  Year {selectedYear}
+            {/* Divider */}
+            <div className="border-t border-slate-200" />
+
+            {/* Temporal Analysis */}
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-primary">schedule</span>
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500">TEMPORAL ANALYSIS</span>
+                </div>
+                <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+                  <button 
+                    title="Rewind to 2020" 
+                    onClick={() => { stopPlayback(); setTimeValue(0); }} 
+                    className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-600 hover:text-primary"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">fast_rewind</span>
+                  </button>
+                  <button 
+                    title={isPlaying ? 'Pause timeline' : 'Play timeline'} 
+                    onClick={togglePlayback} 
+                    className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-primary"
+                  >
+                    <span className="material-symbols-outlined text-[22px]">{isPlaying ? 'pause_circle' : 'play_circle'}</span>
+                  </button>
+                  <button 
+                    title="Jump to 2026" 
+                    onClick={() => { stopPlayback(); setTimeValue(100); }} 
+                    className="p-1.5 rounded-md hover:bg-white hover:shadow-sm transition-all text-slate-600 hover:text-primary"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">fast_forward</span>
+                  </button>
                 </div>
               </div>
-              <div className="flex justify-between mt-3 px-1">
-                {[2020, 2021, 2022, 2023, 2024, 2025, 2026].map((yr) => {
-                  const pct = ((yr - MIN_YEAR) / (MAX_YEAR - MIN_YEAR)) * 100;
-                  const isActive = yr === selectedYear;
-                  return (
-                    <button
-                      key={yr}
-                      title={`Jump to ${yr}`}
-                      aria-label={`Set year to ${yr}`}
-                      onClick={() => { stopPlayback(); setTimeValue(Math.round(pct)); }}
-                      className={`text-center transition-all ${isActive ? 'bg-primary/10 px-1 py-0.5 rounded-sm ring-1 ring-primary/20' : 'hover:opacity-70 hover:bg-slate-100'}`}
-                    >
-                      <p className={`text-[8px] font-bold uppercase tracking-widest leading-none ${isActive ? 'text-primary' : 'text-slate-600'}`}>
-                        {yr}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="mt-2 text-center">
-                <span className="text-[10px] font-medium text-slate-700 bg-slate-50 px-2 py-1 rounded inline-block">
-                  Selected: <strong className="text-primary font-bold">{selectedYear}</strong>
-                </span>
+
+              <div className="relative pt-1">
+                <div className="h-1 w-full bg-slate-200 rounded-full overflow-hidden relative">
+                  <div className="absolute left-0 top-0 h-full time-slider-track" style={{ width: `${timeValue}%` }} />
+                </div>
+                <input
+                  type="range" 
+                  id="year-slider"
+                  min="0" 
+                  max="100" 
+                  value={timeValue}
+                  aria-label="Year timeline slider from 2020 to 2026"
+                  aria-valuetext={`Year ${selectedYear}`}
+                  onChange={(e) => { stopPlayback(); setTimeValue(parseInt(e.target.value)); }}
+                  className="absolute top-[-5px] left-0 w-full opacity-0 cursor-pointer h-6 z-40"
+                />
+                <div
+                  className="absolute top-[-8px] w-4 h-4 bg-primary border-2 border-white rounded-full shadow-lg pointer-events-none transition-all z-30 group"
+                  style={{ left: `calc(${timeValue}% - 8px)` }}
+                  aria-hidden="true"
+                >
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Year {selectedYear}
+                  </div>
+                </div>
+                <div className="flex justify-between mt-3 px-1">
+                  {[2020, 2021, 2022, 2023, 2024, 2025, 2026].map((yr) => {
+                    const pct = ((yr - MIN_YEAR) / (MAX_YEAR - MIN_YEAR)) * 100;
+                    const isActive = yr === selectedYear;
+                    return (
+                      <button
+                        key={yr}
+                        title={`Jump to ${yr}`}
+                        aria-label={`Set year to ${yr}`}
+                        onClick={() => { stopPlayback(); setTimeValue(Math.round(pct)); }}
+                        className={`text-center transition-all ${isActive ? 'bg-primary/10 px-1 py-0.5 rounded-sm ring-1 ring-primary/20' : 'hover:opacity-70 hover:bg-slate-100'}`}
+                      >
+                        <p className={`text-[8px] font-bold uppercase tracking-widest leading-none ${isActive ? 'text-primary' : 'text-slate-600'}`}>
+                          {yr}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
