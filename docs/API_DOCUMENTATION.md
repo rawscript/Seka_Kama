@@ -1,7 +1,7 @@
 # Seka Kama API Documentation
 
 ## Overview
-The Seka Kama API provides programmatic access to ecological data, predictive models, and scenario simulations for lion conservation in the Greater Mara ecosystem.
+Seka Kama API provides programmatic access to ecological data, predictive models, and scenario simulations for lion conservation in the Greater Mara ecosystem.
 
 **Base URL**: `https://api.seka-kama.io/api`
 **API Version**: `v2.0.0`
