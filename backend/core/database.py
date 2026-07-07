@@ -232,23 +232,62 @@ class SupabaseService:
         """
         from datetime import datetime, timezone
         
+        # Map to actual column names in the database
+        # Based on testing, the actual table has:
+        # - scenario_id (not id)
+        # - predicted_lion_delta (not delta_lions)
+        # - Missing: baseline_total_lions, predicted_total_lions, delta_percent
+        # We need to work with the existing schema
+        
+        # Combine modified_features with metadata
+        combined_features = dict(modified_features)
+        combined_features["__metadata"] = {
+            "baseline_total_lions": baseline_total_lions,
+            "predicted_total_lions": predicted_total_lions,
+            "delta_percent": delta_percent,
+            "request_data": request_data or {}
+        }
+        
         scenario_data = {
             "user_id": user_id,
             "user_description": user_description,
-            "modified_features": modified_features,
-            "baseline_total_lions": baseline_total_lions,
-            "predicted_total_lions": predicted_total_lions,
-            "delta_lions": delta_lions,
-            "delta_percent": delta_percent,
+            "modified_features": combined_features,
+            # Store delta_lions as predicted_lion_delta for compatibility
+            "predicted_lion_delta": delta_lions,
             "affected_cells": affected_cells,
-            "llm_narrative": llm_narrative,
-            "request_data": request_data,
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "llm_narrative": llm_narrative
         }
+        
         if scenario_geojson is not None:
-            scenario_data["scenario_geojson"] = scenario_geojson
+            # Store in modified_features metadata since we don't have scenario_geojson column
+            scenario_data["modified_features"]["__metadata"]["scenario_geojson"] = scenario_geojson
+        
         result = self.client.table("scenario_history").insert(scenario_data).execute()
-        return result.data[0] if result.data else {}
+        
+        # Fix the returned data to match expected format
+        if result.data:
+            row = result.data[0]
+            # Rename scenario_id to id for compatibility
+            if 'scenario_id' in row and 'id' not in row:
+                row['id'] = row['scenario_id']
+            # Extract metadata from modified_features
+            if 'modified_features' in row and isinstance(row['modified_features'], dict):
+                metadata = row['modified_features'].get('__metadata', {})
+                row['baseline_total_lions'] = metadata.get('baseline_total_lions', 0)
+                row['predicted_total_lions'] = metadata.get('predicted_total_lions', 0)
+                row['delta_percent'] = metadata.get('delta_percent', 0)
+                row['request_data'] = metadata.get('request_data', {})
+                if 'scenario_geojson' in metadata:
+                    row['scenario_geojson'] = metadata['scenario_geojson']
+                # Remove metadata from modified_features to keep it clean
+                if '__metadata' in row['modified_features']:
+                    row['modified_features'] = {k: v for k, v in row['modified_features'].items() 
+                                               if k != '__metadata'}
+            # Map predicted_lion_delta to delta_lions
+            if 'predicted_lion_delta' in row and 'delta_lions' not in row:
+                row['delta_lions'] = row['predicted_lion_delta']
+            return row
+        return {}
     
     def get_scenario_history(
         self,
@@ -266,7 +305,32 @@ class SupabaseService:
         query = query.order("created_at", desc=True).limit(limit)
         
         result = query.execute()
-        return result.data
+        
+        # Fix the returned data to match expected format
+        fixed_data = []
+        for row in result.data:
+            # Rename scenario_id to id for compatibility
+            if 'scenario_id' in row and 'id' not in row:
+                row['id'] = row['scenario_id']
+            # Extract metadata from modified_features
+            if 'modified_features' in row and isinstance(row['modified_features'], dict):
+                metadata = row['modified_features'].get('__metadata', {})
+                row['baseline_total_lions'] = metadata.get('baseline_total_lions', 0)
+                row['predicted_total_lions'] = metadata.get('predicted_total_lions', 0)
+                row['delta_percent'] = metadata.get('delta_percent', 0)
+                row['request_data'] = metadata.get('request_data', {})
+                if 'scenario_geojson' in metadata:
+                    row['scenario_geojson'] = metadata['scenario_geojson']
+                # Remove metadata from modified_features to keep it clean
+                if '__metadata' in row['modified_features']:
+                    row['modified_features'] = {k: v for k, v in row['modified_features'].items() 
+                                               if k != '__metadata'}
+            # Map predicted_lion_delta to delta_lions
+            if 'predicted_lion_delta' in row and 'delta_lions' not in row:
+                row['delta_lions'] = row['predicted_lion_delta']
+            fixed_data.append(row)
+        
+        return fixed_data
 
     # ========== Historical Trends Operations ==========
 
