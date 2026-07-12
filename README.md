@@ -15,7 +15,7 @@ Seka Kama is designed to bridg human development and ecological stability. Witho
 
 ## 2. Vision
 
-Seka Kama utilizes a robust spatial model that integrates human activity data with the known biological requirements of lions. By establishing statistical relationships between land fragmentation and habitat use, the system can answer questions such as: *“If human activity increases by X% in this specific corridor, what is the impact on population viability over the next decade?”*
+Seka Kama utilizes a sophisticated robust spatial model that integrates human activity data with the known biological requirements of lions. By establishing statistical relationships between land fragmentation and habitat use, the system can answer questions such as: *“If human activity increases by X% in this specific corridor, what is the impact on population viability over the next decade?”*
 
 The final output is a simulation tool that visualizes these “what‑if” scenarios, clarifying the trade‑offs involved in regional development.
 
