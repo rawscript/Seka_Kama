@@ -1,6 +1,6 @@
 # Seka Kama  
 
-*An open-source research initiative investigating the spatial relationship between human expansion and apex predator viability.*
+*An open-source research initiative investigating the spatial relationship between human expansion and apex predator viability. The apex predictors in question is East African Lion*
 
 ## 1. Challenge
 ![Logo](https://res.cloudinary.com/dp7vwr0av/image/upload/v1778346341/Seka_Kama_qxf0dm.png)
