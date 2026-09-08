@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "seka-kama-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-08",
+  "workers_dev": true,
+  "secrets": {
+    "required": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "JWT_SECRET_KEY"]
+  },
+  "vars": {
+    "ALLOWED_ORIGIN": "https://seka-kama.vercel.app",
+    "MODEL_VERSION": "cloudflare-sensitivity-v1"
+  }
+}

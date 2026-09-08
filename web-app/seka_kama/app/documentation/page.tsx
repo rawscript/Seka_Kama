@@ -277,7 +277,7 @@ export default function DocumentationPage() {
             <p className="text-sm text-[#4e4639] leading-relaxed font-light">
               All API endpoints are relative to the following base URL. All requests must be made over HTTPS in production.
             </p>
-            <CodeBlock language="text">{`https://sekakama-production-0aa3.up.railway.app/api`}</CodeBlock>
+            <CodeBlock language="text">{`https://seka-kama-api.<your-cloudflare-subdomain>.workers.dev/api`}</CodeBlock>
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-xs text-amber-800">
                 <strong>Local Development:</strong> When running locally, the base URL is <code className="bg-amber-100 px-1 py-0.5 rounded text-[11px]">http://localhost:8000/api</code>
@@ -947,7 +947,7 @@ export default function DocumentationPage() {
               <div className="p-8 bg-white enterprise-card border-[#d1c5b4]/40">
                 <h4 className="text-lg font-serif font-medium text-[#1a1c1c] mb-3">Technology Stack</h4>
                 <ul className="space-y-2.5 text-sm text-[#4e4639] font-light">
-                  <li className="flex items-start gap-2"><span className="text-[#775a19] mt-1">•</span> <span><strong className="font-medium">Backend</strong> — FastAPI (Python 3.11), Railway</span></li>
+                  <li className="flex items-start gap-2"><span className="text-[#775a19] mt-1">•</span> <span><strong className="font-medium">Backend</strong> — Cloudflare Worker + Supabase</span></li>
                   <li className="flex items-start gap-2"><span className="text-[#775a19] mt-1">•</span> <span><strong className="font-medium">Frontend</strong> — Next.js 16, Vercel</span></li>
                   <li className="flex items-start gap-2"><span className="text-[#775a19] mt-1">•</span> <span><strong className="font-medium">Database</strong> — Supabase (PostGIS)</span></li>
                   <li className="flex items-start gap-2"><span className="text-[#775a19] mt-1">•</span> <span><strong className="font-medium">ML Engine</strong> — XGBoost, StandardScaler</span></li>
@@ -969,7 +969,7 @@ export default function DocumentationPage() {
 
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-[#1a1c1c]">1. Register an account</h4>
-              <CodeBlock language="bash">{`curl -X POST https://sekakama-production-0aa3.up.railway.app/api/auth/register \\
+              <CodeBlock language="bash">{`curl -X POST https://seka-kama-api.<your-cloudflare-subdomain>.workers.dev/api/auth/register \\
   -H "Content-Type: application/json" \\
   -d '{
     "email": "you@example.com",
@@ -981,7 +981,7 @@ export default function DocumentationPage() {
 
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-[#1a1c1c]">2. Get your access token</h4>
-              <CodeBlock language="bash">{`curl -X POST https://sekakama-production-0aa3.up.railway.app/api/auth/login \\
+              <CodeBlock language="bash">{`curl -X POST https://seka-kama-api.<your-cloudflare-subdomain>.workers.dev/api/auth/login \\
   -H "Content-Type: application/json" \\
   -d '{"email": "you@example.com", "password": "securepassword"}'
 
@@ -990,7 +990,7 @@ export default function DocumentationPage() {
 
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-[#1a1c1c]">3. Run a scenario simulation</h4>
-              <CodeBlock language="bash">{`curl -X POST https://sekakama-production-0aa3.up.railway.app/api/scenario \\
+              <CodeBlock language="bash">{`curl -X POST https://seka-kama-api.<your-cloudflare-subdomain>.workers.dev/api/scenario \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_TOKEN" \\
   -d '{

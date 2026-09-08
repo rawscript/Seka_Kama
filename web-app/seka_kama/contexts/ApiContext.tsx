@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { getCorsErrorStatus, resetCorsError } from '@/services/api';
+import { getApiUrl } from '@/services/config';
 
 interface ApiContextType {
   // CORS error state
@@ -71,7 +72,7 @@ export function ApiProvider({ children }: ApiProviderProps) {
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/health`,
+        `${getApiUrl()}/health`,
         { 
           signal: controller.signal,
           mode: 'cors',

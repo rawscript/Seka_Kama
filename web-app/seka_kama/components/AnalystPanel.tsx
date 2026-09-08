@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Bot, Shield, Zap, AlertTriangle, ChevronDown, ChevronUp, Download, RefreshCw, Info, BarChart3, TrendingUp, Clock, MapPin } from 'lucide-react';
 import { api, getCorsErrorStatus, resetCorsError } from '@/services/api';
+import { getApiUrl } from '@/services/config';
 import { useUsabilityTracking } from '@/services/usabilityService';
 import { usePerformanceMonitoring } from '@/services/performanceService';
 import { useApiContext } from '@/contexts/ApiContext';
@@ -150,7 +151,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
     try {
       // Use a timeout for the health check to fail fast
       const healthPromise = Promise.race([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/health`),
+        fetch(`${getApiUrl()}/health`),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Health check timeout')), 3000))
       ]).catch(() => null);
       
@@ -434,7 +435,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
                       <div>
                         <p className="text-[8px] text-rose-700 font-medium mb-1">Backend server appears to be offline</p>
                         <ul className="ml-2 space-y-0.5 text-[8px] text-rose-600">
-                          <li>• Backend is running on Railway</li>
+                          <li>• Backend is running on Cloudflare Workers</li>
                           <li>• CORS headers are properly configured</li>
                           <li>• Network connectivity is working</li>
                         </ul>

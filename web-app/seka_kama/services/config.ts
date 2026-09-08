@@ -1,8 +1,9 @@
 /**
- * Production backend URL (Railway).
- * Always HTTPS to prevent Mixed Content errors on the Vercel frontend.
+ * The deployed Cloudflare Worker URL is intentionally supplied by Vercel's
+ * NEXT_PUBLIC_API_URL environment variable. Do not bake a provider-specific
+ * URL into the client bundle: it makes previews silently call an expired API.
  */
-const PRODUCTION_API_URL = 'https://sekakama-production-0aa3.up.railway.app/api';
+const LOCAL_API_URL = 'http://localhost:8000/api';
 
 export const getApiUrl = (): string => {
   // If we are definitely on the client
@@ -24,22 +25,13 @@ export const getApiUrl = (): string => {
       window.location.hostname.startsWith('192.168.');
 
     if (isLocal) {
-      // Local development - default to localhost:8000
-      return 'http://localhost:8000/api';
+      return LOCAL_API_URL;
     }
     
-    // Not localhost and no env override - use production
-    console.log(`No API URL override detected, using production: ${PRODUCTION_API_URL}`);
-    return PRODUCTION_API_URL;
+    throw new Error('NEXT_PUBLIC_API_URL is not configured for this deployment.');
   }
 
-  // Server-side (SSR) - use env var or default to production
-  let url = process.env.NEXT_PUBLIC_API_URL || PRODUCTION_API_URL;
-  
-  // Force HTTPS for production URLs
-  if (url.includes('sekakama-production') && url.startsWith('http://')) {
-    url = url.replace('http://', 'https://');
-  }
-
+  const url = process.env.NEXT_PUBLIC_API_URL;
+  if (!url) throw new Error('NEXT_PUBLIC_API_URL is not configured for this deployment.');
   return url.endsWith('/') ? url.slice(0, -1) : url;
 };

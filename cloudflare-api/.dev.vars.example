@@ -1,0 +1,77 @@
+# ─── Seka Kama Digital Twin — Production Environment ──────────────────────────
+# NEVER commit this file to version control. Use secrets management (Railway, Vercel, etc.)
+
+# ── Supabase (Production) ──────────────────────────────────────────────────────
+SUPABASE_URL=https://tufpfazzyhfxmdpupupl.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1ZnBmYXp6eWhmeG1kcHVwdXBsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODY2NDEyNCwiZXhwIjoyMDk0MjQwMTI0fQ.ehbM1zPFhE0VDn48lxSOZ3Y_59AOecvchzIGCC7TaZ0E_ROLE_KEY}
+
+# ── JWT Auth ──────────────────────────────────────────────────────────────────
+# Must be at least 32 characters, generate with: openssl rand -hex 32
+JWT_SECRET_KEY=GPrzZCqYAmFhfsj+8nATPW/aFLseG7uBZOV1tbHBjD3SaQB0PB2y7m2XDt+KmdTw
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# ── Model Artefacts ───────────────────────────────────────────────────────────
+MODELS_DIR=./models
+
+# ── LLM Configuration ─────────────────────────────────────────────────────────
+# Use environment-specific LLM endpoints
+LLM_API_URL=https://integrate.api.nvidia.com/v1
+LLM_API_KEY=nv-aH21961600-4557-426a-898b-920777e21d3d
+LLM_MODEL=stepfun-ai/step-3.5-flash
+LLM_MAX_TOKENS=1024
+LLM_TEMPERATURE=0.3
+
+# ── Database ──────────────────────────────────────────────────────────────────
+DATABASE_MAX_CONNECTIONS=20
+DATABASE_TIMEOUT_SECONDS=30
+
+# ── API Configuration ─────────────────────────────────────────────────────────
+API_RATE_LIMIT_REQUESTS=100
+API_RATE_LIMIT_PERIOD=60
+API_DEFAULT_PAGE_SIZE=50
+API_MAX_PAGE_SIZE=1000
+
+# ── Security ──────────────────────────────────────────────────────────────────
+CORS_ALLOWED_ORIGINS=https://seka-kama.vercel.app,https://sekakama-production-0aa3.up.railway.app,https://drive.google.com/uc?export=download&id=1x2X45Y5M0WZGeD35A7lQZgn8c8qRdqJC
+ALLOW_ALL_ORIGINS=False
+TRUSTED_PROXY=true
+SECURE_COOKIES=true
+SESSION_TIMEOUT_MINUTES=120
+
+# ── Monitoring & Observability ────────────────────────────────────────────────
+SENTRY_DSN=${SENTRY_DSN}
+LOGGING_LEVEL=INFO
+PROMETHEUS_ENABLED=true
+HEALTH_CHECK_INTERVAL_SECONDS=30
+
+# ── Cache ─────────────────────────────────────────────────────────────────────
+REDIS_URL=${REDIS_URL}
+CACHE_TTL_SECONDS=300
+
+# ── Email/SMTP (Gmail Default) ────────────────────────────────────────────────
+# REQUIRED: Enable 2FA in Google account, then generate App Password
+# Google shows: "abcd efgh ijkl mnop" → Use: "abcdefghijklmnop" (NO SPACES!)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=jasemwaura@gmail.com               # Your Gmail address
+SMTP_PASSWORD=oyzxlbjflmfmunmr  # App password WITHOUT spaces
+EMAIL_FROM=noreply@seka-kama.io               # Will show as sender
+
+# ── Feature Flags ─────────────────────────────────────────────────────────────
+FEATURE_LIVE_MODE_ENABLED=true
+FEATURE_SCENARIO_SIMULATION_ENABLED=true
+FEATURE_AI_NARRATIVES_ENABLED=true
+FEATURE_REAL_TIME_UPDATES_ENABLED=false  # Enable when infrastructure ready
+
+
+# ── SendGrid Email Service (Alternative: 100 emails/day free) ─────────────────
+# Optional: Uncomment if using SendGrid instead of Gmail
+# SENDGRID_API_KEY=${SENDGRID_API_KEY}
+
+
+# ── Webhook Fallback (for n8n, Zapier, Make.com automation) ───────────────────
+# Optional: For additional automation
+# CONTACT_WEBHOOK_URL=${CONTACT_WEBHOOK_URL}
+# Example: https://hooks.zapier.com/hooks/catch/123456/abc123/
