@@ -103,7 +103,8 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     const existing = await db(env, `users?select=id&email=eq.${encodeURIComponent(input.email)}&limit=1`) as unknown[];
     if (existing.length) return json({ detail: 'Email already registered' }, 400);
     const rows = await db(env, 'users', { method: 'POST', body: JSON.stringify({ email: input.email.toLowerCase(), password_hash: await bcrypt.hash(input.password, 12), full_name: input.full_name, organization: input.organization, role: input.role || 'analyst', is_active: true }) }) as User[];
-    const user = rows[0]; delete user.password_hash; return json(user, 201);
+    const { password_hash: _passwordHash, ...safeUser } = rows[0];
+    return json(safeUser, 201);
   }
   if (path === '/auth/login' && request.method === 'POST') {
     const input = await request.json() as { email?: string; password?: string };
@@ -170,7 +171,7 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
     const predicted = outputs.reduce((s, value) => s + value, 0); const delta = predicted - baseline;
     const scenarioGeojson = { type: 'FeatureCollection', features: affected.map((c, i) => feature(c, { cell_id: c.cell_id, baseline_density: num(c.baseline_lion_density), scenario_density: outputs[i], delta: outputs[i] - num(c.baseline_lion_density) })) };
     const text = narrative(delta, years, affected.length);
-    const inserted = await db(env, 'scenario_history', { method: 'POST', body: JSON.stringify({ user_id: current.user_id, user_description: input.user_query || 'Scenario analysis', modified_features: { ...input.feature_modifications, __metadata: { request_data: input, scenario_geojson } }, baseline_total_lions: baseline, predicted_total_lions: predicted, delta_lions: delta, delta_percent: baseline ? delta / baseline * 100 : 0, affected_cells: affected.length, llm_narrative: text }) }) as Cell[];
+    const inserted = await db(env, 'scenario_history', { method: 'POST', body: JSON.stringify({ user_id: current.user_id, user_description: input.user_query || 'Scenario analysis', modified_features: { ...input.feature_modifications, __metadata: { request_data: input, scenario_geojson: scenarioGeojson } }, baseline_total_lions: baseline, predicted_total_lions: predicted, delta_lions: delta, delta_percent: baseline ? delta / baseline * 100 : 0, affected_cells: affected.length, llm_narrative: text }) }) as Cell[];
     const id = Number(inserted[0]?.id || inserted[0]?.scenario_id || 0);
     return json({ scenario_id: id, baseline_total_lions: baseline, predicted_total_lions: predicted, delta_lions: delta, delta_percent: baseline ? delta / baseline * 100 : 0, affected_units: Object.fromEntries([...new Set(affected.map(c => String(c.management_unit || 'Unspecified')))].map(unit => [unit, affected.filter(c => String(c.management_unit || 'Unspecified') === unit).reduce((s,c) => s + num(c.baseline_lion_density), 0)])), llm_narrative: text, map_visualization_url: '', ecological_context: { engine: 'bounded sensitivity' }, scenario_geojson: scenarioGeojson, created_at: new Date().toISOString() });
   }
