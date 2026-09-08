@@ -222,19 +222,10 @@ class PredictionService:
             else:
                 modified_features[:, idx] += mod_value
         
-        # ── Temporal Projection ──────────────────────────────────────────────
-        # If simulation_years > 0, project trends (slope) into future intensity (mean)
-        if simulation_years > 0 and "all_mean_mean" in self.feature_names and "longterm_slope_mean" in self.feature_names:
-            logger.info(f"Projecting environmental trends over {simulation_years} years...")
-            mean_idx = self.feature_indices["all_mean_mean"]
-            slope_idx = self.feature_indices["longterm_slope_mean"]
-            
-            # Intensity_future = Intensity_now + (Slope * years)
-            # Ensure it stays within valid bounds (e.g. non-negative)
-            for year in range(simulation_years):
-                modified_features[:, mean_idx] += modified_features[:, slope_idx]
-            
-            modified_features[:, mean_idx] = np.clip(modified_features[:, mean_idx], 0, 1)
+        if simulation_years:
+            raise ValueError(
+                "Multi-year projection is disabled because no validated time-indexed inputs are available."
+            )
         
         # Predict both scenarios
         baseline_predictions = self.predict_batch(features_array)

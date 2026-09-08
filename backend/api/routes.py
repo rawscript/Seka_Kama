@@ -391,6 +391,11 @@ async def run_scenario(
     Run SekaNet what-if simulation.
     Requires authentication. Saves scenario to user history.
     """
+    if scenario.simulation_years:
+        raise HTTPException(
+            status_code=422,
+            detail="Multi-year projections are unavailable until time-indexed model inputs are ingested. Submit a snapshot scenario instead."
+        )
     model = request.app.state.model
     scaler = request.app.state.scaler
     feature_names = request.app.state.feature_names
@@ -811,27 +816,16 @@ async def get_statistics(
     """
     Get comprehensive statistics for the Seka Kama landscape.
     Used for dashboard summary cards and reporting.
-    Provides year-adjusted statistics even if year-specific data isn't available.
+    Returns statistics derived only from stored observations.
     """
-    # Use the enhanced get_landscape_stats method which handles year adjustment
     stats = db.get_landscape_stats(management_unit=management_unit, year=year)
     
     # Get protected area coverage (doesn't change by year)
     protected_areas = db.get_protected_areas(limit=1000)
     protected_area_km2 = sum(pa.get("area_km2", 0) for pa in protected_areas)
     
-    # Apply year adjustment to protected area if year is provided
-    if year:
-        # Protected areas might slightly change over years (new designations)
-        year_offset = year - 2023
-        protected_area_km2 = protected_area_km2 * (1.0 + (year_offset * 0.005))  # 0.5% increase per year
-    
-    # Calculate avg_nightlight_trend with year adjustment
+    # Stored spatial summary, without time extrapolation.
     avg_nightlight_trend = stats.get("avg_nightlight", 0)
-    if year:
-        year_offset = year - 2023
-        # Nightlight trend increases with time
-        avg_nightlight_trend = avg_nightlight_trend * (1.0 + (year_offset * 0.03))
     
     return {
         "total_lions": stats.get("total_lions", 0),
@@ -878,8 +872,7 @@ async def get_ecosystem_indicators(
     db: SupabaseService = Depends(get_db)
 ):
     """
-    Get ecosystem indicators with year adjustment.
-    Returns simulated year-adjusted indicators if year-specific data isn't available.
+    Get ecosystem indicators from available live/stored sources.
     """
     try:
         from services.ecological_data_service import get_live_ecosystem_indicators
@@ -887,8 +880,7 @@ async def get_ecosystem_indicators(
         return {"indicators": indicators, "count": len(indicators)}
     except Exception as e:
         logger.error(f"Failed to fetch live indicators: {e}")
-        # Secure fallback to prevent UI break
-        return {"indicators": [], "count": 0, "error": str(e)}
+        raise HTTPException(status_code=503, detail="Ecosystem indicators are unavailable from their source") from e
 
 
 @router.get("/ecosystem/environment")
@@ -898,7 +890,7 @@ async def get_environmental_conditions(
     db: SupabaseService = Depends(get_db)
 ):
     """
-    Get environmental conditions with year adjustment.
+    Get environmental conditions from NASA POWER.
     """
     try:
         from services.ecological_data_service import get_live_environmental_conditions
@@ -906,22 +898,7 @@ async def get_environmental_conditions(
         return conditions
     except Exception as e:
         logger.error(f"Failed to fetch live conditions: {e}")
-        # Default mock fallback
-        return {
-            "temperature": 24.5,
-            "humidity": 65,
-            "wind_speed": 3.2,
-            "precipitation": 2.4,
-            "cloud_cover": 45,
-            "uv_index": 6,
-            "daylight_hours": 12.2,
-            "soil_moisture": 0.65,
-            "management_unit": management_unit,
-            "year": year,
-            "year_adjusted": year != 2023,
-            "timestamp": datetime.now().isoformat(),
-            "error": str(e)
-        }
+        raise HTTPException(status_code=503, detail="NASA POWER environmental data is unavailable") from e
 
 
 @router.get("/ecosystem/trends")
