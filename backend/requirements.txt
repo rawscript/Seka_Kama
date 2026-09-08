@@ -1,4 +1,8 @@
 fastapi==0.115.6
+# main.py imports ProxyHeadersMiddleware from Uvicorn at application startup.
+# The base package is sufficient on Vercel; the local-only [standard] extras
+# remain in requirements-dev.txt.
+uvicorn==0.34.0
 supabase==2.7.0
 python-dotenv==1.0.1
 joblib==1.4.2
