@@ -5,7 +5,10 @@ joblib==1.4.2
 numpy==1.26.4
 pandas==2.2.3
 shapely==2.0.6
-xgboost>=2.0.0
+# The trained model is CPU-inferred. The standard Linux xgboost package ships
+# CUDA support and exceeds Vercel's function bundle limit; this package still
+# exposes the `xgboost` Python module but omits unused GPU algorithms.
+xgboost-cpu==2.1.4
 pydantic==2.10.4
 pydantic-settings==2.6.1
 python-multipart==0.0.31
