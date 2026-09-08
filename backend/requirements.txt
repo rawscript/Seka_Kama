@@ -12,7 +12,7 @@ psycopg2-binary==2.9.10
 asyncpg==0.30.0
 pydantic==2.10.4
 pydantic-settings==2.6.1
-python-multipart==0.0.20
+python-multipart==0.0.31
 openai>=1.30.0
 shap==0.46.0
 python-jose[cryptography]>=3.3.0
