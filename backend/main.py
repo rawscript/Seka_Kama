@@ -401,5 +401,3 @@ async def cors_check(request: Request):
     }
 
 
-# Vercel serverless handler
-handler = app
