@@ -66,7 +66,7 @@ def _validate_env() -> None:
     logger.error("CRITICAL STARTUP ERROR - Missing Environment Variables")
     logger.error("=" * 70)
     for var in missing:
-        logger.error(f"  ❌ {var} is NOT SET")
+        logger.error(f"   {var} is NOT SET")
     
     # Check Vercel-specific environment
     is_vercel = os.getenv("VERCEL") or os.getenv("VERCEL_URL")
@@ -186,7 +186,7 @@ app = FastAPI(
     *   **AI Narratives**: Natural language ecological interpretations powered by Stepfun AI.
     *   **Live Connectivity**: Real-time enrichment from NASA POWER and GBIF.
     
-    *Enterprise Grade — Observability, Analytics, and Audit Logging Enabled.*
+    *Observability, Analytics, and Audit Logging Enabled.*
     """,
     version="2.0.0",
     terms_of_service="https://seka-kama.vercel.app/terms/",
