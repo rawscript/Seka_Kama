@@ -85,6 +85,12 @@ for p in [3000, 3001, 8000]:
     if lo not in allowed_origins:
         allowed_origins.append(lo)
 
+# Always allow the main frontend
+if "https://seka-kama.vercel.app" not in allowed_origins:
+    allowed_origins.append("https://seka-kama.vercel.app")
+
+logger.info(f"CORS allowed origins: {allowed_origins}")
+
 app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"], expose_headers=["*"], max_age=600)
 
 _PROXY_ALLOWED_HOSTS = {"drive.google.com", "docs.google.com", "googleusercontent.com", "dl.google.com", "raw.githubusercontent.com", "github.com", "storage.googleapis.com", "opendata.arcgis.com", "geojson.io", "github.io"}
@@ -164,4 +170,9 @@ async def cors_check(request: Request):
         "allowed": origin in allowed_origins if origin else False,
         "configured_origins": allowed_origins,
         "settings_origins": settings.allowed_origins_list,
+        "env_allowed_origins": os.getenv("ALLOWED_ORIGINS", "NOT SET"),
     }
+
+@app.get("/api/cors-test")
+async def cors_test():
+    return {"message": "CORS is working", "timestamp": "now"}
