@@ -2,7 +2,10 @@
   "builds": [
     {
       "src": "main_serverless.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
@@ -10,5 +13,6 @@
       "src": "/(.*)",
       "dest": "main_serverless.py"
     }
-  ]
+  ],
+  "installCommand": "pip install -r requirements.vercel.txt"
 }

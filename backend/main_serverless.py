@@ -16,20 +16,10 @@ from core.config import settings
 from core.database import init_supabase
 from core.logging_config import setup_logging
 from core.resilience import CircuitBreaker
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
-import sentry_sdk
-from prometheus_fastapi_instrumentator import Instrumentator
-
-if settings.SENTRY_DSN:
-    sentry_sdk.init(dsn=settings.SENTRY_DSN, traces_sample_rate=1.0, profiles_sample_rate=1.0)
 
 setup_logging(debug=settings.DEBUG)
 logger = logging.getLogger(__name__)
 
-limiter = Limiter(key_func=get_remote_address)
 supabase_breaker = CircuitBreaker("supabase", failure_threshold=5)
 model_breaker = CircuitBreaker("ml_model", failure_threshold=3)
 
@@ -81,16 +71,9 @@ async def init_middleware(request: Request, call_next):
     request.app.state.prediction_service = _state["prediction_service"]
     request.app.state.supabase_breaker = supabase_breaker
     request.app.state.model_breaker = model_breaker
-    request.app.state.limiter = limiter
     return await call_next(request)
 
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
-
-instrumentator = Instrumentator().instrument(app)
-if settings.DEBUG:
-    instrumentator.expose(app)
 
 allowed_origins = list(settings.allowed_origins_list)
 if os.getenv("VERCEL_URL"):
