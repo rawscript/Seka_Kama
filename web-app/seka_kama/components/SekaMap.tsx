@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Map, { Source, Layer, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { ShieldCheck, Info, Target, X } from 'lucide-react';
@@ -99,7 +99,7 @@ function SekaMapContent({
   showPrediction = false,
   showEncroachment = false,
   isLiveMode = false,
-}: SekaMapProps): JSX.Element {
+}: SekaMapProps): React.JSX.Element {
   const { 'main-map': mapMain } = useMap();
   const [scenarioResult, setScenarioResult] = useState<any>(null);
   const envLandXUrl = process.env.NEXT_PUBLIC_LANDX_TILE_URL || '';
