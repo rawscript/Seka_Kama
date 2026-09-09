@@ -108,8 +108,13 @@ async def lifespan(app: FastAPI):
         logger.info(f"  Models Directory: {settings.MODEL_PATH}")
         logger.info("=" * 70)
     
-    # 1. Fail fast if critical secrets are absent
-    _validate_env()
+    # 1. Validate environment but don't crash on Vercel
+    try:
+        _validate_env()
+    except RuntimeError as e:
+        logger.error(f"Environment validation failed: {e}")
+        if not is_vercel:
+            raise
 
     # 2. Load SekaNet ML artefacts with circuit breaker
     logger.info("Loading SekaNet models...")
@@ -127,17 +132,15 @@ async def lifespan(app: FastAPI):
         if not features_path.exists():
             raise FileNotFoundError(f"Features file not found at: {features_path}")
         
-        logger.info(f"  ✓ Model files verified at {model_path.parent}")
+        logger.info(f"  Model files verified at {model_path.parent}")
         
         app.state.model = joblib.load(settings.MODEL_PATH)
         app.state.scaler = joblib.load(settings.SCALER_PATH)
         app.state.feature_names = joblib.load(settings.FEATURE_NAMES_PATH)
-        app.state.supabase = init_supabase()
         
-        logger.info(f"  ✓ Model loaded: {type(app.state.model).__name__}")
-        logger.info(f"  ✓ Scaler loaded: {type(app.state.scaler).__name__}")
-        logger.info(f"  ✓ Features loaded: {len(app.state.feature_names)} features")
-        logger.info(f"  ✓ Supabase client initialized")
+        logger.info(f"  Model loaded: {type(app.state.model).__name__}")
+        logger.info(f"  Scaler loaded: {type(app.state.scaler).__name__}")
+        logger.info(f"  Features loaded: {len(app.state.feature_names)} features")
         
     except FileNotFoundError as e:
         logger.error("=" * 70)
@@ -145,29 +148,43 @@ async def lifespan(app: FastAPI):
         logger.error(f"  {str(e)}")
         logger.error("  Ensure models are included in Vercel deployment via vercel.json")
         logger.error("=" * 70)
-        raise RuntimeError(f"Model files missing: {str(e)}") from e
+        if not is_vercel:
+            raise RuntimeError(f"Model files missing: {str(e)}") from e
     except Exception as e:
         logger.error("=" * 70)
         logger.error("CRITICAL: Failed to load models")
         logger.error(f"  Error Type: {type(e).__name__}")
         logger.error(f"  Error: {str(e)}")
         logger.error("=" * 70)
-        raise RuntimeError(f"Could not load ML models: {str(e)}") from e
+        if not is_vercel:
+            raise RuntimeError(f"Could not load ML models: {str(e)}") from e
     
-    # 3. Initialize prediction service
-    from services.prediction_service import PredictionService
-    app.state.prediction_service = PredictionService(
-        app.state.model,
-        app.state.scaler,
-        app.state.feature_names
-    )
+    # 3. Initialize Supabase
+    try:
+        app.state.supabase = init_supabase()
+        logger.info(f"  Supabase client initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize Supabase: {e}")
+        app.state.supabase = None
+    
+    # 4. Initialize prediction service if models loaded
+    if hasattr(app.state, 'model') and hasattr(app.state, 'feature_names'):
+        from services.prediction_service import PredictionService
+        app.state.prediction_service = PredictionService(
+            app.state.model,
+            app.state.scaler,
+            app.state.feature_names
+        )
     
     # Store circuit breakers in app state
     app.state.supabase_breaker = supabase_breaker
     app.state.model_breaker = model_breaker
     
     logger.info("=" * 70)
-    logger.info("✓ SEKA KAMA READY - Model v2.0.0, %d features", len(app.state.feature_names))
+    if hasattr(app.state, 'feature_names'):
+        logger.info("SEKA KAMA READY - Model v2.0.0, %d features", len(app.state.feature_names))
+    else:
+        logger.warning("SEKA KAMA STARTED - Some components failed to load")
     logger.info("=" * 70)
     yield
     logger.info("Shutting down SekaNet — releasing resources.")
@@ -382,3 +399,7 @@ async def cors_check(request: Request):
         "configured_origins": allowed_origins,
         "settings_origins": settings.allowed_origins_list,
     }
+
+
+# Vercel serverless handler
+handler = app

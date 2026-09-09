@@ -1,10 +1,25 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "fastapi",
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": "."
+  },
   "functions": {
-    "main.py": {
-      "includeFiles": "models/**",
-      "excludeFiles": "{tests/**,scripts/**,notebooks/**,sql/**,monitoring/**,Dockerfile*,*.ipynb}"
+    "api/index.py": {
+      "memory": 1024,
+      "maxDuration": 30,
+      "includeFiles": "models/**"
     }
   }
 }
