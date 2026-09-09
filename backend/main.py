@@ -1,3 +1,4 @@
+import sys
 from typing import List, Dict, Optional
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -54,35 +55,103 @@ def _validate_env() -> None:
     """Check that all critical environment variables are set."""
     import os
     missing = [k for k in CRITICAL_ENV_VARS if not os.getenv(k)]
+    
     if not missing:
         logger.info("Environment validation passed — all critical vars present.")
         return
 
+    # Log detailed diagnostics for Vercel debugging
+    logger.error("=" * 70)
+    logger.error("CRITICAL STARTUP ERROR - Missing Environment Variables")
+    logger.error("=" * 70)
+    for var in missing:
+        logger.error(f"  ❌ {var} is NOT SET")
+    
+    # Check Vercel-specific environment
+    is_vercel = os.getenv("VERCEL") or os.getenv("VERCEL_URL")
+    if is_vercel:
+        logger.error("  Detected Vercel deployment environment")
+        logger.error("  Verify environment variables are set in Vercel dashboard:")
+        logger.error("  Project Settings → Environment Variables")
+    
+    logger.error("=" * 70)
+    
     msg = (
         f"Missing critical environment variables: {', '.join(missing)}. "
-        "The server may not function correctly."
+        "The server cannot start without these. "
+        "Please check your Vercel environment variables configuration."
     )
+    
     if settings.DEBUG:
         logger.warning(msg)
+        logger.warning("Proceeding in DEBUG mode, but functionality will be limited.")
     else:
+        # In production, fail with clear error message
         raise RuntimeError(msg)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Validate env, load models and initialise services on startup."""
+    import os
+    
+    # Log Vercel environment info for debugging
+    is_vercel = os.getenv("VERCEL") or os.getenv("VERCEL_URL")
+    if is_vercel:
+        logger.info("=" * 70)
+        logger.info("SEKA KAMA STARTUP - Vercel Deployment Detected")
+        logger.info(f"  VERCEL_URL: {os.getenv('VERCEL_URL', 'not set')}")
+        logger.info(f"  VERCEL_REGION: {os.getenv('VERCEL_REGION', 'not set')}")
+        logger.info(f"  VERCEL_ENV: {os.getenv('VERCEL_ENV', 'not set')}")
+        logger.info(f"  Python Version: {sys.version}")
+        logger.info(f"  Working Directory: {os.getcwd()}")
+        logger.info(f"  Models Directory: {settings.MODEL_PATH}")
+        logger.info("=" * 70)
+    
     # 1. Fail fast if critical secrets are absent
     _validate_env()
 
     # 2. Load SekaNet ML artefacts with circuit breaker
-    logger.info("Loading SekaNet models…")
+    logger.info("Loading SekaNet models...")
     try:
+        # Verify model files exist before loading
+        from pathlib import Path
+        model_path = Path(settings.MODEL_PATH)
+        scaler_path = Path(settings.SCALER_PATH)
+        features_path = Path(settings.FEATURE_NAMES_PATH)
+        
+        if not model_path.exists():
+            raise FileNotFoundError(f"Model file not found at: {model_path}")
+        if not scaler_path.exists():
+            raise FileNotFoundError(f"Scaler file not found at: {scaler_path}")
+        if not features_path.exists():
+            raise FileNotFoundError(f"Features file not found at: {features_path}")
+        
+        logger.info(f"  ✓ Model files verified at {model_path.parent}")
+        
         app.state.model = joblib.load(settings.MODEL_PATH)
         app.state.scaler = joblib.load(settings.SCALER_PATH)
         app.state.feature_names = joblib.load(settings.FEATURE_NAMES_PATH)
         app.state.supabase = init_supabase()
+        
+        logger.info(f"  ✓ Model loaded: {type(app.state.model).__name__}")
+        logger.info(f"  ✓ Scaler loaded: {type(app.state.scaler).__name__}")
+        logger.info(f"  ✓ Features loaded: {len(app.state.feature_names)} features")
+        logger.info(f"  ✓ Supabase client initialized")
+        
+    except FileNotFoundError as e:
+        logger.error("=" * 70)
+        logger.error("CRITICAL: Model files not found!")
+        logger.error(f"  {str(e)}")
+        logger.error("  Ensure models are included in Vercel deployment via vercel.json")
+        logger.error("=" * 70)
+        raise RuntimeError(f"Model files missing: {str(e)}") from e
     except Exception as e:
-        logger.error(f"Failed to load models: {str(e)}", exc_info=True)
-        raise RuntimeError("Critical: Could not load ML models on startup") from e
+        logger.error("=" * 70)
+        logger.error("CRITICAL: Failed to load models")
+        logger.error(f"  Error Type: {type(e).__name__}")
+        logger.error(f"  Error: {str(e)}")
+        logger.error("=" * 70)
+        raise RuntimeError(f"Could not load ML models: {str(e)}") from e
     
     # 3. Initialize prediction service
     from services.prediction_service import PredictionService
@@ -96,11 +165,9 @@ async def lifespan(app: FastAPI):
     app.state.supabase_breaker = supabase_breaker
     app.state.model_breaker = model_breaker
     
-    logger.info(
-        "SekaNet ready — model v%s, %d features.",
-        "2.0.0",
-        len(app.state.feature_names),
-    )
+    logger.info("=" * 70)
+    logger.info("✓ SEKA KAMA READY - Model v2.0.0, %d features", len(app.state.feature_names))
+    logger.info("=" * 70)
     yield
     logger.info("Shutting down SekaNet — releasing resources.")
 
@@ -270,6 +337,7 @@ app.include_router(router, prefix="/api")
 async def health_check(request: Request):
     """Consolidated health check — returns status, version and DB connectivity."""
     from datetime import datetime, timezone
+    import os
 
     db_status = "connected"
     try:
@@ -284,12 +352,23 @@ async def health_check(request: Request):
         and getattr(request.app.state, "feature_names", None) is not None
     )
 
+    # Check critical environment variables
+    env_status = {
+        "SUPABASE_URL": "set" if os.getenv("SUPABASE_URL") else "MISSING",
+        "SUPABASE_SERVICE_ROLE_KEY": "set" if os.getenv("SUPABASE_SERVICE_ROLE_KEY") else "MISSING",
+        "JWT_SECRET_KEY": "set" if os.getenv("JWT_SECRET_KEY") else "MISSING",
+    }
+    
+    all_env_set = all(v == "set" for v in env_status.values())
+
     return {
-        "status": "healthy",
+        "status": "healthy" if (db_status == "connected" and model_loaded and all_env_set) else "degraded",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "database": db_status,
         "model_loaded": model_loaded,
+        "environment_vars": env_status,
         "version": "2.0.0",
+        "vercel_region": os.getenv("VERCEL_REGION", "not on vercel"),
     }
 
 @app.get("/api/cors-check")
