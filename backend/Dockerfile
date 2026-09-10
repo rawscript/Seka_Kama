@@ -1,51 +1,23 @@
 # backend/Dockerfile
-FROM python:3.11-slim as builder
-
-WORKDIR /app
-
-# Install system dependencies for spatial libraries
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    libpq-dev \
-    libgeos-dev \
-    libproj-dev \
-    libspatialindex-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements first for better caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Production stage
+# Persistent FastAPI container for Back4App (and other container hosts).
+# The API does not import GeoPandas/GDAL at runtime, so avoid the large GIS and
+# compiler toolchain that made the prior image exceed Back4App's build window.
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy only necessary files from builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Install runtime dependencies only
-RUN apt-get update && apt-get install -y \
-    libpq5 \
-    libgeos-c1v5 \
-    libproj25 \
-    && rm -rf /var/lib/apt/lists/*
+# Keep dependency installation cacheable between source-only deployments.
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --disable-pip-version-check -r requirements.txt
 
-# Copy application code
-COPY . .
+COPY . ./
 
-# Create non-root user
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+RUN useradd --create-home --uid 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Expose port
+# Back4App supplies PORT at runtime; 8000 remains the local fallback.
 EXPOSE 8000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
-
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
