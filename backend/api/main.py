@@ -145,6 +145,7 @@ async def options_handler(path: str):
     return {"message": "OK"}
 
 @app.get("/health")
+@app.get("/api/health", include_in_schema=False)
 async def health_check(request: Request):
     from datetime import datetime, timezone
     db_status = "connected"
