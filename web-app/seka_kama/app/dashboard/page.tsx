@@ -63,6 +63,13 @@ function sliderToYear(v: number) {
   return Math.round(MIN_YEAR + (v / 100) * (MAX_YEAR - MIN_YEAR));
 }
 
+/** Keep the selected analysis panel clear of the map's fixed control docks. */
+function getAnalysisPanelPosition() {
+  if (typeof window === 'undefined') return { x: 304, y: 104 };
+  if (window.innerWidth < 768) return { x: 16, y: 88 };
+  return { x: Math.max(304, window.innerWidth - 380), y: 104 };
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function LayerToggle({
@@ -376,7 +383,7 @@ function DashboardContent() {
 
         {/* ── Landscape stats strip ── */}
         {!statsLoading && stats && !isMobile && (
-          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 flex gap-2 pointer-events-none">
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 hidden 2xl:flex gap-2 pointer-events-none">
             <StatCard
               label="Total Lions"
               value={stats.total_lions.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -421,7 +428,7 @@ function DashboardContent() {
           <DraggablePanel 
             id="spatial-layers-panel"
             title="Map layers"
-            defaultPosition={{ x: 304, y: 104 }}
+            defaultPosition={getAnalysisPanelPosition()}
             defaultSize={{ width: 340, height: 460 }}
           >
             <div className="bg-white/95 backdrop-blur-sm h-full flex flex-col">
@@ -455,7 +462,7 @@ function DashboardContent() {
           <DraggablePanel 
             id="spatial-trends-panel"
             title="Historical trends"
-            defaultPosition={{ x: 304, y: 104 }}
+            defaultPosition={getAnalysisPanelPosition()}
             defaultSize={{ width: 340, height: 320 }}
           >
              <div className="bg-white/95 backdrop-blur-sm h-full flex flex-col">
@@ -498,7 +505,7 @@ function DashboardContent() {
         {/* ── Scenario result panel ── */}
 
         {/* ── Map Controls Panel ── */}
-        <div className={`absolute bottom-8 right-8 w-[500px] max-w-[calc(100vw-4rem)] z-30 transition-all duration-300 ${isMobile ? 'bottom-4 right-4 max-w-[calc(100vw-2rem)]' : 'right-[420px]'}`}>
+        <div className={`absolute bottom-6 w-[360px] max-w-[calc(100vw-4rem)] z-30 transition-all duration-300 ${isMobile ? 'right-4 max-w-[calc(100vw-2rem)]' : 'right-[400px]'}`}>
           <div className="bg-white/95 backdrop-blur-sm border border-slate-200 p-4 shadow-xl rounded-lg space-y-4">
             
             {/* Regional Overview Dropdown */}
@@ -633,24 +640,26 @@ function DashboardContent() {
         <div className="absolute bottom-8 left-8 flex flex-col gap-4 z-20">
           {/* Zoom controls */}
           <div className="map-overlay-card p-2 flex flex-col gap-2 rounded-lg">
-            <button onClick={handleZoomIn} className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+            <button aria-label="Zoom in" onClick={handleZoomIn} className="w-10 h-10 flex items-center justify-center rounded-md text-on-surface hover:bg-surface-container-low hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary transition-colors">
               <Plus className="w-5 h-5" />
             </button>
             <div className="w-full h-[1px] bg-outline-variant" />
-            <button onClick={handleZoomOut} className="w-8 h-8 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+            <button aria-label="Zoom out" onClick={handleZoomOut} className="w-10 h-10 flex items-center justify-center rounded-md text-on-surface hover:bg-surface-container-low hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary transition-colors">
               <Minus className="w-5 h-5" />
             </button>
           </div>
           
           {/* Map layer selection */}
-          <div
+          <button
+            type="button"
             onClick={() => setActiveLayer((l) => l === 'SATELLITE (TRUE COLOR)' ? 'VECTOR (TOPOGRAPHIC)' : 'SATELLITE (TRUE COLOR)')}
-            className="map-overlay-card px-4 py-2 flex items-center gap-4 rounded-lg cursor-pointer hover:border-primary transition-colors"
+            aria-label={`Switch basemap. Current map: ${activeLayer}`}
+            className="map-overlay-card px-4 py-2 flex items-center gap-4 rounded-lg cursor-pointer hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary transition-colors"
           >
             <span className="material-symbols-outlined text-secondary text-[20px]">layers</span>
             <div className="h-4 w-[1px] bg-outline-variant" />
             <span className="text-[11px] font-bold text-on-surface uppercase tracking-widest">{activeLayer}</span>
-          </div>
+          </button>
           
           {/* Coordinate display - moved to left side */}
           <div className="map-overlay-card px-4 py-2 flex gap-6 rounded-lg shadow-sm">

@@ -355,7 +355,10 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
     <DraggablePanel 
       id="spatial-analyst-panel"
       title="Analyst insights"
-      defaultPosition={{ x: 304, y: 104 }}
+      defaultPosition={{
+        x: typeof window !== 'undefined' && window.innerWidth < 768 ? 16 : Math.max(304, (typeof window !== 'undefined' ? window.innerWidth : 1440) - 380),
+        y: typeof window !== 'undefined' && window.innerWidth < 768 ? 88 : 104,
+      }}
       defaultSize={{ width: 340, height: 460 }}
       minWidth={320}
       minHeight={400}
