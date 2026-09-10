@@ -14,15 +14,30 @@ const DashboardUiContext = createContext<DashboardUiContextType | undefined>(und
 export function DashboardUiProvider({ children }: { children: ReactNode }) {
   const [visiblePanels, setVisiblePanels] = useState<Record<string, boolean>>({
     'analyst': true,
-    'indicators': true,
-    'layers': true,
+    'indicators': false,
+    'layers': false,
     'history': false,
     'trends': false
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const togglePanel = (panelId: string) => {
-    setVisiblePanels(prev => ({ ...prev, [panelId]: !prev[panelId] }));
+    setVisiblePanels((prev) => {
+      // Map controls behave as one tab group. Showing all of their large,
+      // draggable panels at once obscures the analysis surface and creates
+      // competing focal points. History remains a separate modal workflow.
+      const controlPanels = ['analyst', 'indicators', 'layers', 'trends'];
+      if (!controlPanels.includes(panelId)) {
+        return { ...prev, [panelId]: !prev[panelId] };
+      }
+
+      const next = { ...prev };
+      controlPanels.forEach((id) => { next[id] = false; });
+      // A tab selection always leaves one control panel visible. This avoids
+      // an ambiguous empty state and matches users' expectation of tabs.
+      next[panelId] = true;
+      return next;
+    });
   };
 
   return (

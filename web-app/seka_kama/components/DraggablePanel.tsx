@@ -7,6 +7,8 @@ import { Pin, PinOff } from 'lucide-react';
 
 interface DraggablePanelProps {
   id: string;
+  /** Plain-language label shown in the drag handle. */
+  title?: string;
   defaultPosition?: { x: number; y: number };
   defaultSize?: { width: number; height: number };
   minWidth?: number;
@@ -29,6 +31,7 @@ interface PanelState {
 
 export default function DraggablePanel({
   id,
+  title = 'Panel',
   defaultPosition = { x: 16, y: 16 },
   defaultSize = { width: 320, height: 240 },
   minWidth = 200,
@@ -295,7 +298,7 @@ export default function DraggablePanel({
               <div className="w-2 h-2 rounded-none bg-slate-300/80" />
               <div className="w-2 h-2 rounded-none bg-slate-300/80" />
             </div>
-            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider ml-1">Draggable</span>
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider ml-1">{title}</span>
           </div>
           
           <div className="flex items-center gap-1.5">

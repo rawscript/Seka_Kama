@@ -456,8 +456,9 @@ export default function EcosystemIndicatorsPanel({
 
   return (
     <DraggablePanel 
-      id="ecosystem-indicators-panel"
-      defaultPosition={{ x: 380, y: 16 }}
+      id="spatial-indicators-panel"
+      title="Ecosystem metrics"
+      defaultPosition={{ x: 304, y: 104 }}
       defaultSize={{ width: 360, height: 500 }}
       minWidth={340}
       minHeight={400}

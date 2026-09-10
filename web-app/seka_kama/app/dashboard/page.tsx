@@ -54,7 +54,6 @@ const TrendChart = dynamic(() => import('@/components/TrendChart'), { ssr: false
 const NotificationPanel = dynamic(() => import('@/components/NotificationPanel'), { ssr: false });
 const AnalystPanel = dynamic(() => import('@/components/AnalystPanel'), { ssr: false });
 const EcosystemIndicatorsPanel = dynamic(() => import('@/components/EcosystemIndicatorsPanel'), { ssr: false });
-const StaticPanelLayout = dynamic(() => import('@/components/StaticPanelLayout'), { ssr: false });
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MIN_YEAR = 2020;
@@ -151,7 +150,6 @@ function DashboardContent() {
   const [showPrediction, setShowPrediction]         = useState(false);
   const [showEncroachment, setShowEncroachment]     = useState(false);
   const [searchQuery, setSearchQuery]               = useState('');
-  const [isSidebarOpen, setIsSidebarOpen]           = useState(true);
   const [isMobile, setIsMobile]                     = useState(false);
   const { visiblePanels, togglePanel } = useDashboardUi();
   const [isWalkthroughOpen, setIsWalkthroughOpen]   = useState(false);
@@ -421,8 +419,9 @@ function DashboardContent() {
 
         {visiblePanels.layers && (
           <DraggablePanel 
-            id="layers_panel" 
-            defaultPosition={{ x: (typeof window !== 'undefined' ? window.innerWidth : 1200) - 380, y: 16 }} 
+            id="spatial-layers-panel"
+            title="Map layers"
+            defaultPosition={{ x: 304, y: 104 }}
             defaultSize={{ width: 340, height: 460 }}
           >
             <div className="bg-white/95 backdrop-blur-sm h-full flex flex-col">
@@ -454,8 +453,9 @@ function DashboardContent() {
 
         {visiblePanels.trends && (
           <DraggablePanel 
-            id="trends_panel" 
-            defaultPosition={{ x: (typeof window !== 'undefined' ? window.innerWidth : 1200) - 380, y: 500 }} 
+            id="spatial-trends-panel"
+            title="Historical trends"
+            defaultPosition={{ x: 304, y: 104 }}
             defaultSize={{ width: 340, height: 320 }}
           >
              <div className="bg-white/95 backdrop-blur-sm h-full flex flex-col">
@@ -498,7 +498,7 @@ function DashboardContent() {
         {/* ── Scenario result panel ── */}
 
         {/* ── Map Controls Panel ── */}
-        <div className={`absolute bottom-8 right-[420px] w-[500px] z-30 transition-all duration-300 ${isSidebarOpen && !isMobile ? 'right-[420px]' : 'right-8'} ${isMobile && !isSidebarOpen ? 'opacity-0 translate-y-10' : ''}`}>
+        <div className={`absolute bottom-8 right-8 w-[500px] max-w-[calc(100vw-4rem)] z-30 transition-all duration-300 ${isMobile ? 'bottom-4 right-4 max-w-[calc(100vw-2rem)]' : 'right-[420px]'}`}>
           <div className="bg-white/95 backdrop-blur-sm border border-slate-200 p-4 shadow-xl rounded-lg space-y-4">
             
             {/* Regional Overview Dropdown */}
@@ -630,22 +630,6 @@ function DashboardContent() {
         </div>
 
         {/* ── Left-side controls: Zoom, Layer toggle, and Coordinates ── */}
-        {/* ── Floating Primary Panels ── */}
-        {isSidebarOpen && (
-          <>
-            <AnalystPanel 
-              selectedUnit={selectedUnit} 
-              year={selectedYear} 
-            />
-            
-            <EcosystemIndicatorsPanel
-              selectedUnit={selectedUnit}
-              year={selectedYear}
-              isLiveMode={isLiveMode}
-            />
-          </>
-        )}
-
         <div className="absolute bottom-8 left-8 flex flex-col gap-4 z-20">
           {/* Zoom controls */}
           <div className="map-overlay-card p-2 flex flex-col gap-2 rounded-lg">

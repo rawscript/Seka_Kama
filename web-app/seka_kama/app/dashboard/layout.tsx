@@ -204,9 +204,11 @@ function DashboardLayoutContent({
 
             <div>
               <h3 className="text-[12px] font-semibold text-outline mb-4 px-2 tracking-[0.15em] uppercase">Real-time Metrics</h3>
-              <nav className="space-y-1">
+              <nav className="space-y-1" role="toolbar" aria-label="Spatial analysis controls">
                 <button 
                   onClick={() => togglePanel('analyst')}
+                  aria-pressed={visiblePanels.analyst}
+                  aria-label="Show Analyst Insights panel"
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.analyst ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
                 >
                   <BarChart3 className="w-5 h-5" />
@@ -214,6 +216,8 @@ function DashboardLayoutContent({
                 </button>
                 <button 
                   onClick={() => togglePanel('indicators')}
+                  aria-pressed={visiblePanels.indicators}
+                  aria-label="Show Ecosystem Metrics panel"
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.indicators ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
                 >
                   <Activity className="w-5 h-5" />
@@ -221,6 +225,8 @@ function DashboardLayoutContent({
                 </button>
                 <button 
                   onClick={() => togglePanel('layers')}
+                  aria-pressed={visiblePanels.layers}
+                  aria-label="Show Map Layers panel"
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.layers ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
                 >
                   <Layers className="w-5 h-5" />
@@ -228,6 +234,8 @@ function DashboardLayoutContent({
                 </button>
                 <button 
                   onClick={() => togglePanel('trends')}
+                  aria-pressed={visiblePanels.trends}
+                  aria-label="Show Historical Trends panel"
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.trends ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
                 >
                   <TrendingUp className="w-5 h-5" />
