@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from typing import List, Dict, Optional
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +9,9 @@ import json
 import re
 import urllib.parse
 import logging
+
+# Add parent directory to path for core, services imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from api.routes import router
 from api.auth_routes import router as auth_router
