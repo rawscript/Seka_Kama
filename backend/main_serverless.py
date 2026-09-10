@@ -135,6 +135,11 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(keys_router, prefix="/api")
 app.include_router(router, prefix="/api")
 
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    """Handle OPTIONS preflight requests"""
+    return {"message": "OK"}
+
 @app.get("/health")
 async def health_check(request: Request):
     from datetime import datetime, timezone
