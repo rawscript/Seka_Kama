@@ -11,7 +11,6 @@ IMPROVEMENTS:
 """
 
 import numpy as np
-import pandas as pd
 from typing import Dict, List, Tuple, Any, Optional
 import logging
 from datetime import datetime
@@ -323,20 +322,25 @@ class PredictionService:
             }
         }
     
-    def get_feature_importance(self) -> pd.DataFrame:
+    def get_feature_importance(self) -> List[Dict[str, Any]]:
         """
         Get feature importance from XGBoost model
-        
+
         Returns:
-            DataFrame with feature importance ranked
+            JSON-ready feature-importance records ranked from highest to lowest.
+
+        This deliberately avoids pandas: the API only needs serializable records,
+        and pandas substantially increases the Vercel serverless bundle.
         """
         importance = self.model.feature_importances_
-        importance_df = pd.DataFrame({
-            'feature': self.feature_names,
-            'importance': importance
-        }).sort_values('importance', ascending=False)
-        
-        return importance_df
+        return [
+            {"feature": feature, "importance": float(score)}
+            for feature, score in sorted(
+                zip(self.feature_names, importance),
+                key=lambda item: item[1],
+                reverse=True,
+            )
+        ]
     
     def explain_prediction(self, features: Dict[str, float]) -> Dict[str, Any]:
         """
@@ -472,10 +476,10 @@ async def get_feature_importance_json(model, feature_names: List[str]) -> Dict:
         Dict with importance rankings
     """
     service = PredictionService(model, None, feature_names)
-    importance_df = service.get_feature_importance()
+    importance_records = service.get_feature_importance()
     
     return {
-        'feature_importance': importance_df.head(20).to_dict(orient='records'),
-        'top_feature': importance_df.iloc[0]['feature'] if len(importance_df) > 0 else None,
-        'top_importance': float(importance_df.iloc[0]['importance']) if len(importance_df) > 0 else None
+        'feature_importance': importance_records[:20],
+        'top_feature': importance_records[0]['feature'] if importance_records else None,
+        'top_importance': importance_records[0]['importance'] if importance_records else None,
     }
