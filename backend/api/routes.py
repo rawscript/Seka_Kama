@@ -1,6 +1,6 @@
 import json
 import numpy as np
-import pandas as pd
+# import pandas as pd  # Removed - not available on Vercel
 import logging
 from fastapi import APIRouter, HTTPException, Request, Query, Response, Depends
 from typing import Optional, List, Dict, Any
@@ -773,24 +773,37 @@ async def export_grid_cells(
         return {"type": "FeatureCollection", "features": features}
     
     elif format == "csv":
-        df = pd.DataFrame(result.data)
+        # Use pure Python csv module instead of pandas
+        import csv
+        import io
+        
+        if not result.data:
+            return Response(content="", media_type="text/csv")
+        
         # Convert geometry to WKT for CSV
-        if "geom" in df.columns:
+        data = result.data
+        if data and "geom" in data[0]:
             from shapely.geometry import shape
-            import json
-            
-            def to_wkt(g):
-                try:
-                    if isinstance(g, str):
-                        g = json.loads(g)
-                    return shape(g).wkt
-                except Exception:
-                    return str(g)
-                    
-            df["geom_wkt"] = df["geom"].apply(to_wkt)
-            df = df.drop(columns=["geom"])
-        csv_output = df.to_csv(index=False)
-        return Response(content=csv_output, media_type="text/csv")
+            for row in data:
+                if "geom" in row:
+                    try:
+                        if isinstance(row["geom"], str):
+                            g = json.loads(row["geom"])
+                        else:
+                            g = row["geom"]
+                        row["geom_wkt"] = shape(g).wkt
+                    except Exception:
+                        row["geom_wkt"] = str(row.get("geom", ""))
+                    del row["geom"]
+        
+        # Convert to CSV using csv module
+        output = io.StringIO()
+        if data:
+            writer = csv.DictWriter(output, fieldnames=data[0].keys())
+            writer.writeheader()
+            writer.writerows(data)
+        
+        return Response(content=output.getvalue(), media_type="text/csv")
     
     else:  # json
         return result.data
