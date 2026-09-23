@@ -230,6 +230,10 @@ export const api = {
     return this.request(endpoint, { method: 'POST', body: JSON.stringify(body) });
   },
 
+  async patch(endpoint: string, body: any): Promise<any> {
+    return this.request(endpoint, { method: 'PATCH', body: JSON.stringify(body) });
+  },
+
   async delete(endpoint: string): Promise<any> {
     return this.request(endpoint, { method: 'DELETE' });
   },

@@ -16,7 +16,8 @@ import {
   TrendingUp,
   Layers,
   Activity,
-  Eye
+  Eye,
+  Menu
 } from 'lucide-react';
 
 interface User {
@@ -51,7 +52,7 @@ function DashboardLayoutContent({
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
-  const { visiblePanels, togglePanel } = useDashboardUi();
+  const { visiblePanels, togglePanel, isSidebarOpen, setIsSidebarOpen } = useDashboardUi();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -108,7 +109,7 @@ function DashboardLayoutContent({
 
   const initials = user?.full_name
     ? user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-    : 'JD';
+    : '—';
 
   return (
     <>
@@ -171,7 +172,8 @@ function DashboardLayoutContent({
 
       <div className="dashboard-container flex h-screen overflow-hidden">
         {/* Sidebar Navigation */}
-        <aside className="fixed left-0 top-0 h-full w-72 border-r border-outline-variant bg-surface-container-lowest flex flex-col pt-8 pb-6 px-6 z-50 sharp-edge">
+        {isSidebarOpen && <button aria-label="Close navigation" className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
+        <aside className={`fixed left-0 top-0 h-full w-72 border-r border-outline-variant bg-surface-container-lowest flex flex-col pt-8 pb-6 px-6 z-50 sharp-edge transition-transform duration-200 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
           <div className="mb-10 flex flex-col">
             <span className="headline-font text-2xl font-semibold text-primary uppercase tracking-widest leading-none">Seka Kama</span>
             <span className="text-[12px] font-semibold text-secondary tracking-[0.3em] mt-1">ENTERPRISE</span>
@@ -188,6 +190,7 @@ function DashboardLayoutContent({
                     <Link
                       key={link.href}
                       href={link.href}
+                      onClick={() => setIsSidebarOpen(false)}
                       className={`sidebar-link flex items-center gap-3 px-3 py-2.5 sharp-edge ${
                         isActive 
                           ? 'active font-semibold' 
@@ -206,7 +209,7 @@ function DashboardLayoutContent({
               <h3 className="text-[12px] font-semibold text-outline mb-4 px-2 tracking-[0.15em] uppercase">Real-time Metrics</h3>
               <nav className="space-y-1" role="toolbar" aria-label="Spatial analysis controls">
                 <button 
-                  onClick={() => togglePanel('analyst')}
+                  onClick={() => { togglePanel('analyst'); setIsSidebarOpen(false); }}
                   aria-pressed={visiblePanels.analyst}
                   aria-label="Show Analyst Insights panel"
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.analyst ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
@@ -215,7 +218,7 @@ function DashboardLayoutContent({
                   <span className="text-[16px] tracking-tight">Analyst Insights</span>
                 </button>
                 <button 
-                  onClick={() => togglePanel('indicators')}
+                  onClick={() => { togglePanel('indicators'); setIsSidebarOpen(false); }}
                   aria-pressed={visiblePanels.indicators}
                   aria-label="Show Ecosystem Metrics panel"
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.indicators ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
@@ -224,7 +227,7 @@ function DashboardLayoutContent({
                   <span className="text-[16px] tracking-tight">Ecosystem Metrics</span>
                 </button>
                 <button 
-                  onClick={() => togglePanel('layers')}
+                  onClick={() => { togglePanel('layers'); setIsSidebarOpen(false); }}
                   aria-pressed={visiblePanels.layers}
                   aria-label="Show Map Layers panel"
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.layers ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
@@ -233,7 +236,7 @@ function DashboardLayoutContent({
                   <span className="text-[16px] tracking-tight">Map Layers</span>
                 </button>
                 <button 
-                  onClick={() => togglePanel('trends')}
+                  onClick={() => { togglePanel('trends'); setIsSidebarOpen(false); }}
                   aria-pressed={visiblePanels.trends}
                   aria-label="Show Historical Trends panel"
                   className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all sharp-edge ${visiblePanels.trends ? 'text-primary font-semibold bg-surface-container/30' : 'text-secondary hover:text-primary hover:bg-surface-container-low'}`}
@@ -254,6 +257,7 @@ function DashboardLayoutContent({
                     <Link
                       key={link.href}
                       href={link.href}
+                      onClick={() => setIsSidebarOpen(false)}
                       className={`sidebar-link flex items-center gap-3 px-3 py-2.5 sharp-edge ${
                         isActive 
                           ? 'active font-semibold' 
@@ -269,61 +273,55 @@ function DashboardLayoutContent({
             </div>
           </div>
 
-          <div className="mt-auto pt-6">
-            <button className="w-full bg-[#775a19] text-white py-4 px-4 text-[12px] font-bold uppercase tracking-widest hover:bg-opacity-95 active:scale-[0.99] transition-all sharp-edge">
-              New Analysis
-            </button>
+          <div className="mt-auto pt-6 border-t border-outline-variant/60">
+            <p className="px-2 text-xs text-secondary">Choose a section above to continue your work.</p>
           </div>
         </aside>
 
         {/* Main Container */}
-        <div className="flex-1 flex flex-col ml-72 relative">
+        <div className="flex-1 flex flex-col ml-0 md:ml-72 relative">
           {/* Superior Header */}
-          <header className="fixed top-0 right-0 left-72 h-20 z-40 glass-header flex justify-between items-center px-10">
+          <header className="fixed top-0 right-0 left-0 md:left-72 h-20 z-40 glass-header flex justify-between items-center px-4 md:px-10">
             <div className="flex items-center gap-6">
+              <button type="button" aria-label="Open navigation" className="md:hidden p-2 text-secondary" onClick={() => setIsSidebarOpen(true)}><Menu className="w-5 h-5" /></button>
               <h1 className="headline-font text-2xl text-on-surface">
-                {navLinks.find(l => pathname === l.href)?.label || 'Spatial Analysis'}
+                {navLinks.find(l => pathname === l.href)?.label || adminLinks.find(l => pathname === l.href)?.label || (pathname.startsWith('/dashboard/scenarios') ? 'Scenario History' : pathname.startsWith('/dashboard/reports') ? 'Reports' : 'Spatial Analysis')}
               </h1>
               <div className="h-4 w-[1px] bg-outline-variant"></div>
               <nav className="flex gap-6">
-                <span className="text-[12px] font-semibold text-primary border-b-2 border-primary pb-1 uppercase tracking-widest">Live Environment</span>
-                <span className="text-[12px] font-semibold text-secondary hover:text-on-surface transition-opacity uppercase tracking-widest cursor-default">KE_MA</span>
+                <span className="text-[12px] font-semibold text-secondary uppercase tracking-widest">Dashboard</span>
               </nav>
             </div>
 
             <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-none bg-[#775a19] animate-pulse"></div>
-                <span className="text-[12px] font-semibold text-secondary uppercase tracking-widest">System Operational</span>
+              <div className="hidden lg:flex items-center gap-2">
+                <span className="text-[12px] font-semibold text-secondary uppercase tracking-widest">Seka Kama</span>
               </div>
               
               <div className="relative" ref={notificationRef}>
                 <button 
                   onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                  aria-label="Notifications"
+                  aria-expanded={isNotificationOpen}
                   className={`text-secondary hover:text-on-surface transition-colors relative ${isNotificationOpen ? 'text-primary' : ''}`}
                 >
                   <span className="material-symbols-outlined">notifications</span>
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full border border-white"></span>
                 </button>
                 <NotificationPanel isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
               </div>
 
               <div className="flex items-center gap-3 pl-4 border-l border-outline-variant relative" ref={userMenuRef}>
                 <div className="text-right">
-                  <p className="text-[12px] font-semibold text-on-surface leading-none mb-1">{user?.full_name || 'James'}</p>
+                  <p className="text-[12px] font-semibold text-on-surface leading-none mb-1">{user?.full_name || 'Account'}</p>
                   <p className="text-[10px] text-secondary font-medium tracking-wide">{user?.organization || 'Seka Kama'}</p>
                 </div>
                 <button 
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  aria-label="Open account menu"
+                  aria-expanded={isUserMenuOpen}
                   className="w-10 h-10 bg-[#c5a059] rounded-none flex items-center justify-center text-[#4e3700] text-sm font-semibold border border-outline-variant overflow-hidden hover:opacity-90 transition-opacity sharp-edge"
                 >
-                  {user?.full_name ? initials : (
-                    <img 
-                      alt="User avatar" 
-                      className="w-full h-full object-cover" 
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuAS1mvBOdfYdeZ91WPxVznJY1wXvh_jO-0z86T4lzxH3SrEKCkG_djgxN5dSFRuWc-NUcNfo0CjStIIiMe_G9xdA3zhPoltdII94oYStADZs9iDEA0JwmiTx5HCAD7F_52AgdIEIleCB5lZSvyjBx9KmJV5ke0Dck6-D9HwWlTH-CZITVaYYBxKBnul65BJVPuo_d9dOLXWIAxMwRCobRjrT_PjvRsHwsQzE-DyRoAfbrNqZFLlHgREuIE7PQ9O2lBaQ_rSN_cJiAs" 
-                    />
-                  )}
+                  {initials}
                 </button>
 
                 {isUserMenuOpen && (

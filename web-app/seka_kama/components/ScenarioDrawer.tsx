@@ -53,6 +53,7 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
   const [userQuery, setUserQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [completedResult, setCompletedResult] = useState<ScenarioResult | null>(null);
+  const [processError, setProcessError] = useState<string | null>(null);
 
   // -- Drawing handlers --
   const handleMapClick = useCallback((e: any) => {
@@ -150,6 +151,7 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
   const handleRun = async () => {
     if (!drawnGeometry) return;
     setLoading(true);
+    setProcessError(null);
     
     console.log('🚀 Starting scenario execution...', {
       geometry: drawnGeometry,
@@ -193,7 +195,7 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
     } catch (error) {
       console.error('❌ Scenario execution failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Simulation failed: ${errorMessage}\n\nPlease check:\n1. Backend server is running\n2. Database is connected\n3. XGBoost model is loaded\n4. Selected area contains grid cells`);
+      setProcessError(`Simulation failed: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -507,6 +509,8 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
                   </p>
                 </div>
 
+                {processError && <div role="alert" aria-live="assertive" className="border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{processError}<button type="button" onClick={handleRun} className="ml-3 font-semibold underline">Retry</button><button type="button" onClick={() => setProcessError(null)} className="ml-3 underline">Dismiss</button></div>}
+                <p className="sr-only" role="status" aria-live="polite">{loading ? 'Scenario simulation is running.' : completedResult ? 'Scenario simulation completed.' : ''}</p>
                 <button
                   onClick={handleRun}
                   disabled={loading}

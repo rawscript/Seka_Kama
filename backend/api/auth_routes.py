@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime, timezone
@@ -11,6 +12,14 @@ from core.auth import (
 )
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+class ProfileUpdate(BaseModel):
+    full_name: str = Field(min_length=1, max_length=200)
+    organization: str = Field(min_length=1, max_length=200)
+
+class PasswordChange(BaseModel):
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=72)
 
 @router.post("/register", response_model=UserResponse)
 async def register(user: UserCreate):
@@ -209,3 +218,61 @@ async def get_current_user_info(current_user: TokenData = Depends(get_current_us
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve user info"
         )
+
+@router.patch("/me", response_model=UserResponse)
+async def update_current_user(
+    profile: ProfileUpdate,
+    current_user: TokenData = Depends(get_current_user),
+    raw_token: str | None = Depends(get_raw_token),
+):
+    if not raw_token:
+        raise HTTPException(status_code=401, detail="A user session is required to update a profile")
+    supabase = get_supabase_client()
+    full_name = profile.full_name.strip()
+    organization = profile.organization.strip()
+    if not full_name or not organization:
+        raise HTTPException(status_code=400, detail="Name and organization are required")
+    try:
+        result = supabase.table("users").update({
+            "full_name": full_name,
+            "organization": organization,
+        }).eq("id", current_user.user_id).execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="User not found")
+        user_data = result.data[0]
+        return UserResponse(
+            id=user_data["id"], email=user_data["email"],
+            full_name=user_data["full_name"], organization=user_data["organization"],
+            role=user_data["role"], created_at=datetime.fromisoformat(user_data["created_at"]),
+            last_login=datetime.fromisoformat(user_data["last_login"]) if user_data.get("last_login") else None,
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to update profile")
+
+@router.post("/change-password")
+async def change_current_password(
+    request: PasswordChange,
+    current_user: TokenData = Depends(get_current_user),
+    raw_token: str | None = Depends(get_raw_token),
+):
+    if not raw_token:
+        raise HTTPException(status_code=401, detail="A user session is required to change a password")
+    supabase = get_supabase_client()
+    try:
+        result = supabase.table("users").select("password_hash").eq("id", current_user.user_id).execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="User not found")
+        if not verify_password(request.current_password, result.data[0]["password_hash"]):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        if len(request.new_password.encode("utf-8")) > 72:
+            raise HTTPException(status_code=400, detail="New password must be 72 bytes or fewer")
+        supabase.table("users").update({
+            "password_hash": get_password_hash(request.new_password),
+        }).eq("id", current_user.user_id).execute()
+        return {"message": "Password changed successfully"}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to change password")

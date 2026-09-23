@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { getApiUrl } from '@/services/config';
+import { api } from '@/services/api';
 
 interface User {
   id: number;
@@ -33,10 +33,12 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!token) { router.push('/login'); return; }
-    fetch(`${getApiUrl()}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+    api.get('/auth/me')
       .then((u: User) => { setUser(u); setFullName(u.full_name); setOrganization(u.organization); })
-      .catch(() => router.push('/login'))
+      .catch((error) => {
+        if (!localStorage.getItem('access_token')) router.push('/login');
+        else setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Could not load your profile. Please retry.' });
+      })
       .finally(() => setLoading(false));
   }, [router, token]);
 
@@ -46,12 +48,11 @@ export default function ProfilePage() {
     setSaving(true);
     setMessage(null);
     try {
-      // The backend doesn't have a PATCH /auth/me yet — placeholder call
-      // When the endpoint is added, update this fetch.
-      await new Promise(r => setTimeout(r, 500)); // simulate
+      const updated = await api.patch('/auth/me', { full_name: fullName, organization });
+      setUser(updated);
       setMessage({ type: 'success', text: 'Profile updated successfully.' });
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to save changes.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to save changes.' });
     } finally {
       setSaving(false);
     }
@@ -64,11 +65,11 @@ export default function ProfilePage() {
     setChangingPw(true);
     setPwMessage(null);
     try {
-      await new Promise(r => setTimeout(r, 500)); // placeholder
-      setPwMessage({ type: 'success', text: 'Password changed. Please log in again.' });
+      await api.post('/auth/change-password', { current_password: currentPw, new_password: newPw });
+      setPwMessage({ type: 'success', text: 'Password changed successfully.' });
       setCurrentPw(''); setNewPw(''); setConfirmPw('');
-    } catch {
-      setPwMessage({ type: 'error', text: 'Failed to change password.' });
+    } catch (error) {
+      setPwMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to change password.' });
     } finally {
       setChangingPw(false);
     }

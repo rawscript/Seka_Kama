@@ -314,13 +314,11 @@ const StatusOverview = ({ indicators, selectedUnit }: StatusOverviewProps) => (
     
     <div className="mt-3 pt-2 border-t border-[#775a19]/20">
       <p className="text-[11px] text-[#775a19] text-center">
-        Overall ecosystem health: <span className="font-bold">Good</span>
+        {indicators.length ? <>Overall ecosystem health: <span className="font-bold">{indicators.some(i => i.status === 'critical') ? 'Critical' : indicators.some(i => i.status === 'warning') ? 'Warning' : indicators.every(i => i.status === 'optimal') ? 'Optimal' : 'Good'}</span></> : 'Health summary is unavailable.'}
       </p>
     </div>
   </div>
 );
-
-// Mock removal in progress...
 
 export default function EcosystemIndicatorsPanel({ 
   selectedUnit, 
@@ -329,33 +327,27 @@ export default function EcosystemIndicatorsPanel({
 }: EcosystemIndicatorsPanelProps) {
   const [indicators, setIndicators] = useState<EcosystemIndicator[]>([]);
 
-  const [environmentalConditions, setEnvironmentalConditions] = useState<EnvironmentalConditions>({
-    temperature: 24.5,
-    humidity: 65,
-    windSpeed: 3.2,
-    precipitation: 2.4,
-    cloudCover: 45,
-    uvIndex: 6,
-    daylightHours: 12.2,
-    soilMoisture: 0.65
-  });
+  const [environmentalConditions, setEnvironmentalConditions] = useState<EnvironmentalConditions | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [activeView, setActiveView] = useState<'indicators' | 'environment' | 'trends'>('indicators');
   const [selectedIndicator, setSelectedIndicator] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const { trackAnalystInteraction, hasConsent } = useUsabilityTracking();
-  const { shouldAttemptRequest, markApiUnavailable, markApiAvailable } = useApiContext();
+  const { shouldAttemptRequest, markApiUnavailable, markApiAvailable, corsErrorMessage, checkApiAvailability } = useApiContext();
 
   const fetchEcosystemData = async () => {
     if (!shouldAttemptRequest()) {
       setLoading(false);
+      setFetchError(corsErrorMessage || 'Requests are paused while the service is unavailable. Use Retry to check again.');
       return;
     }
     
     setLoading(true);
+    setFetchError(null);
     
     try {
       // 1. Fetch live ecosystem indicators
@@ -373,14 +365,14 @@ export default function EcosystemIndicatorsPanel({
       const envData = await api.getEnvironmentalConditions(selectedUnit || undefined, year);
       if (envData) {
         setEnvironmentalConditions({
-          temperature: envData.temperature ?? 24.5,
-          humidity: envData.humidity ?? 65,
-          windSpeed: envData.wind_speed ?? 3.2,
-          precipitation: envData.precipitation ?? 2.4,
-          cloudCover: envData.cloud_cover ?? 45,
-          uvIndex: envData.uv_index ?? 6,
-          daylightHours: envData.daylight_hours ?? 12.2,
-          soilMoisture: envData.soil_moisture ?? 0.65
+          temperature: envData.temperature,
+          humidity: envData.humidity,
+          windSpeed: envData.wind_speed,
+          precipitation: envData.precipitation,
+          cloudCover: envData.cloud_cover,
+          uvIndex: envData.uv_index,
+          daylightHours: envData.daylight_hours,
+          soilMoisture: envData.soil_moisture
         });
       }
       
@@ -394,6 +386,7 @@ export default function EcosystemIndicatorsPanel({
       }
     } catch (error) {
       console.error('Failed to fetch ecosystem data:', error);
+      setFetchError(error instanceof Error ? error.message : 'Could not load ecosystem data. Please retry.');
       markApiUnavailable('API Error');
     } finally {
       setLoading(false);
@@ -414,14 +407,15 @@ export default function EcosystemIndicatorsPanel({
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     if (hasConsent()) {
       trackAnalystInteraction('ecosystem-panel-refresh', 'click', {
         panelAction: 'refresh_indicators',
         insightType: 'manual_refresh'
       });
     }
-    fetchEcosystemData();
+    if (await checkApiAvailability()) await fetchEcosystemData();
+    else setFetchError('Service is still unavailable. Please try again shortly.');
   };
 
   const handleIndicatorClick = (indicator: EcosystemIndicator) => {
@@ -587,24 +581,20 @@ export default function EcosystemIndicatorsPanel({
                   </div>
                 )}
                 
+                {fetchError && <div role="alert" aria-live="polite" className="mx-3 mt-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{fetchError} <button onClick={handleRefresh} className="ml-2 underline font-semibold">Retry</button></div>}
                 {activeView === 'environment' && (
                   <div className="space-y-4">
-                    <EnvironmentalConditionsCard 
-                      environmentalConditions={environmentalConditions} 
-                      selectedUnit={selectedUnit} 
-                    />
+                    {environmentalConditions ? <EnvironmentalConditionsCard environmentalConditions={environmentalConditions} selectedUnit={selectedUnit} /> : <p role="status" className="p-4 text-sm text-slate-600">{loading ? 'Loading environmental data…' : 'Environmental data is unavailable.'}</p>}
                     
                     <div className="p-3 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-xs font-bold text-slate-800">Seasonal Context</h4>
                         <span className="text-[10px] text-slate-600 px-2 py-0.5 bg-slate-200 rounded-full">
-                          Dry Season
+                          Seasonal data
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-600 leading-tight">
-                        Current environmental conditions are typical for the dry season in {selectedUnit || 'the region'}. 
-                        Reduced rainfall and moderate temperatures create optimal conditions for wildlife movement 
-                        but increase HWC risk near water sources.
+                        Use the measurements above to assess current conditions. No additional seasonal assessment is available.
                       </p>
                     </div>
                   </div>

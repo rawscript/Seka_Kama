@@ -6,7 +6,7 @@ import { api } from '@/services/api';
 import { getApiUrl } from '@/services/config';
 import {
   Key, Plus, Trash2, Copy, Eye, EyeOff,
-  Shield, User, Bell, Database, Activity,
+  Shield, User, Database, Activity,
   CheckCircle, AlertTriangle, RefreshCw, ExternalLink
 } from 'lucide-react';
 
@@ -55,6 +55,7 @@ export default function SettingsPage() {
   const [healthLoading, setHealthLoading] = useState(true);
   const [copied, setCopied]           = useState(false);
   const [toast, setToast]             = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -69,21 +70,23 @@ export default function SettingsPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setProfile(await res.json());
-    } catch { /* non-fatal */ }
+    } catch (error) { setLoadError(error instanceof Error ? error.message : 'Could not load account details.'); }
   }, []);
 
   const loadKeys = useCallback(async () => {
-    try { setApiKeys(await api.listApiKeys()); } catch { /* non-fatal */ }
+    try { setApiKeys(await api.listApiKeys()); } catch (error) { setLoadError(error instanceof Error ? error.message : 'Could not load API keys.'); }
   }, []);
 
   const loadHealth = useCallback(async () => {
     setHealthLoading(true);
+    setLoadError(null);
     try {
       const res = await fetch(`${getApiUrl()}/health`);
       const data = await res.json();
       setHealthStatus(data);
-    } catch {
+    } catch (error) {
       setHealthStatus({ status: 'error', detail: 'Unreachable' });
+      setLoadError(error instanceof Error ? error.message : 'System health could not be loaded.');
     } finally {
       setHealthLoading(false);
     }
@@ -142,6 +145,7 @@ export default function SettingsPage() {
             {toast}
           </div>
         )}
+        {loadError && <div role="alert" aria-live="polite" className="mx-auto mt-4 max-w-6xl rounded border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{loadError}<button onClick={() => { setLoadError(null); loadProfile(); loadKeys(); loadHealth(); }} className="ml-3 font-semibold underline">Retry</button></div>}
 
         {/* Header */}
         <div className="max-w-[1440px] mx-auto px-6 md:px-20 py-16">
@@ -311,30 +315,8 @@ export default function SettingsPage() {
                 )}
               </SettingsSection>
 
-              {/* Security */}
               <SettingsSection title="Security" icon={Shield}>
-                <div className="space-y-4 text-[11px] text-[#4e4639]">
-                  {[
-                    { label: 'JWT Auth',        ok: true,  desc: 'HS256 tokens, 30-min expiry' },
-                    { label: 'HTTPS',           ok: true,  desc: 'TLS 1.3 enforced' },
-                    { label: 'RBAC',            ok: true,  desc: 'admin / researcher / viewer' },
-                    { label: 'Rate Limiting',   ok: true,  desc: '60 req/min per key' },
-                    { label: 'Audit Logs',      ok: true,  desc: 'All writes logged' },
-                  ].map(row => (
-                    <div key={row.label} className="flex items-start gap-3">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="font-bold text-[#1a1c1c]">{row.label}</p>
-                        <p className="text-[#7f7667]">{row.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SettingsSection>
-
-              {/* Notifications placeholder */}
-              <SettingsSection title="Notifications" icon={Bell}>
-                <p className="text-sm text-[#7f7667] italic">Email notification preferences coming in v2.2.0.</p>
+                <p className="text-sm text-[#7f7667]">Security policy is managed by the service configuration. This page does not report live verification results.</p>
               </SettingsSection>
             </div>
           </div>

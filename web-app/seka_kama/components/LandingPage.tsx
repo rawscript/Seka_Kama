@@ -60,17 +60,19 @@ export default function LandingPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const [statsRetry, setStatsRetry] = useState(0);
 
   const statsList: Statistic[] = stats ? [
-    { label: 'Estimated Lions', value: stats.total_lions?.toString() || '—', change: `${stats.avg_lion_density?.toFixed(2)}/km²`, changeType: 'positive' },
-    { label: 'Protected Area', value: `${stats.protected_area_coverage_km2?.toLocaleString()} km²`, change: 'Verified', changeType: 'neutral' },
-    { label: 'Management Units', value: stats.management_unit_count?.toString() || '—', change: 'Operational', changeType: 'neutral' },
-    { label: 'Threatened Cells', value: stats.high_risk_cell_count?.toString() || '—', change: 'High Risk', changeType: 'negative' },
+    { label: 'Estimated Lions', value: stats.total_lions?.toLocaleString() || '—', change: `${stats.avg_lion_density?.toFixed(2) ?? '—'} lions/km² average`, changeType: 'neutral' },
+    { label: 'Protected Area', value: `${stats.protected_area_coverage_km2?.toLocaleString() ?? '—'} km²`, change: 'Mapped coverage', changeType: 'neutral' },
+    { label: 'Management Units', value: stats.management_unit_count?.toString() || '—', change: 'Units in dataset', changeType: 'neutral' },
+    { label: 'High-Risk Cells', value: stats.high_risk_cell_count?.toLocaleString() || '—', change: 'Modelled cells', changeType: 'neutral' },
   ] : [
-    { label: 'Lion Population', value: '...', change: '...', changeType: 'neutral' },
-    { label: 'Protected Area', value: '...', change: '...', changeType: 'neutral' },
-    { label: 'Active Conservancies', value: '...', change: '...', changeType: 'neutral' },
-    { label: 'Nightlight Trend', value: '...', change: '...', changeType: 'neutral' },
+    { label: 'Estimated Lions', value: '—', change: 'Unavailable', changeType: 'neutral' },
+    { label: 'Protected Area', value: '—', change: 'Unavailable', changeType: 'neutral' },
+    { label: 'Management Units', value: '—', change: 'Unavailable', changeType: 'neutral' },
+    { label: 'High-Risk Cells', value: '—', change: 'Unavailable', changeType: 'neutral' },
   ];
 
   useEffect(() => {
@@ -104,15 +106,16 @@ export default function LandingPage() {
         if (response.ok) {
            const data = await response.json();
            setStats(data);
-        }
+        } else throw new Error(`Statistics unavailable (HTTP ${response.status}).`);
       } catch (error) {
         console.error("Failed to load initial stats:", error);
+        setStatsError(error instanceof Error ? error.message : 'Could not load landscape statistics.');
       }
     };
 
     checkSession();
     loadInitialData();
-  }, []);
+  }, [statsRetry]);
 
   // 3. Set the dynamic routing path depending on state
   const consolePath = isAuthenticated ? '/dashboard' : '/login';
@@ -168,6 +171,7 @@ export default function LandingPage() {
       {/* Metrics Section */}
       <section className="bg-white py-16 border-y border-[#d1c5b4]/60">
         <div className="max-w-[1440px] mx-auto px-6 md:px-20 grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6">
+          {statsError && <p role="alert" aria-live="polite" className="col-span-full text-center text-sm text-rose-800">{statsError}<button onClick={() => { setStatsError(null); setStatsRetry(v => v + 1); }} className="ml-3 font-semibold underline">Retry</button></p>}
           {statsList.map((stat, idx) => (
             <div
               key={stat.label}

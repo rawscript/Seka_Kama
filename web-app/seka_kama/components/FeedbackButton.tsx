@@ -26,6 +26,7 @@ export default function FeedbackButton({
   const [activeTab, setActiveTab] = useState<'quick' | 'bug' | 'feature' | 'accessibility'>('quick');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   
   // Feedback service
   const {
@@ -124,11 +125,12 @@ export default function FeedbackButton({
 
   const handleSubmitQuickFeedback = async () => {
     if (!quickFeedback.title.trim() || !quickFeedback.description.trim()) {
-      alert('Please provide both a title and description');
+      setSubmissionError('Please provide both a title and description.');
       return;
     }
 
     setSubmitting(true);
+    setSubmissionError(null);
     
     try {
       const feedbackId = await submitQuickFeedback(
@@ -167,7 +169,7 @@ export default function FeedbackButton({
       }, 2000);
     } catch (error) {
       console.error('Failed to submit feedback:', error);
-      alert('Failed to submit feedback. Please try again.');
+      setSubmissionError(error instanceof Error ? `Failed to submit feedback: ${error.message}` : 'Failed to submit feedback. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -175,11 +177,12 @@ export default function FeedbackButton({
 
   const handleSubmitBugReport = async () => {
     if (!bugReport.title.trim() || !bugReport.description.trim()) {
-      alert('Please provide both a title and description');
+      setSubmissionError('Please provide both a title and description.');
       return;
     }
 
     setSubmitting(true);
+    setSubmissionError(null);
     
     try {
       const feedbackId = await submitBugReport(
@@ -222,7 +225,7 @@ export default function FeedbackButton({
       }, 2000);
     } catch (error) {
       console.error('Failed to submit bug report:', error);
-      alert('Failed to submit bug report. Please try again.');
+      setSubmissionError(error instanceof Error ? `Failed to submit bug report: ${error.message}` : 'Failed to submit bug report. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -230,11 +233,12 @@ export default function FeedbackButton({
 
   const handleSubmitFeatureRequest = async () => {
     if (!featureRequest.title.trim() || !featureRequest.description.trim()) {
-      alert('Please provide both a title and description');
+      setSubmissionError('Please provide both a title and description.');
       return;
     }
 
     setSubmitting(true);
+    setSubmissionError(null);
     
     try {
       const feedbackId = await submitFeatureRequest(
@@ -273,7 +277,7 @@ export default function FeedbackButton({
       }, 2000);
     } catch (error) {
       console.error('Failed to submit feature request:', error);
-      alert('Failed to submit feature request. Please try again.');
+      setSubmissionError(error instanceof Error ? `Failed to submit feature request: ${error.message}` : 'Failed to submit feature request. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -281,11 +285,12 @@ export default function FeedbackButton({
 
   const handleSubmitAccessibilityIssue = async () => {
     if (!accessibilityIssue.title.trim() || !accessibilityIssue.description.trim()) {
-      alert('Please provide both a title and description');
+      setSubmissionError('Please provide both a title and description.');
       return;
     }
 
     setSubmitting(true);
+    setSubmissionError(null);
     
     try {
       const feedbackId = await submitAccessibilityIssue(
@@ -324,7 +329,7 @@ export default function FeedbackButton({
       }, 2000);
     } catch (error) {
       console.error('Failed to submit accessibility issue:', error);
-      alert('Failed to submit accessibility issue. Please try again.');
+      setSubmissionError(error instanceof Error ? `Failed to submit accessibility report: ${error.message}` : 'Failed to submit accessibility report. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -416,6 +421,7 @@ export default function FeedbackButton({
           </div>
         ) : (
           <>
+            {submissionError && <div role="alert" aria-live="assertive" className="mx-6 mt-4 rounded border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{submissionError}</div>}
             {/* Tabs */}
             <div className="flex border-b border-slate-200">
               <button

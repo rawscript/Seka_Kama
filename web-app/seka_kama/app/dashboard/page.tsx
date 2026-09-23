@@ -175,44 +175,50 @@ function DashboardContent() {
   // Landscape stats (Gap 1)
   const [stats, setStats]           = useState<LandscapeStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   // Historical trends (Gap 2)
   const [trends, setTrends]         = useState<HistoricalTrend[]>([]);
   const [trendsLoading, setTrendsLoading] = useState(false);
 
   const [availableUnits, setAvailableUnits] = useState<string[]>([]);
+  const [unitsError, setUnitsError] = useState<string | null>(null);
+  const [trendsError, setTrendsError] = useState<string | null>(null);
+  const [retryRequest, setRetryRequest] = useState(0);
 
   // ── Fetch available units once on mount ──────────────────────────────────
   useEffect(() => {
     api.getManagementUnits()
       .then(setAvailableUnits)
-      .catch(() => { /* non-fatal */ });
-  }, []);
+      .catch((error) => setUnitsError(error instanceof Error ? error.message : 'Management units could not be loaded.'));
+  }, [retryRequest]);
 
   // ── Fetch landscape stats on mount / unit change / year change ──────────
   useEffect(() => {
     let cancelled = false;
     setStatsLoading(true);
+    setStatsError(null);
     api.getStatistics(selectedUnit || undefined, selectedYear)
       .then((s) => { 
         if (!cancelled) setStats(s);
       })
-      .catch(() => { /* non-fatal — stats strip stays hidden */ })
+      .catch((error) => { if (!cancelled) { setStats(null); setStatsError(error instanceof Error ? error.message : 'Landscape summary could not be loaded.'); } })
       .finally(() => { if (!cancelled) setStatsLoading(false); });
     return () => { cancelled = true; };
-  }, [selectedUnit, selectedYear]);
+  }, [selectedUnit, selectedYear, retryRequest]);
 
   // ── Fetch historical trends when panel is opened ──────────────────────────
   useEffect(() => {
     if (!showTrends) return;
     let cancelled = false;
     setTrendsLoading(true);
+    setTrendsError(null);
     api.getHistoricalTrends(selectedUnit || 'Regional Total')
       .then((r) => { if (!cancelled) setTrends(r.trends ?? []); })
-      .catch(() => { if (!cancelled) setTrends([]); })
+      .catch((error) => { if (!cancelled) { setTrends([]); setTrendsError(error instanceof Error ? error.message : 'Historical trends could not be loaded.'); } })
       .finally(() => { if (!cancelled) setTrendsLoading(false); });
     return () => { cancelled = true; };
-  }, [showTrends, selectedUnit, selectedYear]);
+  }, [showTrends, selectedUnit, selectedYear, retryRequest]);
 
   // -- Responsive check --
 
@@ -337,7 +343,7 @@ function DashboardContent() {
         <div className="absolute top-8 left-8 flex items-center gap-3 z-10 transition-all duration-300">
           <div className="flex items-center gap-3 px-4 py-2 bg-[#1a1c1c]/80 backdrop-blur-md rounded-none pointer-events-none border border-white/10">
             <div className="w-2 h-2 rounded-none bg-[#775a19]" />
-            <span className="text-[10px] font-bold text-white uppercase tracking-widest">DIGITAL TWIN ACTIVE</span>
+            <span className="text-[10px] font-bold text-white uppercase tracking-widest">{isLiveMode ? 'LIVE PREDICTION' : 'HISTORICAL ANALYSIS'}</span>
             <span className="text-[10px] font-bold text-[#775a19] ml-2 opacity-80 uppercase tracking-widest">{selectedYear}</span>
           </div>
 
@@ -380,6 +386,8 @@ function DashboardContent() {
             {isLiveMode ? 'Live Twin Active' : 'Enable Live Twin'}
           </button>
         </div>
+
+        {(statsError || unitsError || (showTrends && trendsError)) && <div role="alert" aria-live="polite" className="absolute top-20 left-8 z-30 max-w-sm rounded border border-rose-300 bg-white/95 px-4 py-3 text-sm text-rose-900 shadow-lg">{statsError || unitsError || trendsError}<button onClick={() => setRetryRequest(v => v + 1)} className="ml-3 font-semibold underline">Retry</button></div>}
 
         {/* ── Landscape stats strip ── */}
         {!statsLoading && stats && !isMobile && (

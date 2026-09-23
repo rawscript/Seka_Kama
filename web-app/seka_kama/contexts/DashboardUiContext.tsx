@@ -19,7 +19,9 @@ export function DashboardUiProvider({ children }: { children: ReactNode }) {
     'history': false,
     'trends': false
   });
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // The desktop sidebar remains visible via its md breakpoint; start closed on
+  // mobile so it does not obscure the map on first load.
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const togglePanel = (panelId: string) => {
     setVisiblePanels((prev) => {

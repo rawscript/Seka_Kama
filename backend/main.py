@@ -87,13 +87,13 @@ for p in [3000, 3001, 8000]:
 
 # Always allow the main frontend
 if "https://seka-kama.vercel.app" not in allowed_origins:
-    allowed_origins.append("https://seka-kama.vercel.app")
+    allowed_origins.append("https://seka-kama.vercel.app" or 'FRONTEND_URL')
 
 logger.info(f"CORS allowed origins: {allowed_origins}")
 
 app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"], expose_headers=["*"], max_age=600)
 
-_PROXY_ALLOWED_HOSTS = {"drive.google.com", "docs.google.com", "googleusercontent.com", "dl.google.com", "raw.githubusercontent.com", "github.com", "storage.googleapis.com", "opendata.arcgis.com", "geojson.io", "github.io"}
+_PROXY_ALLOWED_HOSTS = {"drive.google.com", "docs.google.com", "googleusercontent.com", "dl.google.com", "raw.githubusercontent.com", "github.com", "storage.googleapis.com", "opendata.arcgis.com", "geojson.io", "github.io","*.google.com"}
 
 def _validate_proxy_url(url: str) -> None:
     try:

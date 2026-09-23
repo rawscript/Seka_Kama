@@ -67,3 +67,18 @@
 @utility animate-in {
   animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Keep keyboard focus visible across pages, including controls rendered from inline styles. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #775a19;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

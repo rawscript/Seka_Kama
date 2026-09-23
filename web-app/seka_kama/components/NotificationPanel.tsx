@@ -6,9 +6,7 @@ import {
   X, 
   Info, 
   ShieldAlert, 
-  Zap, 
-  Clock,
-  ExternalLink
+  Zap
 } from 'lucide-react';
 import { getApiUrl } from '@/services/config';
 
@@ -47,9 +45,11 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchNotifications = async () => {
     setLoading(true);
+    setError(null);
     const token = localStorage.getItem('access_token');
     
     try {
@@ -58,18 +58,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
       if (healthResp.ok) setHealth(await healthResp.json());
 
       // 2. Fetch Logs
-      if (!token) {
-        setLogs([
-          {
-            id: 1,
-            action: "System Initialized",
-            resource_type: "System",
-            created_at: new Date().toISOString(),
-            details: { message: "Ecological Digital Twin layer is active." }
-          }
-        ]);
-        return;
-      }
+      if (!token) { setLogs([]); return; }
 
       const response = await fetch(`${getApiUrl()}/audit-logs?limit=10`, {
         headers: { 'Authorization': `Bearer ${token}` },
@@ -77,10 +66,11 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
       
       if (response.ok) {
         const data = await response.json();
-        setLogs(data.logs);
-      }
+        setLogs(data.logs ?? []);
+      } else throw new Error(response.status === 403 ? 'Audit log access requires an administrator account.' : `Could not load notifications (HTTP ${response.status}).`);
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
+      setError(error instanceof Error ? error.message : 'Could not load notifications.');
     } finally {
       setLoading(false);
     }
@@ -101,9 +91,9 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
           <Bell className="w-4 h-4 text-[#775a19]" />
           <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#1a1c1c]">Intelligence Stream</h3>
         </div>
-        <button onClick={onClose} className="text-slate-400 hover:text-black transition-colors">
+        <div className="flex items-center gap-3"><button type="button" aria-label="Refresh notifications" onClick={fetchNotifications} className="text-[10px] font-semibold text-[#775a19] hover:underline">Refresh</button><button aria-label="Close notifications" onClick={onClose} className="text-slate-400 hover:text-black transition-colors">
           <X className="w-4 h-4" />
-        </button>
+        </button></div>
       </div>
 
       <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
@@ -112,6 +102,8 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
              <div className="w-5 h-5 border-2 border-[#775a19] border-t-transparent rounded-none animate-spin"></div>
              <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Syncing Stream...</p>
           </div>
+        ) : error ? (
+          <div className="p-6 text-center text-sm text-rose-800" role="alert" aria-live="polite">{error}<button onClick={fetchNotifications} className="mt-2 block mx-auto font-semibold underline">Retry</button></div>
         ) : (
           <>
             {health && (
@@ -129,14 +121,14 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
                     </div>
                     <div className="p-2 bg-white/5 rounded-sm">
                        <p className="text-[8px] text-white/30 uppercase font-bold mb-1">Stepfun AI</p>
-                       <p className="text-[10px] text-white font-bold">READY</p>
+                       <p className="text-[10px] text-white font-bold">{health.services.llm?.toUpperCase() ?? 'UNKNOWN'}</p>
                     </div>
                  </div>
                  {health.live_context && (
                     <div className="pt-2 border-t border-white/10">
                        <p className="text-[10px] text-white/60 leading-tight">
                           <span className="text-amber-400 font-bold">LIVE:</span> {health.live_context.situation} environment detected. 
-                          Baseline rainfall at {health.live_context.annual_rainfall_mm?.toFixed(0) || '800'}mm.
+                          Baseline rainfall at {health.live_context.annual_rainfall_mm?.toFixed(0) ?? '—'}mm.
                        </p>
                     </div>
                  )}
@@ -158,11 +150,7 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
         )}
       </div>
 
-      <div className="p-3 bg-[#f9f9f9] border-t border-[#d1c5b4] text-center">
-        <button className="text-[10px] font-bold text-[#775a19] uppercase tracking-widest hover:underline flex items-center justify-center gap-1.5 mx-auto">
-          View All Logs <ExternalLink className="w-3 h-3" />
-        </button>
-      </div>
+      <div className="p-3 bg-[#f9f9f9] border-t border-[#d1c5b4] text-center text-[10px] text-slate-500">Latest available activity</div>
     </div>
   );
 }
