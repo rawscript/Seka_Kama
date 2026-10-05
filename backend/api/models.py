@@ -10,7 +10,7 @@ class ScenarioRequest(BaseModel):
     feature_modifications: Dict[str, float]  # e.g., {"longterm_slope_mean": 0.15}
     management_units: Optional[List[str]] = None
     user_query: Optional[str] = None
-    simulation_years: int = 0  # 0 = snapshot, >0 = project trends over time
+    simulation_years: int = 0  # Snapshot only until validated time-indexed inputs are ingested.
 
 
 class ScenarioResponse(BaseModel):

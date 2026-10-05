@@ -55,9 +55,18 @@ interface EnvironmentalConditions {
   windSpeed: number;
   precipitation: number;
   cloudCover: number;
-  uvIndex: number;
-  daylightHours: number;
-  soilMoisture: number;
+  uvIndex: number | null;
+  daylightHours: number | null;
+  soilMoisture: number | null;
+}
+
+interface EcosystemTrend {
+  indicator_id: string;
+  indicator_name: string;
+  values: Array<{ year: number; value: number }>;
+  average_change_per_year: number;
+  significance: 'high' | 'medium' | 'low';
+  source?: string;
 }
 
 // Helper components moved outside of main component to avoid re-creation on each render
@@ -171,7 +180,9 @@ const EnvironmentalConditionsCard = ({ environmentalConditions, selectedUnit }: 
       </div>
       <div className="flex items-center gap-2">
         <Sun className="w-3 h-3 text-amber-500" />
-        <span className="text-[10px] text-slate-600">{environmentalConditions.daylightHours.toFixed(1)}h daylight</span>
+        <span className="text-[10px] text-slate-600">
+          {environmentalConditions.daylightHours != null ? `${environmentalConditions.daylightHours.toFixed(1)}h daylight` : 'daylight n/a'}
+        </span>
       </div>
     </div>
     
@@ -238,12 +249,14 @@ const EnvironmentalConditionsCard = ({ environmentalConditions, selectedUnit }: 
       <div className="text-center">
         <Sun className="w-3 h-3 text-amber-500 mx-auto mb-1" />
         <span className="text-[10px] text-slate-700 font-medium">UV Index</span>
-        <div className="text-xs font-bold text-slate-900">{environmentalConditions.uvIndex}</div>
+        <div className="text-xs font-bold text-slate-900">{environmentalConditions.uvIndex ?? '—'}</div>
       </div>
       <div className="text-center">
         <Gauge className="w-3 h-3 text-emerald-600 mx-auto mb-1" />
         <span className="text-[10px] text-slate-700 font-medium">Soil Moisture</span>
-        <div className="text-xs font-bold text-slate-900">{(environmentalConditions.soilMoisture * 100).toFixed(0)}%</div>
+        <div className="text-xs font-bold text-slate-900">
+          {environmentalConditions.soilMoisture != null ? `${(environmentalConditions.soilMoisture * 100).toFixed(0)}%` : '—'}
+        </div>
       </div>
     </div>
   </div>
@@ -328,6 +341,7 @@ export default function EcosystemIndicatorsPanel({
   const [indicators, setIndicators] = useState<EcosystemIndicator[]>([]);
 
   const [environmentalConditions, setEnvironmentalConditions] = useState<EnvironmentalConditions | null>(null);
+  const [trends, setTrends] = useState<EcosystemTrend[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -375,6 +389,9 @@ export default function EcosystemIndicatorsPanel({
           soilMoisture: envData.soil_moisture
         });
       }
+
+      const trendData = await api.getEcosystemTrends(selectedUnit || undefined, ['rainfall', 'prey_density']);
+      setTrends(Array.isArray(trendData) ? trendData : []);
       
       setLastUpdated(new Date());
 
@@ -608,43 +625,45 @@ export default function EcosystemIndicatorsPanel({
                         <h4 className="text-xs font-bold text-purple-900">Historical Trends</h4>
                       </div>
                       <p className="text-[11px] text-purple-800 leading-tight">
-                        Trend analysis for {selectedUnit || 'the region'} shows overall improvement in ecosystem health 
-                        over the past 5 years, with connectivity and habitat suitability showing the most significant gains.
+                        {trends.length
+                          ? `Showing source-backed trend series for ${selectedUnit || 'the regional centroid'}.`
+                          : 'No historical indicator series is currently available from the configured sources.'}
                       </p>
                     </div>
                     
                     <div className="space-y-3">
-                      <h4 className="text-xs font-bold text-slate-700">Top Improving Indicators</h4>
-                      {indicators
-                        .filter(i => i.trend === 'up')
-                        .sort((a, b) => b.changePercentage - a.changePercentage)
-                        .slice(0, 3)
-                        .map((indicator) => (
-                          <div key={indicator.id} className="flex items-center justify-between p-2 bg-emerald-50 rounded border border-emerald-100">
-                            <div className="flex items-center gap-2">
-                              {indicator.icon}
-                              <span className="text-[11px] font-medium text-emerald-800">{indicator.name}</span>
+                      <h4 className="text-xs font-bold text-slate-700">Available Indicator Series</h4>
+                      {trends.length === 0 ? (
+                        <p className="text-[11px] text-slate-600 p-3 bg-slate-50 border border-slate-200 rounded">
+                          Historical trends require ingested indicator series or reachable live source history.
+                        </p>
+                      ) : trends.map((trend) => {
+                        const latest = trend.values[trend.values.length - 1];
+                        const first = trend.values[0];
+                        const delta = latest && first ? latest.value - first.value : 0;
+                        return (
+                          <div key={trend.indicator_id} className="p-3 bg-white rounded border border-slate-200 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-slate-800">{trend.indicator_name}</span>
+                              <span className={`text-xs font-bold ${delta >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                {delta >= 0 ? '+' : ''}{delta.toFixed(2)}
+                              </span>
                             </div>
-                            <span className="text-xs font-bold text-emerald-700">+{indicator.changePercentage.toFixed(1)}%</span>
-                          </div>
-                        ))}
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-bold text-slate-700">Indicators Needing Attention</h4>
-                      {indicators
-                        .filter(i => i.status === 'warning' || i.status === 'critical')
-                        .map((indicator) => (
-                          <div key={indicator.id} className="flex items-center justify-between p-2 bg-rose-50 rounded border border-rose-100">
-                            <div className="flex items-center gap-2">
-                              {indicator.icon}
-                              <span className="text-[11px] font-medium text-rose-800">{indicator.name}</span>
+                            <div className="flex items-center justify-between text-[10px] text-slate-500">
+                              <span>{first?.year} → {latest?.year}</span>
+                              <span>{trend.source || 'source-backed'}</span>
                             </div>
-                            <span className="text-xs font-bold text-rose-700">
-                              {indicator.status === 'critical' ? 'Critical' : 'Warning'}
-                            </span>
+                            <div className="flex gap-1 items-end h-10">
+                              {trend.values.map((row) => {
+                                const max = Math.max(...trend.values.map(v => Math.abs(v.value)), 1);
+                                return (
+                                  <div key={row.year} title={`${row.year}: ${row.value}`} className="flex-1 bg-purple-200 rounded-sm" style={{ height: `${Math.max(8, Math.abs(row.value) / max * 40)}px` }} />
+                                );
+                              })}
+                            </div>
                           </div>
-                        ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

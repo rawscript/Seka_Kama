@@ -511,6 +511,14 @@ function DashboardContent() {
         )}
 
         {/* ── Scenario result panel ── */}
+        {scenarioResult && scenarioResult.type !== 'selection' && (
+          <div className={`absolute top-28 z-40 ${isMobile ? 'left-4 right-4' : 'right-8'}`}>
+            <ScenarioResultPanel
+              result={scenarioResult}
+              onClose={() => setScenarioResult(null)}
+            />
+          </div>
+        )}
 
         {/* ── Map Controls Panel ── */}
         <div className={`absolute bottom-6 w-[360px] max-w-[calc(100vw-4rem)] z-30 transition-all duration-300 ${isMobile ? 'right-4 max-w-[calc(100vw-2rem)]' : 'right-[400px]'}`}>

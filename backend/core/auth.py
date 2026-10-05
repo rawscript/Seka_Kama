@@ -58,7 +58,7 @@ SECRET_KEY: str = _raw_secret
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 class Token(BaseModel):
@@ -152,14 +152,60 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 from core.database import get_db, SupabaseService
+import os
+import json
+from typing import Optional
 
-# In-memory revoked token set (process-scoped; sufficient for single-instance deployments).
-# For multi-instance deployments, replace with a shared Redis/DB-backed store.
+# Redis-backed token revocation store for multi-instance deployments
+# Falls back to in-memory for development/single-instance
 _revoked_tokens: set[str] = set()
+_redis_client = None
+
+def _get_redis_client():
+    """Get Redis client for token revocation (lazy initialization)."""
+    global _redis_client
+    if _redis_client is None:
+        redis_url = os.getenv("REDIS_URL")
+        if redis_url:
+            try:
+                import redis
+                _redis_client = redis.from_url(redis_url, decode_responses=True)
+                logger.info("Redis connected for token revocation")
+            except Exception as e:
+                logger.warning(f"Redis connection failed, using in-memory store: {e}")
+                _redis_client = False  # Mark as failed
+    return _redis_client if _redis_client and _redis_client is not False else None
 
 def revoke_token(token: str) -> None:
-    """Mark a JWT as revoked for the lifetime of this process."""
-    _revoked_tokens.add(token)
+    """
+    Mark a JWT as revoked.
+    Uses Redis if available (multi-instance), else in-memory (single-instance).
+    """
+    redis_client = _get_redis_client()
+    if redis_client:
+        try:
+            # Store in Redis with TTL matching token expiration
+            redis_client.setex(
+                f"revoked_token:{token}",
+                ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+                "1"
+            )
+            logger.debug(f"Token revoked in Redis: {token[:20]}...")
+        except Exception as e:
+            logger.error(f"Redis revocation failed, falling back to memory: {e}")
+            _revoked_tokens.add(token)
+    else:
+        _revoked_tokens.add(token)
+
+def is_token_revoked(token: str) -> bool:
+    """Check if a token has been revoked."""
+    redis_client = _get_redis_client()
+    if redis_client:
+        try:
+            return redis_client.exists(f"revoked_token:{token}")
+        except Exception as e:
+            logger.error(f"Redis check failed, checking memory: {e}")
+    return token in _revoked_tokens
 
 async def get_api_key(
     api_key: Optional[str] = Depends(api_key_header),
@@ -217,7 +263,7 @@ async def get_current_user(
         token = credentials.credentials
 
         # Reject explicitly revoked tokens
-        if token in _revoked_tokens:
+        if is_token_revoked(token):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has been revoked",

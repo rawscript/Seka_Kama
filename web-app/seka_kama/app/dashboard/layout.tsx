@@ -330,7 +330,7 @@ function DashboardLayoutContent({
                       <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{user?.role || 'Access Tier'}</p>
                       <p className="text-sm font-semibold truncate text-on-surface">{user?.email}</p>
                     </div>
-                    <Link href="/settings" className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-secondary hover:text-on-surface hover:bg-surface-container-low transition-colors text-left font-medium block">
+                    <Link href="/dashboard/profile" className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-secondary hover:text-on-surface hover:bg-surface-container-low transition-colors text-left font-medium block">
                       <span className="material-symbols-outlined text-[20px]">settings</span>
                       System Preferences
                     </Link>

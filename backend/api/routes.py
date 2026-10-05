@@ -918,6 +918,7 @@ async def get_environmental_conditions(
 async def get_ecosystem_trends(
     management_unit: Optional[str] = Query(None),
     indicator_ids: Optional[str] = Query(None),
+    indicators: Optional[str] = Query(None),
     db: SupabaseService = Depends(get_db)
 ):
     """
@@ -925,7 +926,8 @@ async def get_ecosystem_trends(
     """
     try:
         from services.ecological_data_service import get_ecosystem_trends
-        ids = indicator_ids.split(",") if indicator_ids else None
+        raw_ids = indicator_ids or indicators
+        ids = raw_ids.split(",") if raw_ids else None
         trends = await get_ecosystem_trends(management_unit, ids)
         return trends
     except Exception as e:

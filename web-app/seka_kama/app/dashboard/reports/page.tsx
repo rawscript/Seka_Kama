@@ -48,6 +48,9 @@ export default function ReportsPage() {
     api.getFeatureImportance()
       .then(d => setImportance(d.feature_importance.slice(0, 12)))
       .catch(() => { });
+    api.getManagementUnits()
+      .then(setUnits)
+      .catch(() => { });
   }, []);
 
   // Load stats whenever selectedUnit changes

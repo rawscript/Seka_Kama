@@ -25,7 +25,7 @@ class AuditService:
             user_agent = request.headers.get("user-agent")
 
         try:
-            db.table("audit_logs").insert({
+            db.client.table("audit_logs").insert({
                 "user_id": user_id,
                 "action": action,
                 "resource_type": resource_type,

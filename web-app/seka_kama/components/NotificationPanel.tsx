@@ -6,7 +6,8 @@ import {
   X, 
   Info, 
   ShieldAlert, 
-  Zap
+  Zap,
+  Clock
 } from 'lucide-react';
 import { getApiUrl } from '@/services/config';
 
@@ -115,13 +116,13 @@ export default function NotificationPanel({ isOpen, onClose }: NotificationPanel
                  <div className="grid grid-cols-2 gap-2">
                     <div className="p-2 bg-white/5 rounded-sm">
                        <p className="text-[8px] text-white/30 uppercase font-bold mb-1">NASA POWER</p>
-                       <p className={`text-[10px] font-bold ${health.services.nasa_power === 'connected' ? 'text-white' : 'text-rose-400'}`}>
-                          {health.services.nasa_power.toUpperCase()}
+                       <p className={`text-[10px] font-bold ${health.services?.nasa_power === 'connected' ? 'text-white' : 'text-rose-400'}`}>
+                          {(health.services?.nasa_power ?? 'unknown').toUpperCase()}
                        </p>
                     </div>
                     <div className="p-2 bg-white/5 rounded-sm">
                        <p className="text-[8px] text-white/30 uppercase font-bold mb-1">Stepfun AI</p>
-                       <p className="text-[10px] text-white font-bold">{health.services.llm?.toUpperCase() ?? 'UNKNOWN'}</p>
+                       <p className="text-[10px] text-white font-bold">{health.services?.llm?.toUpperCase() ?? 'UNKNOWN'}</p>
                     </div>
                  </div>
                  {health.live_context && (

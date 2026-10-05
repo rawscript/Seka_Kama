@@ -408,6 +408,19 @@ class SupabaseService:
         # 3. Aggregates via RPC
         summary = self.get_spatial_summary(management_unit, year)
         high_risk_cells = 0
+        try:
+            risk_query = self.client.table("grid_cells").select("cell_id", count="exact")
+            if management_unit:
+                risk_query = risk_query.eq("management_unit", management_unit)
+            if year:
+                risk_query = risk_query.eq("year", year)
+            # Stored-observation risk proxy: low lion density plus positive
+            # nightlight trend. This mirrors the SQL bootstrap view when it
+            # exists, but works even when the RPC/view is unavailable.
+            risk_res = risk_query.lt("baseline_lion_density", 0.1).gt("longterm_slope_mean", 0.05).execute()
+            high_risk_cells = risk_res.count or len(risk_res.data or [])
+        except Exception as e:
+            logger.warning("Could not calculate high-risk cells: %s", e)
         base_nightlight = summary.get("avg_nightlight", 0)
         
         return {

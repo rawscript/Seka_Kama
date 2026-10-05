@@ -32,7 +32,6 @@ const DEFAULT_MODIFICATIONS = {
   all_skew_mean: 0.0,
   cheetah_abundance: 0.0,
   pop2018_mean: 0.0,
-  simulation_years: 0,
 };
 
 interface ScenarioResult {
@@ -156,17 +155,16 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
     console.log('🚀 Starting scenario execution...', {
       geometry: drawnGeometry,
       modifications,
-      simulation_years: modifications.simulation_years || 0,
+      simulation_years: 0,
       user_query: userQuery,
       selected_unit: selectedUnit
     });
     
     try {
-      const { simulation_years, ...otherMods } = modifications as any;
       const result = await api.runScenario({
         geometry: drawnGeometry,
-        feature_modifications: otherMods,
-        simulation_years: simulation_years || 0,
+        feature_modifications: modifications,
+        simulation_years: 0,
         user_query: userQuery,
         management_units: selectedUnit ? [selectedUnit] : undefined,
       });
@@ -459,15 +457,12 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
                       <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Simulation Temporal Depth</span>
                     </div>
                     <div className="px-2 py-0.5 rounded-none border border-white/20 bg-white/5 text-[10px] font-mono font-bold text-white">
-                      {modifications.simulation_years || 0} Earth Years
+                      Snapshot
                     </div>
                   </div>
-                  <input
-                    type="range" min="0" max="10" step="1"
-                    value={modifications.simulation_years || 0}
-                    onChange={(e) => setModifications({ ...modifications, simulation_years: parseInt(e.target.value) })}
-                    className="w-full h-1 bg-white/10 rounded-none appearance-none cursor-pointer accent-[#775a19]"
-                  />
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
+                    Time-indexed projection inputs have not been ingested yet, so scenarios run as validated single-year snapshots.
+                  </p>
                 </div>
 
                 {/* Other Parameters (Cheetah & Population) - Compact */}

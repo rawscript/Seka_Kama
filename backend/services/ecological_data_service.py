@@ -381,14 +381,72 @@ async def get_ecosystem_trends(management_unit: Optional[str] = None, indicator_
     """
     Returns historical trends for ecosystem indicators.
     """
-    # This service has no persisted indicator series. Returning an empty result
-    # is scientifically honest; historical data must be ingested first.
-    return []
+    selected = set(indicator_ids or ["rainfall", "prey_density"])
+    current_year = datetime.now().year - 1
+    years = list(range(current_year - 4, current_year + 1))
+    lon, lat = 35.24, -1.52
+    trends: List[Dict[str, Any]] = []
+
+    if "rainfall" in selected:
+        values = []
+        for y in years:
+            rainfall = await asyncio.get_event_loop().run_in_executor(
+                None, fetch_real_nasa_annual_rainfall, lon, lat, y
+            )
+            if rainfall is not None:
+                values.append({"year": y, "value": round(float(rainfall), 2)})
+        if values:
+            change = (values[-1]["value"] - values[0]["value"]) / max(1, len(values) - 1)
+            trends.append({
+                "indicator_id": "rainfall",
+                "indicator_name": "Rainfall (NASA)",
+                "values": values,
+                "average_change_per_year": round(change, 3),
+                "significance": "medium" if abs(change) > 25 else "low",
+                "source": "NASA POWER PRECTOTCORR",
+            })
+
+    if "prey_density" in selected:
+        values = []
+        for y in years:
+            density = await fetch_gbif_prey_density(lon, lat, 50, y)
+            if density is not None:
+                values.append({"year": y, "value": round(float(density), 6)})
+        if values:
+            change = (values[-1]["value"] - values[0]["value"]) / max(1, len(values) - 1)
+            trends.append({
+                "indicator_id": "prey_density",
+                "indicator_name": "Prey Abundance",
+                "values": values,
+                "average_change_per_year": round(change, 6),
+                "significance": "medium" if abs(change) > 0.001 else "low",
+                "source": "GBIF Occurrence API",
+            })
+
+    return trends
 
 async def get_indicator_history(indicator_id: str, management_unit: Optional[str] = None) -> Dict[str, Any]:
     """
     Returns detailed history for a specific indicator.
     """
+    trends = await get_ecosystem_trends(management_unit, [indicator_id])
+    if trends:
+        trend = trends[0]
+        return {
+            "indicator_id": trend["indicator_id"],
+            "indicator_name": trend["indicator_name"],
+            "history": [
+                {
+                    "year": row["year"],
+                    "value": row["value"],
+                    "status": "good",
+                    "environmental_context": {"source": trend.get("source")},
+                }
+                for row in trend["values"]
+            ],
+            "data_available": True,
+            "source": trend.get("source"),
+        }
     return {
         "indicator_id": indicator_id,
         "indicator_name": indicator_id.replace("_", " ").title(),

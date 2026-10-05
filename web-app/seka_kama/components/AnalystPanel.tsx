@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Bot, Shield, Zap, AlertTriangle, ChevronDown, ChevronUp, Download, RefreshCw, Info, BarChart3, TrendingUp, Clock, MapPin } from 'lucide-react';
-import { api, getCorsErrorStatus, resetCorsError } from '@/services/api';
+import { api } from '@/services/api';
 import { getApiUrl } from '@/services/config';
 import { useUsabilityTracking } from '@/services/usabilityService';
 import { usePerformanceMonitoring } from '@/services/performanceService';
@@ -197,7 +197,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         console.warn('API unavailable - backend may have CORS issues or connectivity problems.');
         markApiUnavailable('Backend API unavailable');
         
-        // Show actual fallback only if this is first load and we have some data
+        // Keep a neutral loading message on first failure.
         if (!insight) {
           // Set minimal fallback for first load only
           setInsight({
@@ -216,7 +216,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
           setError('Backend API is unavailable. Please ensure the backend server is running and CORS is properly configured.');
         }
         
-        // Track fallback data usage
+        // Track unavailable data state.
         if (hasConsent()) {
           trackAnalystInteraction('analyst-panel-unavailable', 'click', {
             panelAction: 'api_unavailable',
@@ -266,7 +266,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
     if (hasConsent()) {
       trackAnalystInteraction('analyst-panel-report-button', 'click', {
         panelAction: 'generate_report',
-        insightType: insight?.key_insights?.length ? 'multi_insight' : 'fallback'
+        insightType: insight?.key_insights?.length ? 'multi_insight' : 'unavailable'
       });
     }
     
@@ -439,9 +439,9 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
                       <div>
                         <p className="text-[8px] text-rose-700 font-medium mb-1">Backend server appears to be offline</p>
                         <ul className="ml-2 space-y-0.5 text-[8px] text-rose-600">
-                          <li>• Backend is running on Cloudflare Workers</li>
-                          <li>• CORS headers are properly configured</li>
-                          <li>• Network connectivity is working</li>
+                          <li>• Verify the backend health endpoint is reachable</li>
+                          <li>• Confirm CORS allows this frontend origin</li>
+                          <li>• Check network connectivity and deployment logs</li>
                         </ul>
                       </div>
                     </div>
@@ -484,24 +484,15 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="flex gap-3 p-3 bg-white rounded-none items-start border border-[#775a19]/20 shadow-sm">
-                      <div className="p-1.5 bg-[#775a19]/5 rounded-none">
-                        <Shield className="w-3.5 h-3.5 text-[#775a19]" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-[#775a19] uppercase tracking-wider mb-1">Neural Defense</p>
-                        <p className="text-[11px] text-slate-800">Habitat suitability is currently optimal in the northern corridors. Human pressure remains below 0.1 trend threshold.</p>
-                      </div>
+                  <div className="flex gap-3 p-3 bg-white rounded-none items-start border border-slate-200 shadow-sm">
+                    <div className="p-1.5 bg-slate-50 rounded-none">
+                      <Info className="w-3.5 h-3.5 text-slate-500" />
                     </div>
-                    <div className="flex gap-3 p-3 bg-white rounded-none items-start border border-amber-200 shadow-sm">
-                      <div className="p-1.5 bg-amber-50 rounded-none">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">Active Threat</p>
-                        <p className="text-[11px] text-slate-800">Nightlight encroachment detected near Talek boundary. Probability of HWC (Human-Wildlife Conflict) is elevated at 12%.</p>
-                      </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Analysis Unavailable</p>
+                      <p className="text-[11px] text-slate-700">
+                        No source-backed analyst narrative is available for this selection yet.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -523,7 +514,7 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
                   </div>
                   <div>
                     <div className="text-[9px] font-mono text-slate-500 uppercase tracking-widest">
-                      Model Confidence: {(insight?.confidence || 0.942) * 100}%
+                      Model Confidence: {insight?.confidence ? `${(insight.confidence * 100).toFixed(1)}%` : 'unavailable'}
                     </div>
                     <div className="text-[7px] text-slate-400">
                       Based on {selectedUnit ? 'local' : 'regional'} ecological data
