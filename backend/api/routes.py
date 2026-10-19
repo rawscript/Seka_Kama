@@ -1,10 +1,12 @@
 import json
 import numpy as np
-# import pandas as pd  # Removed - not available on Vercel
 import logging
 from fastapi import APIRouter, HTTPException, Request, Query, Response, Depends
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
+from shapely.geometry import shape
+import csv
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -391,11 +393,6 @@ async def run_scenario(
     Run SekaNet what-if simulation.
     Requires authentication. Saves scenario to user history.
     """
-    if scenario.simulation_years:
-        raise HTTPException(
-            status_code=422,
-            detail="Multi-year projections are unavailable until time-indexed model inputs are ingested. Submit a snapshot scenario instead."
-        )
     model = request.app.state.model
     scaler = request.app.state.scaler
     feature_names = request.app.state.feature_names
@@ -469,8 +466,7 @@ async def run_scenario(
     try:
         results = await predict_scenario(
             model, scaler, feature_names,
-            affected_cells, final_modifications,
-            simulation_years=scenario.simulation_years
+            affected_cells, final_modifications
         )
     except ValueError as ve:
         logger.warning(f"Validation error in scenario: {str(ve)}")
@@ -774,30 +770,46 @@ async def export_grid_cells(
     
     elif format == "csv":
         # Use pure Python csv module instead of pandas
-        import csv
-        import io
         
         if not result.data:
             return Response(content="", media_type="text/csv")
         
         # Convert geometry to WKT for CSV
         data = result.data
-        if data and "geom" in data[0]:
-            from shapely.geometry import shape
-            for row in data:
-                if "geom" in row:
-                    try:
-                        if isinstance(row["geom"], str):
-                            g = json.loads(row["geom"])
-                        else:
-                            g = row["geom"]
-                        row["geom_wkt"] = shape(g).wkt
-                    except Exception:
-                        row["geom_wkt"] = str(row.get("geom", ""))
-                    del row["geom"]
+        for row in data:
+            if "geom" in row:
+                try:
+                    if isinstance(row["geom"], str):
+                        g = json.loads(row["geom"])
+                    else:
+                        g = row["geom"]
+                    row["geom_wkt"] = shape(g).wkt
+                except Exception as e:
+                    logger.warning(f"Failed to convert geometry to WKT: {e}")
+                    row["geom_wkt"] = ""
+                del row["geom"]
         
         # Convert to CSV using csv module
         output = io.StringIO()
+        if data:
+            # Get all unique fieldnames
+            fieldnames = set()
+            for row in data:
+                fieldnames.update(row.keys())
+            fieldnames = sorted(list(fieldnames))
+            
+            writer = csv.DictWriter(output, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in data:
+                # Convert None to empty string for CSV
+                csv_row = {k: (v if v is not None else "") for k, v in row.items()}
+                writer.writerow(csv_row)
+        
+        return Response(
+            content=output.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=grid_cells.csv"}
+        )
         if data:
             writer = csv.DictWriter(output, fieldnames=data[0].keys())
             writer.writeheader()

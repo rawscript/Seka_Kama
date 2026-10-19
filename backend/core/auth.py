@@ -172,7 +172,11 @@ def _get_redis_client():
                 _redis_client = redis.from_url(redis_url, decode_responses=True)
                 logger.info("Redis connected for token revocation")
             except Exception as e:
-                logger.warning(f"Redis connection failed, using in-memory store: {e}")
+                error_msg = f"Redis connection failed, using in-memory store: {e}"
+                if _IS_PRODUCTION:
+                    logger.warning(error_msg + " - Multi-instance deployments require Redis for token revocation")
+                else:
+                    logger.info(error_msg)
                 _redis_client = False  # Mark as failed
     return _redis_client if _redis_client and _redis_client is not False else None
 

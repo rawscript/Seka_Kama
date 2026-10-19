@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS public.scenario_history (
     user_description TEXT,
     modified_features JSONB,
     request_data JSONB,
+    scenario_geojson JSONB,
     baseline_total_lions FLOAT,
     predicted_total_lions FLOAT,
     delta_lions FLOAT,

@@ -131,8 +131,7 @@ class PredictionService:
         self,
         baseline_cells: List[Dict],
         modifications: Dict[str, float],
-        apply_percent: bool = True,
-        simulation_years: int = 0
+        apply_percent: bool = True
     ) -> Dict[str, Any]:
         """
         Calculate impact of feature modifications on lion abundance
@@ -220,11 +219,6 @@ class PredictionService:
                 modified_features[zero_mask, idx] += mod_value
             else:
                 modified_features[:, idx] += mod_value
-        
-        if simulation_years:
-            raise ValueError(
-                "Multi-year projection is disabled because no validated time-indexed inputs are available."
-            )
         
         # Predict both scenarios
         baseline_predictions = self.predict_batch(features_array)
@@ -406,8 +400,7 @@ async def predict_scenario(
     scaler,
     feature_names: List[str],
     affected_cells: List[Dict],
-    modifications: Dict[str, float],
-    simulation_years: int = 0
+    modifications: Dict[str, float]
 ) -> Dict[str, Any]:
     """
     Async wrapper for scenario prediction
@@ -431,8 +424,7 @@ async def predict_scenario(
     results = service.calculate_scenario_impact(
         baseline_cells=affected_cells,
         modifications=modifications,
-        apply_percent=True,
-        simulation_years=simulation_years
+        apply_percent=True
     )
     
     return results

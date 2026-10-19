@@ -54,6 +54,8 @@ async def fetch_gbif_prey_density(lon: float, lat: float, radius_km: float = 50,
     Queries the live GBIF API for herbivore occurrences near a coordinate.
     Returns total records / km² as a density proxy.
     Uses parallel async requests to prevent blocking.
+    
+    Returns None on failure to allow graceful degradation.
     """
     deg = radius_km / 111.0   # 1° ≈ 111 km
     area_km2 = (2 * radius_km) ** 2
@@ -66,42 +68,48 @@ async def fetch_gbif_prey_density(lon: float, lat: float, radius_km: float = 50,
            f"{lon-deg} {lat+deg},"
            f"{lon-deg} {lat-deg}))")
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        tasks = []
-        for name, taxon_key in PREY_SPECIES.items():
-            params = {
-                "taxonKey": taxon_key,
-                "geometry": wkt,
-                "year": year,
-                "limit": 0,
-            }
-            tasks.append(client.get(GBIF_URL, params=params))
-        
-        responses = await asyncio.gather(*tasks, return_exceptions=True)
-        
-    total = 0
-    # Match responses back to species names
-    species_names = list(PREY_SPECIES.keys())
-    for i, resp in enumerate(responses):
-        name = species_names[i]
-        if isinstance(resp, Exception):
-            logger.debug(f"  GBIF {name} failed: {resp}")
-            continue
-        
-        # Type narrowing for linting
-        if hasattr(resp, "status_code") and resp.status_code == 200:
-            try:
-                data = resp.json()
-                count = data.get("count", 0)
-                total += count
-                logger.debug(f"  GBIF {name}: {count} records")
-            except Exception as e:
-                logger.warning(f"Failed to parse GBIF response for {name}: {e}")
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            tasks = []
+            for name, taxon_key in PREY_SPECIES.items():
+                params = {
+                    "taxonKey": taxon_key,
+                    "geometry": wkt,
+                    "year": year,
+                    "limit": 0,
+                }
+                tasks.append(client.get(GBIF_URL, params=params))
+            
+            responses = await asyncio.gather(*tasks, return_exceptions=True)
+            
+        total = 0
+        # Match responses back to species names
+        species_names = list(PREY_SPECIES.keys())
+        for i, resp in enumerate(responses):
+            name = species_names[i]
+            if isinstance(resp, Exception):
+                logger.warning(f"GBIF {name} request failed: {resp}")
+                continue
+            
+            # Type narrowing for linting
+            if hasattr(resp, "status_code") and resp.status_code == 200:
+                try:
+                    data = resp.json()
+                    count = data.get("count", 0)
+                    total += count
+                    logger.debug(f"  GBIF {name}: {count} records")
+                except Exception as e:
+                    logger.warning(f"Failed to parse GBIF response for {name}: {e}")
+            elif hasattr(resp, "status_code"):
+                logger.warning(f"GBIF {name} returned status {resp.status_code}")
 
-    density = total / area_km2 if area_km2 > 0 else 0.0
-    logger.info(f"GBIF prey density @ ({lat:.3f}, {lon:.3f}): "
-                f"{total} records → {density:.5f}/km²")
-    return float(density)
+        density = total / area_km2 if area_km2 > 0 else 0.0
+        logger.info(f"GBIF prey density @ ({lat:.3f}, {lon:.3f}): "
+                    f"{total} records → {density:.5f}/km²")
+        return float(density)
+    except Exception as e:
+        logger.error(f"GBIF API error for ({lat:.3f}, {lon:.3f}): {e}")
+        return None
 
 
 # ── HWC risk derivation ────────────────────────────────────────────────────────
@@ -247,12 +255,14 @@ async def enrich_cells_with_live_data(
 
 async def fetch_complete_nasa_data(lon: float, lat: float, year: Optional[int] = None) -> Dict[str, Any]:
     """
-    Fetches comprehensive environmental data from NASA POWER.
+    Fetches comprehensive environmental data from NASA POWER with retry logic.
     Parameters:
       - PRECTOTCORR: Precipitation
       - T2M: Temperature at 2m
       - RH2M: Relative Humidity at 2m
       - WS2M: Wind Speed at 2m
+    
+    Returns empty dict on failure to allow graceful degradation.
     """
     if year is None:
         year = datetime.now().year - 1
@@ -272,33 +282,59 @@ async def fetch_complete_nasa_data(lon: float, lat: float, year: Optional[int] =
         "format": "JSON"
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, params=params)
-            if response.status_code != 200:
-                logger.error(f"NASA Power API Error: {response.status_code}")
-                return {}
-            
-            data = response.json()
-            params_data = data.get("properties", {}).get("parameter", {})
-            
-            results = {}
-            # Average daily values for most; Sum for Precipitation
-            for p in parameters:
-                p_values = [v for v in params_data.get(p, {}).values() if v is not None and v > -900]
-                if not p_values:
-                    results[p] = None
-                    continue
+    max_retries = 3
+    retry_delay = 1.0  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(url, params=params)
                 
-                if p == "PRECTOTCORR":
-                    results[p] = sum(p_values)
-                else:
-                    results[p] = sum(p_values) / len(p_values)
-            
-            return results
-    except Exception as e:
-        logger.error(f"NASA Power broad fetch error: {e}")
-        return {}
+                if response.status_code == 429:  # Rate limited
+                    if attempt < max_retries - 1:
+                        logger.warning(f"NASA POWER rate limited, retrying in {retry_delay}s (attempt {attempt + 1}/{max_retries})")
+                        await asyncio.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                        continue
+                    else:
+                        logger.error("NASA POWER rate limited after all retries")
+                        return {}
+                
+                if response.status_code != 200:
+                    logger.error(f"NASA Power API Error: {response.status_code}")
+                    return {}
+                
+                data = response.json()
+                params_data = data.get("properties", {}).get("parameter", {})
+                
+                results = {}
+                # Average daily values for most; Sum for Precipitation
+                for p in parameters:
+                    p_values = [v for v in params_data.get(p, {}).values() if v is not None and v > -900]
+                    if not p_values:
+                        results[p] = None
+                        continue
+                    
+                    if p == "PRECTOTCORR":
+                        results[p] = sum(p_values)
+                    else:
+                        results[p] = sum(p_values) / len(p_values)
+                
+                return results
+                
+        except httpx.TimeoutException:
+            if attempt < max_retries - 1:
+                logger.warning(f"NASA POWER timeout, retrying (attempt {attempt + 1}/{max_retries})")
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2
+            else:
+                logger.error(f"NASA POWER timeout after all retries for ({lat:.3f}, {lon:.3f})")
+                return {}
+        except Exception as e:
+            logger.error(f"NASA Power broad fetch error: {e}")
+            return {}
+    
+    return {}
 
 async def get_live_ecosystem_indicators(management_unit: Optional[str] = None, year: Optional[int] = None) -> List[Dict[str, Any]]:
     """

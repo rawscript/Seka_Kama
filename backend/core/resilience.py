@@ -38,11 +38,13 @@ class CircuitBreaker:
         failure_threshold: int = 5,
         success_threshold: int = 2,
         timeout: int = 60,
+        recovery_timeout: int = None,
     ):
         self.name = name
         self.failure_threshold = failure_threshold
         self.success_threshold = success_threshold
         self.timeout = timeout
+        self.recovery_timeout = recovery_timeout or timeout
         
         self.state = CircuitState.CLOSED
         self.failure_count = 0
@@ -120,6 +122,14 @@ class CircuitBreaker:
             "last_failure_time": self.last_failure_time.isoformat()
             if self.last_failure_time else None,
         }
+    
+    def is_closed(self) -> bool:
+        """Check if circuit breaker is closed (healthy)"""
+        return self.state == CircuitState.CLOSED
+    
+    def is_open(self) -> bool:
+        """Check if circuit breaker is open (failing)"""
+        return self.state == CircuitState.OPEN
 
 
 def retry_with_backoff(

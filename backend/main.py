@@ -20,8 +20,9 @@ from core.resilience import CircuitBreaker
 setup_logging(debug=settings.DEBUG)
 logger = logging.getLogger(__name__)
 
-supabase_breaker = CircuitBreaker("supabase", failure_threshold=5)
-model_breaker = CircuitBreaker("ml_model", failure_threshold=3)
+# Initialize circuit breakers for external service resilience
+supabase_breaker = CircuitBreaker("supabase", failure_threshold=5, recovery_timeout=60)
+model_breaker = CircuitBreaker("ml_model", failure_threshold=3, recovery_timeout=120)
 
 _state = {"model": None, "scaler": None, "feature_names": None, "supabase": None, "prediction_service": None, "initialized": False}
 
@@ -71,6 +72,14 @@ async def init_middleware(request: Request, call_next):
     request.app.state.prediction_service = _state["prediction_service"]
     request.app.state.supabase_breaker = supabase_breaker
     request.app.state.model_breaker = model_breaker
+    
+    # Check circuit breaker status for logging
+    if not supabase_breaker.is_closed():
+        logger.warning(f"Supabase circuit breaker is {supabase_breaker.state.value}, service degraded")
+    
+    if not model_breaker.is_closed():
+        logger.warning(f"Model circuit breaker is {model_breaker.state.value}, predictions unavailable")
+    
     return await call_next(request)
 
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
