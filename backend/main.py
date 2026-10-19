@@ -57,9 +57,10 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 app = FastAPI(
     title="Seka Kama: Ecological Digital Twin API",
     version="2.0.0",
+    # Always provide Redoc for production API documentation
     docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
-    openapi_url="/openapi.json" if settings.DEBUG else None,
+    redoc_url="/redoc",  # Available in production for API consumers
+    openapi_url="/openapi.json",  # Required for Redoc
 )
 
 @app.middleware("http")
@@ -102,7 +103,20 @@ logger.info(f"CORS allowed origins: {allowed_origins}")
 
 app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"], expose_headers=["*"], max_age=600)
 
-_PROXY_ALLOWED_HOSTS = {"drive.google.com", "docs.google.com", "googleusercontent.com", "dl.google.com", "raw.githubusercontent.com", "github.com", "storage.googleapis.com", "opendata.arcgis.com", "geojson.io", "github.io","*.google.com"}
+# Proxy security allowlist - specific hosts for GeoJSON data sources
+_PROXY_ALLOWED_HOSTS = {
+    "drive.google.com",
+    "docs.google.com", 
+    "googleusercontent.com",
+    "dl.google.com",
+    "raw.githubusercontent.com",
+    "github.com",
+    "storage.googleapis.com",
+    "opendata.arcgis.com",
+    "geojson.io",
+    "github.io"
+    # Note: Removed wildcard "*.google.com" for security
+}
 
 def _validate_proxy_url(url: str) -> None:
     try:

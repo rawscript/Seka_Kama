@@ -194,20 +194,26 @@ class SupabaseService:
     
     def update_user_last_login(self, user_id: int) -> None:
         """
-        Update user's last login timestamp.
+        Update user's last login timestamp with error handling.
         """
         from datetime import datetime, timezone
-        self.client.table("users").update({
-            "last_login": datetime.now(timezone.utc).isoformat()
-        }).eq("id", user_id).execute()
+        try:
+            self.client.table("users").update({
+                "last_login": datetime.now(timezone.utc).isoformat()
+            }).eq("id", user_id).execute()
+        except Exception as e:
+            logger.warning(f"Failed to update last_login for user {user_id}: {e}")
     
     def update_user_preferences(self, user_id: int, preferences: Dict[str, Any]) -> None:
         """
-        Update user's preferences JSON.
+        Update user's preferences JSON with error handling.
         """
-        self.client.table("users").update({
-            "preferences": preferences
-        }).eq("id", user_id).execute()
+        try:
+            self.client.table("users").update({
+                "preferences": preferences
+            }).eq("id", user_id).execute()
+        except Exception as e:
+            logger.warning(f"Failed to update preferences for user {user_id}: {e}")
     
     # ========== Scenario History Operations ==========
     
@@ -277,13 +283,22 @@ class SupabaseService:
     def get_historical_trends(self, management_unit: str = "Regional Total") -> List[Dict[str, Any]]:
         """
         Retrieve historical population trends for a management unit.
+        Validates management_unit parameter and returns empty list if not found.
         """
-        result = self.client.table("historical_stats")\
-            .select("*")\
-            .eq("management_unit", management_unit)\
-            .order("year")\
-            .execute()
-        return result.data
+        if not management_unit or not isinstance(management_unit, str):
+            logger.warning("Invalid management_unit parameter")
+            return []
+        
+        try:
+            result = self.client.table("historical_stats")\
+                .select("*")\
+                .eq("management_unit", management_unit)\
+                .order("year")\
+                .execute()
+            return result.data or []
+        except Exception as e:
+            logger.error(f"Failed to get historical trends for {management_unit}: {e}")
+            return []
     
     # ========== Statistics and Aggregations ==========
     
@@ -310,11 +325,16 @@ class SupabaseService:
     
     def get_management_units(self) -> List[str]:
         """
-        Get list of unique management units.
+        Get list of unique management units with error handling.
+        Returns empty list if table doesn't exist or is empty.
         """
-        result = self.client.table("grid_cells").select("management_unit").execute()
-        units = set(cell["management_unit"] for cell in result.data if cell.get("management_unit"))
-        return sorted(list(units))
+        try:
+            result = self.client.table("grid_cells").select("management_unit").execute()
+            units = set(cell.get("management_unit") for cell in (result.data or []) if cell.get("management_unit"))
+            return sorted(list(units))
+        except Exception as e:
+            logger.error(f"Failed to get management units: {e}")
+            return []
     
     def get_spatial_summary(self, management_unit: Optional[str] = None, year: Optional[int] = None) -> Dict[str, Any]:
         """
@@ -388,20 +408,21 @@ class SupabaseService:
             ]
 
     # ========== API Key Operations ==========
-    
+        
     def list_api_keys(self, user_id: int) -> List[Dict[str, Any]]:
         """
-        List all active API keys for a user.
+        List all active API keys for a user with error handling.
         """
         try:
             result = self.client.table("api_keys").select("*").eq("user_id", user_id).eq("is_active", True).order("created_at", desc=True).execute()
-            return result.data
+            return result.data or []
         except Exception as e:
             error_msg = str(e).lower()
             if "api_keys" in error_msg and ("not exist" in error_msg or "42p01" in error_msg):
                 logger.error(f"Table 'api_keys' missing while listing for user {user_id}")
                 return []
-            raise e
+            logger.warning(f"Failed to list API keys for user {user_id}: {e}")
+            return []
         
     def create_api_key(self, user_id: int, name: str, key_hash: str, prefix: str) -> Dict[str, Any]:
         """
@@ -475,14 +496,22 @@ class SupabaseService:
         
     def revoke_api_key(self, user_id: int, key_id: int) -> bool:
         """
-        Deactivate an API key.
+        Deactivate an API key with error handling.
         """
-        result = self.client.table("api_keys")\
-            .update({"is_active": False})\
-            .eq("id", key_id)\
-            .eq("user_id", user_id)\
-            .execute()
-        return len(result.data) > 0
+        try:
+            result = self.client.table("api_keys")\
+                .update({"is_active": False})\
+                .eq("id", key_id)\
+                .eq("user_id", user_id)\
+                .execute()
+            return len(result.data) > 0
+        except Exception as e:
+            error_msg = str(e).lower()
+            if "api_keys" in error_msg and ("not exist" in error_msg or "42p01" in error_msg):
+                logger.error(f"Table 'api_keys' missing while revoking key {key_id}")
+                return False
+            logger.warning(f"Failed to revoke API key {key_id}: {e}")
+            return False
 
     def verify_api_key(self, key_hash: str) -> Optional[Dict[str, Any]]:
         """
@@ -495,7 +524,7 @@ class SupabaseService:
             .execute()
         
         return result.data[0] if result.data else None
-
+    
     def update_key_last_used(self, key_id: int) -> None:
         """
         Update the last_used timestamp for an API key.
@@ -508,7 +537,11 @@ class SupabaseService:
                 .eq("id", key_id)\
                 .execute()
         except Exception as e:
-            logger.warning(f"Failed to update last_used for key {key_id}: {e}")
+            error_msg = str(e).lower()
+            if "api_keys" in error_msg and ("not exist" in error_msg or "42p01" in error_msg):
+                logger.debug(f"Table 'api_keys' missing while updating last_used for key {key_id}")
+            else:
+                logger.warning(f"Failed to update last_used for key {key_id}: {e}")
 
 # ========== Database Functions for RPC (Run in Supabase SQL Editor) ==========
 

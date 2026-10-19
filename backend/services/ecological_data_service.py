@@ -114,23 +114,34 @@ async def fetch_gbif_prey_density(lon: float, lat: float, radius_km: float = 50,
 
 # ── HWC risk derivation ────────────────────────────────────────────────────────
 
-def derive_hwc_risk(nightlight: float, dist_protected_km: float,
-                    rainfall_mm: Optional[float] = None) -> float:
+def derive_hwc_risk(
+    nightlight: float, 
+    dist_protected_km: float,
+    rainfall_mm: Optional[float] = None,
+    # Configurable thresholds (can be moved to config if needed)
+    settlement_weight: float = 0.50,
+    proximity_weight: float = 0.35,
+    rainfall_weight: float = 0.15,
+    proximity_threshold_km: float = 10.0,
+    rainfall_baseline_mm: float = 800.0
+) -> float:
     """
     Derives Human-Wildlife Conflict risk score (0–1).
 
     Factors:
-      - Nightlight intensity  → settlement pressure  (weight 0.50)
-      - Distance to reserve   → interface exposure   (weight 0.35)
-      - Rainfall scarcity     → resource stress       (weight 0.15)
+      - Nightlight intensity  → settlement pressure
+      - Distance to reserve   → interface exposure
+      - Rainfall scarcity     → resource stress
+    
+    All thresholds and weights are configurable for different ecosystems.
     """
-    light = min(nightlight, 1.0) * 0.50
+    light = min(nightlight, 1.0) * settlement_weight
 
-    # Risk peaks within 10 km of the protected area boundary
-    prox = max(0.0, (10 - dist_protected_km) / 10) * 0.35
+    # Risk peaks within proximity_threshold_km of the protected area boundary
+    prox = max(0.0, (proximity_threshold_km - dist_protected_km) / proximity_threshold_km) * proximity_weight
 
     if rainfall_mm is not None:
-        rain = max(0.0, (800 - rainfall_mm) / 800) * 0.15
+        rain = max(0.0, (rainfall_baseline_mm - rainfall_mm) / rainfall_baseline_mm) * rainfall_weight
     else:
         rain = 0.075   # neutral fallback
 
@@ -173,13 +184,21 @@ def fetch_rainfall_for_prompt(user_query: str, lon: float, lat: float,
 # ── Centroid helper ────────────────────────────────────────────────────────────
 
 def _centroid(cell: Dict[str, Any]) -> Tuple[float, float]:
+    """
+    Extract centroid coordinates from a grid cell.
+    
+    Standardizes on 'pt_lon' and 'pt_lat' as the canonical column names
+    used throughout the database schema for point geometry centroids.
+    """
     centroid = cell.get("centroid")
     if isinstance(centroid, dict):
         coords = centroid.get("coordinates", [])
         if len(coords) >= 2:
             return float(coords[0]), float(coords[1])
-    lon = cell.get("lon") or cell.get("longitude") or 35.24
-    lat = cell.get("lat") or cell.get("latitude") or -1.52
+    
+    # Use standardized column names (pt_lon, pt_lat from bootstrap.sql)
+    lon = cell.get("pt_lon") or cell.get("longitude") or 35.24
+    lat = cell.get("pt_lat") or cell.get("latitude") or -1.52
     return float(lon), float(lat)
 
 
