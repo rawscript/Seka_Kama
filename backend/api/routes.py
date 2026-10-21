@@ -20,6 +20,7 @@ from services.llm_service import generate_narrative, generate_explanation
 from services.audit_service import audit_service
 from core.database import get_db, SupabaseService
 from core.auth import get_current_user, TokenData, require_admin
+from core.rate_limiting import check_rate_limit
 
 router = APIRouter()
 
@@ -151,7 +152,12 @@ async def predict_landscape(
     """
     Run predictive modeling over the entire landscape (or a unit).
     This generates a 'Predicted Density' layer for the digital twin.
+    
+    Rate limited: Expensive operation with ML inference on thousands of cells.
     """
+    # Apply rate limiting for expensive operations (Issue 21)
+    await check_rate_limit(request, limiter_type="expensive")
+    
     # 1. Fetch grid cells
     cells = db.get_grid_cells(management_unit=management_unit, year=year, limit=2000)
     
@@ -392,7 +398,12 @@ async def run_scenario(
     """
     Run SekaNet what-if simulation.
     Requires authentication. Saves scenario to user history.
+    
+    Rate limited: Expensive operation with ML inference, LLM calls, and database writes.
     """
+    # Apply rate limiting for expensive operations (Issue 21)
+    await check_rate_limit(request, limiter_type="expensive")
+    
     model = request.app.state.model
     scaler = request.app.state.scaler
     feature_names = request.app.state.feature_names
@@ -655,7 +666,12 @@ async def explain_prediction(
     """
     Generate LLM explanation for a specific grid cell prediction.
     Used for interpretability and stakeholder communication.
+    
+    Rate limited: May use SHAP computation and LLM calls.
     """
+    # Apply rate limiting for expensive operations (Issue 21)
+    await check_rate_limit(req, limiter_type="expensive")
+    
     model = req.app.state.model
     scaler = req.app.state.scaler
     feature_names = req.app.state.feature_names

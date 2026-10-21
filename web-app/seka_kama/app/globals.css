@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* Material Symbols Outlined font support */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
@@ -20,17 +19,14 @@
 }
 
 @theme {
-  /* Brand color tokens */
   --color-brand-gold: #775a19;
   --color-brand-dark-gold: #4e3700;
   --color-brand-bg: #f9f9f9;
   --color-brand-charcoal: #1a1c1c;
   --color-brand-muted: #4e4639;
 
-  /* The Fixed Shadow Token */
   --shadow-enterprise: 0 12px 32px rgba(127, 118, 103, 0.08);
 
-  /* Glassmorphism Tokens */
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-bg-heavy: rgba(0, 0, 0, 0.6);
   --glass-border: rgba(255, 255, 255, 0.1);
@@ -49,7 +45,6 @@
   border: 1px solid var(--glass-border);
 }
 
-/* Custom Base Utility Classes */
 @utility enterprise-badge {
   @apply text-[10px] font-mono font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full border;
 }
@@ -58,7 +53,6 @@
   @apply border border-[#d1c5b4]/50 p-8 shadow-enterprise transition-all duration-300 hover:shadow-xl hover:border-[#775a19]/30;
 }
 
-/* Custom Keyframe Animations if used by mounted state */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -68,7 +62,6 @@
   animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Keep keyboard focus visible across pages, including controls rendered from inline styles. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid #775a19;
   outline-offset: 3px;

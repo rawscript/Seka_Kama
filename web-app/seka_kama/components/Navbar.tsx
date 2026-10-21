@@ -43,7 +43,7 @@ export default function Navbar() {
 
   return (
     <nav className="top-0 bg-[#f9f9f9]/90 backdrop-blur-md border-b border-[#d1c5b4]/60 z-50 sticky w-full">
-      <div className="flex justify-between items-center w-full px-6 md:px-20 py-5 max-w-[1440px] mx-auto">
+      <div className="flex justify-between items-center w-full px-6 md:px-10 py-5 max-w-[1440px] mx-auto">
         <Link href="/" className="font-serif font-normal tracking-tight text-2xl text-[#1a1c1c] italic hover:opacity-80 transition-opacity">
           Seka Kama
         </Link>
