@@ -1,7 +1,7 @@
 # backend/services/llm_service.py
 """
 LLM service — powered by NVIDIA NIM (stepfun-ai/step-3.5-flash)
-via the OpenAI-compatible client.
+via the OpenAI-compatible async client.
 
 Falls back to a rule-based narrative if the API is unavailable.
 
@@ -9,13 +9,14 @@ FIXES:
 - LLM now receives delta_pct sign information to properly contextualize increase/decrease scenarios
 - Improved prompt engineering to enforce directional language consistency
 - API generation now includes proper numeric formatting for scenario context
+- Issue 22: Using AsyncOpenAI client instead of synchronous OpenAI client
 """
 
 import logging
 import os
 import json
 from typing import Any, Dict, Optional, List
-from openai import OpenAI
+from openai import AsyncOpenAI  # Changed from OpenAI to AsyncOpenAI (Issue 22)
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -30,9 +31,9 @@ DEFAULT_SLIDER_VALUES = {
 
 # ── Client factory ─────────────────────────────────────────────────────────
 
-def _get_client() -> OpenAI:
-    """Return an OpenAI client pointed at NVIDIA NIM."""
-    return OpenAI(base_url=settings.LLM_API_URL, api_key=settings.LLM_API_KEY)
+def _get_client() -> AsyncOpenAI:
+    """Return an async OpenAI client pointed at NVIDIA NIM."""
+    return AsyncOpenAI(base_url=settings.LLM_API_URL, api_key=settings.LLM_API_KEY)
 
 
 _LLM_MODEL   = settings.LLM_MODEL
