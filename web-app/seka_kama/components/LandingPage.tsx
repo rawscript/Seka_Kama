@@ -124,23 +124,22 @@ export default function LandingPage() {
       <Navbar />
 
       <header className="relative w-full min-h-screen flex items-center overflow-hidden bg-[#f9f9f9]">
-        <div className="absolute inset-0 z-0 select-none pointer-events-none bg-[#f9f9f9]">
+        <div className="absolute inset-0 z-0 select-none pointer-events-none bg-[#e9e4d8]">
           <div
-            className="absolute inset-0 opacity-90 transition-transform duration-[20s] ease-out animate-[slow-zoom_20s_linear_infinite_alternate]"
+            className="absolute inset-0 opacity-70"
             style={{
               backgroundImage: "url('landing-pride.jpg')",
               backgroundSize: "cover",
-              backgroundPosition: "center 35%",
+              backgroundPosition: "58% 35%",
               backgroundRepeat: "no-repeat",
               mixBlendMode: "multiply",
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#f9f9f9] from-15% via-[#f9f9f9]/20 to-transparent md:w-3/4 lg:w-1/2" />
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#f9f9f9] to-transparent h-48" />
+          <div className="absolute inset-0 bg-[#f3f0e8]/45" />
         </div>
 
         <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 md:px-10 py-20">
-          <div className={`max-w-2xl ${mounted ? "animate-in" : "opacity-0"}`}>
+          <div className={`max-w-2xl border-l-2 border-[#775a19] bg-[#f9f8f3]/90 px-6 py-8 shadow-enterprise backdrop-blur-[2px] md:px-10 md:py-10 ${mounted ? "animate-in" : "opacity-0"}`}>
             <p className="text-[11px] font-bold text-[#775a19] mb-4 tracking-[0.3em] uppercase">
               INTELLIGENCE-DRIVEN CONSERVATION
             </p>
@@ -150,7 +149,7 @@ export default function LandingPage() {
                 The Digital Twin
               </span>
             </h1>
-            <p className="text-base md:text-lg leading-relaxed text-[#f7f5f0] mb-10 max-w-lg font-light">
+            <p className="text-base md:text-lg leading-relaxed text-[#4e4639] mb-10 max-w-lg font-light">
               A precision Digital Twin for the Greater Mara ecosystem,
               leveraging real-time geospatial intelligence and predictive
               ecology to secure future biodiversity.
@@ -179,7 +178,7 @@ export default function LandingPage() {
             <p
               role="alert"
               aria-live="polite"
-              className="col-span-full text-center text-sm text-rose-800"
+              className="col-span-full text-sm text-rose-800"
             >
               {statsError}
               <button
@@ -196,7 +195,7 @@ export default function LandingPage() {
           {statsList.map((stat, idx) => (
             <div
               key={stat.label}
-              className={`flex flex-col items-center text-center p-4 md:border-r border-[#d1c5b4]/50 last:border-0 ${mounted ? "animate-in" : "opacity-0"}`}
+              className={`flex flex-col items-start text-left p-4 md:border-r border-[#d1c5b4]/50 last:border-0 ${mounted ? "animate-in" : "opacity-0"}`}
               style={{
                 animationDelay: `${idx * 75}ms`,
                 animationFillMode: "both",
@@ -226,18 +225,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-[#f9f9f9] py-20 flex flex-col items-center text-center px-6 overflow-hidden">
+      <section className="bg-[#f9f9f9] py-20 px-6 overflow-hidden">
         <div
-          className={`max-w-4xl ${mounted ? "animate-in" : "opacity-0"}`}
+          className={`max-w-[1440px] mx-auto md:px-4 ${mounted ? "animate-in" : "opacity-0"}`}
           style={{ animationDelay: "200ms", animationFillMode: "both" }}
         >
-          <span className="text-[#c5a059]/40 text-6xl block mb-2 font-serif italic select-none">
+          <span className="text-[#c5a059]/60 text-6xl block mb-2 font-serif italic select-none">
             “
           </span>
-          <h2 className="text-3xl md:text-4xl md:leading-relaxed italic text-[#1a1c1c] font-light max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl md:leading-relaxed italic text-[#1a1c1c] font-light max-w-3xl">
             Intelligence is the silent guardian of the wild.
           </h2>
-          <div className="mt-8 flex items-center justify-center gap-4">
+          <div className="mt-8 flex items-center gap-4">
             <div className="h-[1px] w-10 bg-[#d1c5b4]" />
             <span className="text-[10px] font-bold tracking-[0.25em] text-[#7f7667] uppercase">
               THE SCIENTIFIC VISION

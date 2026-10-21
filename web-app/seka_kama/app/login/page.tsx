@@ -62,8 +62,9 @@ function LoginForm() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
@@ -106,14 +107,16 @@ function LoginForm() {
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
         }
-      `}} />
+      `,
+        }}
+      />
       <div className="login-container text-white selection:bg-[#c5a059] selection:text-[#4e3700] relative">
         <div className="cinematic-bg">
           <img
             ref={bgRef}
             alt="Conservation Research Outpost"
             className="w-full h-full object-cover"
-            src="https://res.cloudinary.com/dp7vwr0av/image/upload/v1779445101/auth-form-2_exleco.png"
+            src="auth-form-2.jpg"
           />
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
@@ -121,10 +124,14 @@ function LoginForm() {
         <main className="relative h-screen flex items-center justify-center px-6 md:px-10 lg:px-20 overflow-hidden lg:justify-end z-10 w-full">
           {/* Terminal Identifier (Top Right) */}
           <div className="absolute top-10 right-10 flex flex-col items-end z-20 pointer-events-none hidden md:flex">
-            <span className="text-[10px] text-[#c5a059] tracking-[0.2em] mb-1 font-semibold uppercase">TERMINAL STATUS</span>
+            <span className="text-[10px] text-[#c5a059] tracking-[0.2em] mb-1 font-semibold uppercase">
+              TERMINAL STATUS
+            </span>
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-[#c5a059] animate-pulse"></div>
-              <span className="text-[11px] font-medium text-white/60 uppercase tracking-widest">Node: SER-04-S // SECURE</span>
+              <span className="text-[11px] font-medium text-white/60 uppercase tracking-widest">
+                Node: SER-04-S // SECURE
+              </span>
             </div>
           </div>
 
@@ -134,13 +141,16 @@ function LoginForm() {
             <div className="mb-16 relative z-10">
               <div className="flex items-center gap-4 mb-8">
                 <span className="w-10 h-[1px] bg-[#c5a059]/40"></span>
-                <span className="text-[11px] font-semibold text-[#c5a059]/80 tracking-[0.3em] uppercase">AUTHENTICATION REQUIRED</span>
+                <span className="text-[11px] font-semibold text-[#c5a059]/80 tracking-[0.3em] uppercase">
+                  AUTHENTICATION REQUIRED
+                </span>
               </div>
               <h2 className="login-headline text-[48px] md:text-[56px] font-semibold text-white mb-4 text-glow leading-none">
                 Welcome Back.
               </h2>
               <p className="text-[16px] text-[#e2e2e2]/50 max-w-[320px] leading-relaxed">
-                Access the secure field intelligence network. Credentials required for sector sync.
+                Access the secure field intelligence network. Credentials
+                required for sector sync.
               </p>
             </div>
 
@@ -178,11 +188,13 @@ function LoginForm() {
               </div>
 
               {error && (
-                <div className={`text-sm p-3 rounded border ${
-                  sessionExpired
-                    ? 'text-amber-300 bg-amber-500/10 border-amber-500/30'
-                    : 'text-[#ba1a1a] bg-[#ba1a1a]/10 border-[#ba1a1a]/30'
-                }`}>
+                <div
+                  className={`text-sm p-3 rounded border ${
+                    sessionExpired
+                      ? "text-amber-300 bg-amber-500/10 border-amber-500/30"
+                      : "text-[#ba1a1a] bg-[#ba1a1a]/10 border-[#ba1a1a]/30"
+                  }`}
+                >
                   {sessionExpired && (
                     <span className="font-bold block mb-0.5 text-[10px] uppercase tracking-widest">
                       Session Expired
@@ -194,10 +206,18 @@ function LoginForm() {
 
               <div className="flex items-center justify-between text-[11px] font-medium tracking-widest text-white/40">
                 <label className="flex items-center gap-3 cursor-pointer hover:text-white transition-colors">
-                  <input className="w-4 h-4 rounded-none bg-transparent border-white/20 text-[#c5a059] focus:ring-offset-0 focus:ring-[#c5a059]" type="checkbox" />
+                  <input
+                    className="w-4 h-4 rounded-none bg-transparent border-white/20 text-[#c5a059] focus:ring-offset-0 focus:ring-[#c5a059]"
+                    type="checkbox"
+                  />
                   REMEMBER TERMINAL
                 </label>
-                <Link className="hover:text-[#c5a059] transition-colors" href="/register">REGISTER</Link>
+                <Link
+                  className="hover:text-[#c5a059] transition-colors"
+                  href="/register"
+                >
+                  REGISTER
+                </Link>
               </div>
 
               <button
@@ -207,14 +227,20 @@ function LoginForm() {
               >
                 {isLoading ? (
                   <>
-                    <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                    <span className="material-symbols-outlined animate-spin text-[20px]">
+                      progress_activity
+                    </span>
                     SYNCHRONIZING...
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined text-[20px]">fingerprint</span>
+                    <span className="material-symbols-outlined text-[20px]">
+                      fingerprint
+                    </span>
                     INITIALIZE SYSTEM
-                    <span className="material-symbols-outlined text-[18px] group-hover/btn:translate-x-2 transition-transform duration-500">east</span>
+                    <span className="material-symbols-outlined text-[18px] group-hover/btn:translate-x-2 transition-transform duration-500">
+                      east
+                    </span>
                   </>
                 )}
               </button>
@@ -227,19 +253,29 @@ function LoginForm() {
                 <div className="h-1 w-1 bg-white/40"></div>
                 <div className="h-1 w-1 bg-white/40"></div>
               </div>
-              <span className="text-[8px] tracking-[0.5em] font-semibold uppercase relative right-0">Encrypted Session</span>
+              <span className="text-[8px] tracking-[0.5em] font-semibold uppercase relative right-0">
+                Encrypted Session
+              </span>
             </div>
           </div>
 
           {/* Footer Data */}
           <div className="absolute bottom-10 left-20 hidden lg:flex gap-16 items-center text-white/30 z-20">
             <div className="flex flex-col">
-              <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">Location</span>
-              <span className="text-[11px] font-medium text-white/60 tracking-widest">SERENGETI SECTOR x</span>
+              <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">
+                Location
+              </span>
+              <span className="text-[11px] font-medium text-white/60 tracking-widest">
+                SERENGETI SECTOR x
+              </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">System Time</span>
-              <span className="text-[11px] font-medium text-white/60 tracking-widest">{timeStr}</span>
+              <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">
+                System Time
+              </span>
+              <span className="text-[11px] font-medium text-white/60 tracking-widest">
+                {timeStr}
+              </span>
             </div>
           </div>
         </main>

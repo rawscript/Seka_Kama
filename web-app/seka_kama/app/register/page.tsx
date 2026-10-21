@@ -79,8 +79,9 @@ export default function RegisterPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
@@ -122,14 +123,16 @@ export default function RegisterPage() {
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
         }
-      `}} />
+      `,
+        }}
+      />
       <div className="login-container text-white selection:bg-[#c5a059] selection:text-[#4e3700] relative overflow-y-auto overflow-x-hidden">
         <div className="cinematic-bg">
           <img
             ref={bgRef}
             alt="Conservation Research Outpost"
             className="w-full h-full object-cover"
-            src="https://res.cloudinary.com/dp7vwr0av/image/upload/v1779445100/auth-form_kh1bio.png"
+            src="register.jpg"
           />
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
@@ -137,10 +140,14 @@ export default function RegisterPage() {
         <main className="relative min-h-screen flex items-center justify-center px-6 md:px-10 lg:px-20 lg:justify-end z-10 w-full py-12">
           {/* Terminal Identifier (Top Right) */}
           <div className="absolute top-10 right-10 flex flex-col items-end z-20 pointer-events-none hidden md:flex">
-            <span className="text-[10px] text-[#c5a059] tracking-[0.2em] mb-1 font-semibold uppercase">TERMINAL STATUS</span>
+            <span className="text-[10px] text-[#c5a059] tracking-[0.2em] mb-1 font-semibold uppercase">
+              TERMINAL STATUS
+            </span>
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-[#c5a059] animate-pulse"></div>
-              <span className="text-[11px] font-medium text-white/60 uppercase tracking-widest">Node: SER-04-S // ENLISTMENT</span>
+              <span className="text-[11px] font-medium text-white/60 uppercase tracking-widest">
+                Node: SER-04-S // ENLISTMENT
+              </span>
             </div>
           </div>
 
@@ -150,13 +157,16 @@ export default function RegisterPage() {
             <div className="mb-12 relative z-10">
               <div className="flex items-center gap-4 mb-6">
                 <span className="w-10 h-[1px] bg-[#c5a059]/40"></span>
-                <span className="text-[11px] font-semibold text-[#c5a059]/80 tracking-[0.3em] uppercase">ACCESS REQUEST</span>
+                <span className="text-[11px] font-semibold text-[#c5a059]/80 tracking-[0.3em] uppercase">
+                  ACCESS REQUEST
+                </span>
               </div>
               <h2 className="login-headline text-[48px] md:text-[56px] font-semibold text-white mb-4 text-glow leading-none">
                 Enlistment.
               </h2>
               <p className="text-[16px] text-[#e2e2e2]/50 max-w-[320px] leading-relaxed">
-                Join the frontlines of digital conservation monitoring and spatial intelligence.
+                Join the frontlines of digital conservation monitoring and
+                spatial intelligence.
               </p>
             </div>
 
@@ -173,7 +183,9 @@ export default function RegisterPage() {
                     required
                     type="text"
                     value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, full_name: e.target.value })
+                    }
                   />
                 </div>
 
@@ -186,7 +198,9 @@ export default function RegisterPage() {
                     placeholder="UNEP / Mara Conservancy"
                     type="text"
                     value={formData.organization}
-                    onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, organization: e.target.value })
+                    }
                   />
                 </div>
 
@@ -200,7 +214,9 @@ export default function RegisterPage() {
                     required
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                   />
                 </div>
 
@@ -214,7 +230,9 @@ export default function RegisterPage() {
                     required
                     type="password"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                   />
                 </div>
 
@@ -228,7 +246,12 @@ export default function RegisterPage() {
                     required
                     type="password"
                     value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        confirmPassword: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -241,10 +264,17 @@ export default function RegisterPage() {
 
               <div className="flex items-center justify-between text-[11px] font-medium tracking-widest text-white/40 mb-10">
                 <label className="flex items-center gap-3 hover:text-white transition-colors">
-                  <span className="material-symbols-outlined text-[14px]">shield_check</span>
+                  <span className="material-symbols-outlined text-[14px]">
+                    shield_check
+                  </span>
                   DATA SOVEREIGNTY SECURED
                 </label>
-                <Link className="hover:text-[#c5a059] transition-colors" href="/login">SIGN IN INSTEAD</Link>
+                <Link
+                  className="hover:text-[#c5a059] transition-colors"
+                  href="/login"
+                >
+                  SIGN IN INSTEAD
+                </Link>
               </div>
 
               <button
@@ -254,14 +284,20 @@ export default function RegisterPage() {
               >
                 {isLoading ? (
                   <>
-                    <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                    <span className="material-symbols-outlined animate-spin text-[20px]">
+                      progress_activity
+                    </span>
                     INITIALIZING...
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined text-[20px]">fingerprint</span>
+                    <span className="material-symbols-outlined text-[20px]">
+                      fingerprint
+                    </span>
                     SUBMIT CLEARANCE
-                    <span className="material-symbols-outlined text-[18px] group-hover/btn:translate-x-2 transition-transform duration-500">east</span>
+                    <span className="material-symbols-outlined text-[18px] group-hover/btn:translate-x-2 transition-transform duration-500">
+                      east
+                    </span>
                   </>
                 )}
               </button>
@@ -274,19 +310,29 @@ export default function RegisterPage() {
                 <div className="h-1 w-1 bg-white/40"></div>
                 <div className="h-1 w-1 bg-white/40"></div>
               </div>
-              <span className="text-[8px] tracking-[0.5em] font-semibold uppercase relative right-0">Encrypted Provisioning</span>
+              <span className="text-[8px] tracking-[0.5em] font-semibold uppercase relative right-0">
+                Encrypted Provisioning
+              </span>
             </div>
           </div>
 
           {/* Footer Data */}
           <div className="absolute bottom-10 left-20 hidden lg:flex gap-16 items-center text-white/30 z-20">
             <div className="flex flex-col">
-              <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">Location</span>
-              <span className="text-[11px] font-medium text-white/60 tracking-widest">SERENGETI SECTOR VII</span>
+              <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">
+                Location
+              </span>
+              <span className="text-[11px] font-medium text-white/60 tracking-widest">
+                SERENGETI SECTOR VII
+              </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">System Time</span>
-              <span className="text-[11px] font-medium text-white/60 tracking-widest">{timeStr}</span>
+              <span className="text-[9px] font-semibold tracking-[0.3em] mb-1 uppercase text-[#c5a059]/60">
+                System Time
+              </span>
+              <span className="text-[11px] font-medium text-white/60 tracking-widest">
+                {timeStr}
+              </span>
             </div>
           </div>
         </main>
