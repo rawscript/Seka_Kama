@@ -3,25 +3,62 @@
 Corridor Service — calculates potential movement corridors for large carnivores.
 Uses a resistance-surface approach based on human development (nightlights)
 and habitat suitability (XGBoost predictions).
+
+CONFIGURABLE THRESHOLDS:
+All ecological thresholds can be configured via environment variables or 
+passed as parameters to the main function.
 """
 
 import logging
 import json
+import os
 import numpy as np
 from typing import List, Dict, Any, Optional
 from supabase import Client
 
 logger = logging.getLogger(__name__)
 
+# Configurable ecological thresholds (can be overridden via env vars)
+# These represent the Mara-specific ecological assumptions
+CORRIDOR_DENSITY_THRESHOLD = float(os.getenv("CORRIDOR_DENSITY_THRESHOLD", "8.0"))
+CORRIDOR_MAX_DISTANCE_DEG = float(os.getenv("CORRIDOR_MAX_DISTANCE_DEG", "0.15"))  # ~15km
+CORRIDOR_NIGHTLIGHT_THRESHOLD = float(os.getenv("CORRIDOR_NIGHTLIGHT_THRESHOLD", "0.1"))
+
+
 async def identify_ecological_corridors(
     supabase: Client,
     management_unit: Optional[str] = None,
-    threshold: float = 8.0 # Density threshold to be considered a 'core' node
+    threshold: Optional[float] = None,
+    max_distance_km: Optional[float] = None,
+    nightlight_threshold: Optional[float] = None
 ) -> Dict[str, Any]:
     """
     Identifies high-suitability patches and proposes corridors between them.
     Returns a GeoJSON FeatureCollection of proposed corridor segments.
+    
+    Args:
+        supabase: Supabase client instance
+        management_unit: Optional management unit filter
+        threshold: Lion density threshold for 'core' nodes (default: 8.0 lions/km²)
+        max_distance_km: Maximum corridor length in km (default: 15.0 km)
+        nightlight_threshold: Maximum nightlight intensity for corridor suitability (default: 0.1)
+    
+    Returns:
+        GeoJSON FeatureCollection with corridor line features
     """
+    # Use configured defaults if not specified
+    density_threshold = threshold if threshold is not None else CORRIDOR_DENSITY_THRESHOLD
+    max_dist_deg = (max_distance_km / 111.0) if max_distance_km else CORRIDOR_MAX_DISTANCE_DEG
+    nl_threshold = nightlight_threshold if nightlight_threshold is not None else CORRIDOR_NIGHTLIGHT_THRESHOLD
+    
+    # Validate threshold values
+    if density_threshold <= 0:
+        raise ValueError(f"Density threshold must be positive, got {density_threshold}")
+    if max_dist_deg <= 0:
+        raise ValueError(f"Max distance must be positive, got {max_dist_deg}")
+    if nl_threshold < 0:
+        raise ValueError(f"Nightlight threshold cannot be negative, got {nl_threshold}")
+    
     try:
         # 1. Fetch protected areas as anchor points
         pa_result = supabase.table("protected_areas").select("site_name, centroid, geom").execute()
@@ -45,8 +82,8 @@ async def identify_ecological_corridors(
         if management_unit:
             query = query.eq("management_unit", management_unit)
         
-        # We look for high density and low nightlights
-        query = query.gt("baseline_lion_density", threshold).lt("all_mean_mean", 0.1).limit(500)
+        # We look for high density and low nightlights using validated thresholds
+        query = query.gt("baseline_lion_density", density_threshold).lt("all_mean_mean", nl_threshold).limit(500)
         cells_result = query.execute()
         
         nodes = []
@@ -69,7 +106,7 @@ async def identify_ecological_corridors(
         for node in nodes:
             for anchor in anchor_points:
                 dist = np.sqrt((node['lon'] - anchor['lon'])**2 + (node['lat'] - anchor['lat'])**2)
-                if dist < 0.15: # Approx 15km
+                if dist < max_dist_deg:  # Use validated distance threshold
                     corridors.append({
                         "type": "Feature",
                         "geometry": {

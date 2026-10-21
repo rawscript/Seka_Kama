@@ -18,7 +18,7 @@ async def get_baseline_grid(
     bbox: Optional[Dict[str, float]] = None,
     year: Optional[int] = None,
     limit: int = 10000
-) -> List[Dict]:
+) -> List[Dict[str, Any]]:
     """
     Get baseline grid cells for a specific year
     """
@@ -68,10 +68,10 @@ async def get_baseline_grid(
 
 async def get_affected_cells(
     supabase: Client,
-    geometry_geojson: Dict,
+    geometry_geojson: Dict[str, Any],
     management_units: Optional[List[str]] = None,
     year: Optional[int] = None
-) -> List[Dict]:
+) -> List[Dict[str, Any]]:
     """
     Find grid cells that intersect a drawn polygon using PostGIS RPC.
     Much faster than in-memory intersection for large polygons.
@@ -109,7 +109,18 @@ async def get_affected_cells(
         return cells
         
     except Exception as e:
-        logger.error("PostGIS RPC failure: %s — falling back to in-memory filter.", e)
+        error_msg = str(e).lower()
+        
+        # Distinguish between authentication/connection errors (not recoverable)
+        # and temporary issues (recoverable via fallback)
+        if "401" in error_msg or "403" in error_msg or "unauthorized" in error_msg or "forbidden" in error_msg:
+            logger.error("Authentication error in PostGIS RPC - check Supabase credentials: %s", e)
+            raise  # Re-raise authentication errors - don't silently fallback
+        elif "timeout" in error_msg or "network" in error_msg or "connection" in error_msg:
+            logger.warning("Network/timeout error in PostGIS RPC, attempting fallback: %s", e)
+        else:
+            logger.error("PostGIS RPC failure: %s — falling back to in-memory filter.", e)
+            
         # Fallback: table scan + Python-side intersection (no row limit on the
         # initial fetch so we don't silently miss cells outside the first 1000).
         query = supabase.table("grid_cells").select("*")
@@ -144,7 +155,7 @@ async def get_affected_cells(
 async def get_protected_areas(
     supabase: Client,
     bbox: Optional[Dict[str, float]] = None
-) -> List[Dict]:
+) -> List[Dict[str, Any]]:
     """
     Get protected areas for map display using PostGIS RPC
     
