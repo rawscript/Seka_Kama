@@ -185,7 +185,10 @@ Example Response: {{"all_mean_mean": 0.2, "longterm_slope_mean": 0.05}}
         client = _get_client()
         logger.info(f"Firing up LLM (model: {_LLM_MODEL}) for query: '{user_query[:50]}...'")
         
-        response = client.chat.completions.create(
+        # Use await with async client (Issue 22)
+
+        
+        response = await client.chat.completions.create(
             model=_LLM_MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
@@ -246,7 +249,7 @@ async def generate_narrative(
     )
 
     try:
-        narrative = _stream_completion(prompt)
+        narrative = await _stream_completion(prompt)
         final_narrative = _post_process(narrative, scenario_results)
         if not final_narrative:
             logger.info("LLM returned empty narrative, using fallback")
@@ -277,7 +280,7 @@ async def generate_explanation(
     )
 
     try:
-        return _stream_completion(prompt, max_tokens=256)
+        return await _stream_completion(prompt, max_tokens=256)
     except Exception as exc:
         logger.warning("NVIDIA NIM explanation call failed: %s", exc)
         return _fallback_explanation(features, prediction)
@@ -378,11 +381,14 @@ Include:
 Be professional, concise, and use Markdown for emphasis. Use phrases like "{'will increase' if delta > 0 else 'will decrease' if delta < 0 else 'remains stable'}" to maintain clarity."""
 
 
-def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:
+async def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:
     """Call NVIDIA NIM with streaming and return the assembled text."""
     client = _get_client()
 
-    stream = client.chat.completions.create(
+    # Use async with await (Issue 22)
+
+
+    stream = await client.chat.completions.create(
         model       = _LLM_MODEL,
         messages    = [{"role": "user", "content": prompt}],
         temperature = _TEMPERATURE,
