@@ -1,0 +1,20 @@
+{
+  "model_version": "sekanet-shp-unversioned",
+  "status": "legacy-artifact-provenance-incomplete",
+  "target": "lion density (description in baseline prediction script)",
+  "target_unit": null,
+  "cell_size": null,
+  "training_period": null,
+  "data_sources": [],
+  "licences": [],
+  "hyperparameters": null,
+  "metrics": null,
+  "git_commit": null,
+  "date": "2026-10-27",
+  "limitations": [
+    "Training data and target-generation code are not present in the repository.",
+    "Target unit and per-cell area are unverified.",
+    "Feature ranges and training percentiles are unavailable.",
+    "Habitat covariates are absent from the 43-feature model input."
+  ]
+}

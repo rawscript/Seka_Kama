@@ -403,6 +403,18 @@ async def run_scenario(
     """
     # Apply rate limiting for expensive operations (Issue 21)
     await check_rate_limit(request, limiter_type="expensive")
+
+    # The checked-in model has no documented target unit or training ranges,
+    # so totals cannot safely be represented as animal counts and no feature
+    # intervention can be validated. Keep the endpoint contract but fail closed.
+    raise HTTPException(
+        status_code=503,
+        detail=(
+            "Scenario simulation is temporarily disabled: model target units, "
+            "training ranges, and a validated feature allow-list are unavailable. "
+            "See OPEN_ITEMS.md."
+        ),
+    )
     
     model = request.app.state.model
     scaler = request.app.state.scaler

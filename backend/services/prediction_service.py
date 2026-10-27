@@ -152,10 +152,11 @@ class PredictionService:
         if not baseline_cells:
             raise ValueError("baseline_cells cannot be empty")
         
-        if not modifications:
-            raise ValueError("modifications cannot be empty")
+        if modifications is None:
+            raise ValueError("modifications must be an object")
         
-        # Validate modifications reference valid features
+        # Validate modifications reference valid features. An empty mapping is
+        # the explicit null scenario and must produce identical predictions.
         self._validate_modifications(modifications)
         
         # Extract features with robust error handling
@@ -232,8 +233,7 @@ class PredictionService:
         scenario_sum = scenario_predictions.sum()
         
         if baseline_sum == 0:
-            logger.warning("Baseline predictions sum is zero, delta_percent_total will be 0")
-            delta_percent_total = 0.0
+            delta_percent_total = None
         else:
             delta_percent_total = float((scenario_sum / baseline_sum - 1) * 100)
         

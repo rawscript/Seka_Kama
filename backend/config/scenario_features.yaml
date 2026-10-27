@@ -1,0 +1,7 @@
+version: 1
+enabled: false
+disabled_reason: >-
+  No feature has verified units, training ranges, and sensitivity evidence in the
+  checked-in model bundle. Supply the training matrix and model provenance before
+  enabling scenario modifications.
+features: []

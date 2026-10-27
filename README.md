@@ -11,13 +11,15 @@ This project addresses the critical gap between land‑use planning and wildlife
 
 ### Opportunity 
 
-SekaKama is designed to bridge human development and ecological stability. Without the ability to simulate future outcomes, land‑use decisions often overlook long‑term biodiversity impacts. Seka Kama provides a predictive environment where different development scenarios can be tested for their direct effect on predator movement and population health.
+SekaKama is a research interface for exploring spatial data related to human development and wildlife conservation. The legacy scenario feature is currently disabled while model provenance and data units are verified; it does not currently provide validated forecasts of population change.
 
 ## 2. Vision
 
-Seka Kama utilizes a sophisticated robust spatial model that integrates human activity data with the known biological requirements of lions. By establishing statistical relationships between land fragmentation and habitat use, the system can answer questions such as: *“If human activity increases by X% in this specific corridor, what is the impact on population viability over the next decade?”*
+> **Model status (2026-10-27):** The checked-in legacy XGBoost artifact has no verified target unit, training data, feature ranges, or habitat inputs. Scenario simulation is therefore disabled in the API pending the data and provenance listed in [OPEN_ITEMS.md](OPEN_ITEMS.md). The model must not be interpreted as a validated count of lions or as a causal forecast. See [MODEL_CARD.md](MODEL_CARD.md) and [docs/data_dictionary.md](docs/data_dictionary.md).
 
-The final output is a simulation tool that visualizes these “what‑if” scenarios, clarifying the trade‑offs involved in regional development.
+The repository contains a legacy XGBoost model and spatial analysis interface. Its training target, units, and validation are not documented well enough to support population viability forecasts. See the model status note above and [MODEL_CARD.md](MODEL_CARD.md).
+
+Scenario simulation remains disabled until the documented data and model requirements are met.
 
 ## 3. Documentation and Resources
 
