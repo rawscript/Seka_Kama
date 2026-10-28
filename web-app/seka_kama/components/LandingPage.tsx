@@ -99,15 +99,19 @@ export default function LandingPage() {
       }
     };
 
+    const abortController = new AbortController();
+
     const loadInitialData = async () => {
       try {
-        const response = await fetch(`${getApiUrl()}/statistics`);
+        const response = await fetch(`${getApiUrl()}/statistics`, {
+          signal: abortController.signal
+        });
         if (response.ok) {
            const data = await response.json();
            setStats(data);
         } else throw new Error(`Statistics unavailable (HTTP ${response.status}).`);
-      } catch (error) {
-        // Warn rather than error — expected when the backend is not yet running locally.
+      } catch (error: any) {
+        if (error.name === 'AbortError') return; // Clean exit on unmount/navigation
         console.warn("Failed to load initial stats:", error);
         setStatsError(error instanceof Error ? error.message : 'Could not load landscape statistics.');
       }
@@ -115,6 +119,10 @@ export default function LandingPage() {
 
     checkSession();
     loadInitialData();
+
+    return () => {
+      abortController.abort(); // Cancel request immediately when navigating away
+    };
   }, [statsRetry]);
 
   const consolePath = isAuthenticated ? '/dashboard' : '/login';

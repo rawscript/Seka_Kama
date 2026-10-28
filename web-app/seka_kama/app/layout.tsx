@@ -26,7 +26,7 @@ export default function RootLayout({
       <head>
         <link rel="stylesheet" href={MATERIAL_SYMBOLS_URL} />
       </head>
-      <body className={`${inter.className} min-h-full flex flex-col bg-[#f9f9f9] text-[#1a1c1c]`}>
+      <body suppressHydrationWarning className={`${inter.className} min-h-full flex flex-col bg-[#f9f9f9] text-[#1a1c1c]`}>
         <GlobalErrorBoundary>
           {/* Floating layer for draggable panels */}
           <div id="floating-layer" className="fixed inset-0 pointer-events-none z-[9999]" />
