@@ -338,17 +338,23 @@ class SupabaseService:
     
     def get_spatial_summary(self, management_unit: Optional[str] = None, year: Optional[int] = None) -> Dict[str, Any]:
         """
-        Get spatial summary statistics.
+        Get spatial summary statistics with error isolation and fallback.
         """
-        params = {"management_unit": management_unit}
-        if year:
-            params["target_year"] = year
-        
-        result = self.client.rpc(
-            "get_spatial_summary",
-            params
-        ).execute()
-        return result.data[0] if result.data else {}
+        try:
+            params = {}
+            # Only pass non-None values to avoid Postgres parameter/column ambiguity
+            if management_unit:
+                params["management_unit"] = management_unit
+            if year:
+                params["target_year"] = year
+            
+            result = self.client.rpc("get_spatial_summary", params).execute()
+            if result.data and len(result.data) > 0:
+                return result.data[0]
+        except Exception as e:
+            logger.warning(f"get_spatial_summary RPC failed or unavailable: {e}")
+            
+        return {"avg_nightlight": 0.0, "avg_lion_density": 0.0}
 
     def get_landscape_stats(self, management_unit: Optional[str] = None, year: Optional[int] = None) -> Dict[str, Any]:
         """

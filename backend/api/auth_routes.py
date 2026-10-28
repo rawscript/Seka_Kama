@@ -27,6 +27,7 @@ class PasswordChange(BaseModel):
     new_password: str = Field(min_length=8, max_length=72)
 
 @router.post("/register", response_model=UserResponse)
+@router.post("/register/", response_model=UserResponse, include_in_schema=False)
 async def register(user: UserCreate):
     supabase = get_supabase_client()
     
