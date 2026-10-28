@@ -93,15 +93,15 @@ export default function IntelligencePage() {
     <div className="bg-[#f9f9f9] min-h-screen flex flex-col selection:bg-[#775a19]/10 selection:text-[#4e3700]">
       <Navbar />
 
-      <main className="max-w-[1440px] mx-auto px-6 md:px-20 py-24 flex-grow w-full space-y-32">
+      <main className="w-full px-6 lg:px-12 py-16 flex-grow space-y-24">
 
         {/* ── Hero ── */}
-        <section className={`max-w-4xl ${mounted ? 'animate-in' : 'opacity-0'}`}>
+        <section className={`w-full ${mounted ? 'animate-in' : 'opacity-0'}`}>
           <p className="text-[11px] font-bold text-[#775a19] mb-4 tracking-[0.3em] uppercase">Computational Ecology</p>
           <h1 className="text-5xl md:text-[68px] leading-tight text-[#1a1c1c] mb-8 font-normal tracking-tight">
             The <span className="italic font-light text-[#4e3700]">Intelligence Layer</span>
           </h1>
-          <p className="text-lg md:text-xl leading-relaxed text-[#4e4639] font-light max-w-2xl">
+          <p className="text-lg md:text-xl leading-relaxed text-[#4e4639] font-light w-full max-w-4xl">
             SekaNet is the neural backbone of the Seka Kama digital twin — a gradient-boosted tree architecture
             trained to predict biodiversity trends and simulate the cascade effects of human expansion.
           </p>
@@ -234,7 +234,7 @@ export default function IntelligencePage() {
 
         {/* ── System status terminal ── */}
         <section className="border-t border-[#d1c5b4]/60 pt-24">
-          <div className="bg-white border border-[#d1c5b4]/60 p-8 shadow-enterprise max-w-2xl">
+          <div className="bg-white border border-[#d1c5b4]/60 p-8 shadow-enterprise w-full max-w-4xl">
             <div className="flex items-center gap-3 mb-8">
               <div className="flex gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#ba1a1a]" />

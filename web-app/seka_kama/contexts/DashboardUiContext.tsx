@@ -2,9 +2,14 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+export type PanelId = 'analyst' | 'indicators' | 'layers' | 'trends' | 'history';
+
 interface DashboardUiContextType {
-  visiblePanels: Record<string, boolean>;
-  togglePanel: (panelId: string) => void;
+  visiblePanels: Record<PanelId, boolean>;
+  /** Active right-rail panel (analyst | indicators | layers | trends), or null */
+  activeRailPanel: Exclude<PanelId, 'history'> | null;
+  togglePanel: (panelId: PanelId) => void;
+  closeRailPanel: () => void;
   isSidebarOpen: boolean;
   setIsSidebarOpen: (isOpen: boolean) => void;
 }
@@ -12,42 +17,39 @@ interface DashboardUiContextType {
 const DashboardUiContext = createContext<DashboardUiContextType | undefined>(undefined);
 
 export function DashboardUiProvider({ children }: { children: ReactNode }) {
-  const [visiblePanels, setVisiblePanels] = useState<Record<string, boolean>>({
-    'analyst': true,
-    'indicators': false,
-    'layers': false,
-    'history': false,
-    'trends': false
-  });
-  // The desktop sidebar remains visible via its md breakpoint; start closed on
-  // mobile so it does not obscure the map on first load.
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeRailPanel, setActiveRailPanel] = useState<Exclude<PanelId, 'history'> | null>('analyst');
+  const [historyOpen, setHistoryOpen] = useState(false);
 
-  const togglePanel = (panelId: string) => {
-    setVisiblePanels((prev) => {
-      // Map controls behave as one tab group. Showing all of their large,
-      // draggable panels at once obscures the analysis surface and creates
-      // competing focal points. History remains a separate modal workflow.
-      const controlPanels = ['analyst', 'indicators', 'layers', 'trends'];
-      if (!controlPanels.includes(panelId)) {
-        return { ...prev, [panelId]: !prev[panelId] };
-      }
-
-      const next = { ...prev };
-      controlPanels.forEach((id) => { next[id] = false; });
-      // A tab selection always leaves one control panel visible. This avoids
-      // an ambiguous empty state and matches users' expectation of tabs.
-      next[panelId] = true;
-      return next;
-    });
+  // Derived: visiblePanels kept for backward compat with page.tsx history checks
+  const visiblePanels: Record<PanelId, boolean> = {
+    analyst:    activeRailPanel === 'analyst',
+    indicators: activeRailPanel === 'indicators',
+    layers:     activeRailPanel === 'layers',
+    trends:     activeRailPanel === 'trends',
+    history:    historyOpen,
   };
 
+  const togglePanel = (panelId: PanelId) => {
+    if (panelId === 'history') {
+      setHistoryOpen((v) => !v);
+      return;
+    }
+    // Rail tab behaviour: clicking active tab closes rail; clicking another opens it
+    setActiveRailPanel((prev) => (prev === panelId ? null : panelId));
+  };
+
+  const closeRailPanel = () => setActiveRailPanel(null);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   return (
-    <DashboardUiContext.Provider value={{ 
-      visiblePanels, 
-      togglePanel, 
-      isSidebarOpen, 
-      setIsSidebarOpen 
+    <DashboardUiContext.Provider value={{
+      visiblePanels,
+      activeRailPanel,
+      togglePanel,
+      closeRailPanel,
+      isSidebarOpen,
+      setIsSidebarOpen,
     }}>
       {children}
     </DashboardUiContext.Provider>

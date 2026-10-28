@@ -61,24 +61,41 @@ async def register(user: UserCreate):
         result = supabase.table("users").insert(new_user).execute()
         
         if not result.data:
-            raise HTTPException(status_code=500, detail="Registration failed")
+            # Check if user was inserted (RLS may suppress RETURNING data)
+            fetch_res = supabase.table("users").select("*").eq("email", user.email).execute()
+            if fetch_res.data:
+                user_data = fetch_res.data[0]
+            else:
+                logger.error("Registration failed: row not returned after insert for %s", user.email)
+                raise HTTPException(status_code=500, detail="Registration failed to store user")
+        else:
+            user_data = result.data[0]
         
-        user_data = result.data[0]
+        raw_created = user_data.get("created_at")
+        if isinstance(raw_created, str):
+            created_at_dt = datetime.fromisoformat(raw_created.replace("Z", "+00:00"))
+        elif isinstance(raw_created, datetime):
+            created_at_dt = raw_created
+        else:
+            created_at_dt = datetime.now(timezone.utc)
+
         return UserResponse(
             id=user_data["id"],
             email=user_data["email"],
-            full_name=user_data["full_name"],
-            organization=user_data["organization"],
-            role=user_data["role"],
-            created_at=datetime.fromisoformat(user_data["created_at"]),
+            full_name=user_data.get("full_name") or user.full_name,
+            organization=user_data.get("organization") or user.organization,
+            role=user_data.get("role") or user.role,
+            created_at=created_at_dt,
             last_login=None
         )
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("Registration error: %s", e)
+        err_msg = str(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration failed"
+            detail=f"Registration failed: {err_msg}"
         )
 
 @router.post("/login", response_model=Token)

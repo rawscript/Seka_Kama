@@ -145,10 +145,10 @@ export default function SettingsPage() {
             {toast}
           </div>
         )}
-        {loadError && <div role="alert" aria-live="polite" className="mx-auto mt-4 max-w-6xl rounded border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{loadError}<button onClick={() => { setLoadError(null); loadProfile(); loadKeys(); loadHealth(); }} className="ml-3 font-semibold underline">Retry</button></div>}
+        {loadError && <div role="alert" aria-live="polite" className="mx-auto mt-4 w-full rounded border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{loadError}<button onClick={() => { setLoadError(null); loadProfile(); loadKeys(); loadHealth(); }} className="ml-3 font-semibold underline">Retry</button></div>}
 
         {/* Header */}
-        <div className="max-w-[1440px] mx-auto px-6 md:px-20 py-16">
+        <div className="w-full px-6 lg:px-12 py-12">
           <div className="mb-12 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-bold text-[#775a19] uppercase tracking-[0.3em] mb-2">Account</p>

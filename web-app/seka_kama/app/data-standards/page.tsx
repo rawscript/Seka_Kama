@@ -31,8 +31,8 @@ export default function DataStandardsPage() {
     <div className="bg-[#f9f9f9] min-h-screen flex flex-col selection:bg-[#775a19]/10 selection:text-[#4e3700]">
       <Navbar />
 
-      <main className="max-w-[1440px] mx-auto px-6 md:px-20 py-24 flex-grow w-full">
-        <section className={`max-w-3xl mb-16 ${mounted ? 'animate-in' : 'opacity-0'}`}>
+      <main className="w-full px-6 lg:px-12 py-16 flex-grow">
+        <section className={`w-full mb-16 ${mounted ? 'animate-in' : 'opacity-0'}`}>
           <p className="text-[11px] font-bold text-[#775a19] mb-4 tracking-[0.3em] uppercase">
             TECHNICAL INTEGRITY
           </p>

@@ -21,9 +21,9 @@ export default function MethodologyPage() {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-6 overflow-hidden bg-[#f9f9f9]">
+      <section className="relative pt-32 pb-20 px-6 lg:px-12 overflow-hidden bg-[#f9f9f9]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(119,90,25,0.05),transparent)] pointer-events-none" />
-        <div className="max-w-6xl mx-auto text-center relative z-10">
+        <div className="w-full text-left relative z-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#775a19]/5 border border-[#775a19]/20 mb-8 animate-in">
             <Beaker className="w-4 h-4 text-[#775a19]" />
             <span className="text-[10px] font-bold text-[#775a19] uppercase tracking-[0.2em]">Scientific Framework</span>
@@ -31,13 +31,13 @@ export default function MethodologyPage() {
           <h1 className="text-5xl md:text-7xl font-normal text-[#1a1c1c] tracking-tight mb-8">
             The Intelligence <span className="italic font-light text-[#4e3700]">Methodology</span>
           </h1>
-          <p className="text-lg text-[#4e4639] max-w-3xl mx-auto leading-relaxed font-light">
+          <p className="text-lg text-[#4e4639] max-w-3xl leading-relaxed font-light">
             Seka Kama utilizes a high-precision Digital Twin architecture, bridging spatial nightlight trends with multi-species predator viability models.
           </p>
         </div>
       </section>
 
-      <main className="max-w-6xl mx-auto px-6 py-20 space-y-32">
+      <main className="max-w-[1440px] mx-auto px-6 lg:px-12 py-20 space-y-32">
         
         {/* Core Pillars */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-12">

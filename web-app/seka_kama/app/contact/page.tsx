@@ -49,7 +49,6 @@ export default function ContactPage() {
     setError('');
 
     try {
-      // Send form data to backend API
       const response = await fetch(`${getApiUrl()}/contact`, {
         method: 'POST',
         headers: {
@@ -59,41 +58,30 @@ export default function ContactPage() {
       });
 
       if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}`);
+        throw new Error('Failed to send message. Please try again later.');
       }
 
-      const result = await response.json();
-      
-      if (result.success) {
-        // Show success state
-        setIsSubmitted(true);
-        
-        // Reset form after successful submission
-        setFormData({
-          name: '',
-          email: '',
-          organization: '',
-          message: ''
-        });
-      } else {
-        throw new Error(result.message || 'Failed to send message');
-      }
-
-    } catch (err) {
-      setError('Failed to send message. Please try again or email directly to jasemwaura@gmail.com');
-      console.error('Form submission error:', err);
+      setIsSubmitted(true);
+      setFormData({
+        name: '',
+        email: '',
+        organization: '',
+        message: ''
+      });
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="bg-[#f9f9f9] min-h-screen flex flex-col selection:bg-[#775a19]/10 selection:text-[#4e3700]">
+    <div className="bg-[#f9f9f9] min-h-screen flex flex-col selection:bg-[#775a19]/10 selection:text-[#4e3700] w-full">
       <Navbar />
 
-      <main className="max-w-[1440px] mx-auto px-6 md:px-20 py-24 flex-grow w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
-          <div className={`space-y-12 ${mounted ? 'animate-in' : 'opacity-0'}`}>
+      <main className="w-full px-6 lg:px-12 py-16 flex-grow">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 w-full">
+          <div className={`lg:col-span-5 space-y-12 ${mounted ? 'animate-in' : 'opacity-0'}`}>
             <div className="space-y-4">
               <p className="text-[11px] font-bold text-[#775a19] mb-4 tracking-[0.3em] uppercase">
                 CONTACT US
@@ -101,7 +89,7 @@ export default function ContactPage() {
               <h1 className="text-5xl md:text-6xl font-normal text-[#1a1c1c] tracking-tight leading-tight">
                 Get in <span className="italic font-light text-[#4e3700]">touch</span>.
               </h1>
-              <p className="text-[#4e4639] text-lg leading-relaxed font-light max-w-md">
+              <p className="text-[#4e4639] text-base leading-relaxed font-light">
                 Have questions about the SekaNet model or want to integrate your conservancy data?
                 Seka Kama spatial analysts and researchers are here to help.
               </p>
@@ -114,136 +102,110 @@ export default function ContactPage() {
             </div>
           </div>
 
-          <div className={`enterprise-card bg-white p-10 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
+          <div className={`lg:col-span-7 enterprise-card bg-white p-8 md:p-12 border border-[#d1c5b4]/60 ${mounted ? 'animate-in' : 'opacity-0'}`} style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
             <h3 className="text-xl font-serif font-medium text-[#1a1c1c] mb-8">Direct Inquiry</h3>
             
             {isSubmitted ? (
               <div className="text-center py-12">
-                <div className="mb-6">
-                  {/* Lion GIF - free animated lion from GIPHY */}
-                  <div className="w-48 h-48 mx-auto mb-4 overflow-hidden rounded-full border-4 border-amber-200">
-                    <img 
-                      src="https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" 
-                      alt="Lion celebrating" 
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Fallback to icon if GIF fails to load
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          const fallback = document.createElement('div');
-                          fallback.className = 'w-full h-full bg-gradient-to-br from-amber-100 to-amber-300 flex items-center justify-center';
-                          const icon = document.createElement('div');
-                          icon.innerHTML = '<svg class="w-16 h-16 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>';
-                          fallback.appendChild(icon);
-                          parent.appendChild(fallback);
-                        }
-                      }}
-                    />
-                  </div>
-                  <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-                </div>
-                <h4 className="text-2xl font-serif font-medium text-[#1a1c1c] mb-3">Message Sent Successfully!</h4>
-                <p className="text-[#4e4639] mb-6">
-                  Thank you for your inquiry. We'll reply to{' '}
-                  <span className="text-[#775a19] font-medium">{formData.email}</span> shortly.
+                <CheckCircle className="w-16 h-16 text-[#775a19] mx-auto mb-4" />
+                <h4 className="text-2xl font-serif font-medium text-[#1a1c1c] mb-2">Inquiry Transmitted</h4>
+                <p className="text-sm text-[#4e4639] font-light max-w-sm mx-auto mb-6">
+                  Thank you for reaching out. A platform specialist will review your request and respond within 24 hours.
                 </p>
                 <button
                   onClick={() => setIsSubmitted(false)}
-                  className="bg-[#1a1c1c] text-white font-bold py-3 px-8 text-[11px] tracking-[0.2em] hover:bg-[#775a19] transition-colors uppercase inline-flex items-center gap-2"
+                  className="bg-[#1a1c1c] text-white font-bold py-3 px-8 text-[11px] tracking-[0.2em] hover:bg-[#775a19] transition-colors uppercase"
                 >
                   Send Another Message
                 </button>
               </div>
             ) : (
-              <form className="space-y-6" onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-sm text-sm">
                     {error}
                   </div>
                 )}
                 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-[#7f7667] uppercase tracking-widest">
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
-                  <input 
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full bg-[#f3f3f3] border border-[#d1c5b4]/40 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-[#775a19] transition-colors placeholder:text-[#d1c5b4]/80" 
-                    placeholder="Dr. Jane Doe" 
-                    disabled={isSubmitting}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="name" className="block text-[11px] font-bold text-[#775a19] uppercase tracking-wider mb-2">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      placeholder="Dr. Sarah Kanga"
+                      className="w-full bg-[#f3f3f3] border border-[#d1c5b4]/40 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-[#775a19] transition-colors placeholder:text-[#d1c5b4]/80"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="email" className="block text-[11px] font-bold text-[#775a19] uppercase tracking-wider mb-2">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      placeholder="sarah@mara-research.org"
+                      className="w-full bg-[#f3f3f3] border border-[#d1c5b4]/40 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-[#775a19] transition-colors placeholder:text-[#d1c5b4]/80"
+                    />
+                  </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-[#7f7667] uppercase tracking-widest">
-                    Email Address <span className="text-red-500">*</span>
+
+                <div>
+                  <label htmlFor="organization" className="block text-[11px] font-bold text-[#775a19] uppercase tracking-wider mb-2">
+                    Organization / Conservancy
                   </label>
-                  <input 
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full bg-[#f3f3f3] border border-[#d1c5b4]/40 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-[#775a19] transition-colors placeholder:text-[#d1c5b4]/80" 
-                    placeholder="jane.doe@example.com" 
-                    disabled={isSubmitting}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-[#7f7667] uppercase tracking-widest">
-                    Organization
-                  </label>
-                  <input 
+                  <input
                     type="text"
+                    id="organization"
                     name="organization"
                     value={formData.organization}
                     onChange={handleChange}
-                    className="w-full bg-[#f3f3f3] border border-[#d1c5b4]/40 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-[#775a19] transition-colors placeholder:text-[#d1c5b4]/80" 
-                    placeholder="Wildlife Research Inst." 
-                    disabled={isSubmitting}
+                    placeholder="Mara Elephant Project / UNEP"
+                    className="w-full bg-[#f3f3f3] border border-[#d1c5b4]/40 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-[#775a19] transition-colors placeholder:text-[#d1c5b4]/80"
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-[#7f7667] uppercase tracking-widest">
-                    Message <span className="text-red-500">*</span>
+
+                <div>
+                  <label htmlFor="message" className="block text-[11px] font-bold text-[#775a19] uppercase tracking-wider mb-2">
+                    Message *
                   </label>
-                  <textarea 
+                  <textarea
+                    id="message"
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
                     required
-                    className="w-full bg-[#f3f3f3] border border-[#d1c5b4]/40 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-[#775a19] transition-colors min-h-[140px] placeholder:text-[#d1c5b4]/80" 
-                    placeholder="How can Seka Kama assist?" 
-                    disabled={isSubmitting}
+                    rows={5}
+                    placeholder="Inquiry regarding regional calibration vectors or custom scenario modeling..."
+                    className="w-full bg-[#f3f3f3] border border-[#d1c5b4]/40 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-[#775a19] transition-colors placeholder:text-[#d1c5b4]/80"
                   />
                 </div>
-                
-                <div className="text-xs text-[#7f7667] italic">
-                  Your message will be forwarded to <span className="text-[#775a19] font-medium">jasemwaura@gmail.com</span>
-                  <br />
-                  We'll reply to your email address so you can continue the conversation.
-                </div>
-                
-                <button 
+
+                <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#1a1c1c] text-white font-bold py-4 text-[11px] tracking-[0.2em] hover:bg-[#775a19] disabled:opacity-50 disabled:cursor-not-allowed transition-colors uppercase flex items-center justify-center gap-2"
+                  className="w-full bg-[#1a1c1c] text-white font-bold py-4 text-[11px] tracking-[0.2em] hover:bg-[#775a19] transition-colors uppercase flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Sending...
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Transmitting...
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4" /> Send Intelligence Request
+                      <Send className="w-4 h-4" />
+                      Submit Inquiry
                     </>
                   )}
                 </button>
@@ -258,15 +220,15 @@ export default function ContactPage() {
   );
 }
 
-function ContactItem({ icon: Icon, label, value }: { icon: any, label: string, value: string }) {
+function ContactItem({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-6 group">
-      <div className="w-14 h-14 bg-white border border-[#d1c5b4]/40 flex items-center justify-center transition-all group-hover:border-[#775a19] group-hover:shadow-md">
-        <Icon className="w-6 h-6 text-[#775a19]" />
+    <div className="flex items-start gap-4">
+      <div className="p-3 bg-[#775a19]/10 rounded-sm text-[#775a19] flex-shrink-0">
+        <Icon className="w-5 h-5" />
       </div>
       <div>
-        <p className="text-[10px] font-bold text-[#775a19] uppercase tracking-widest mb-1">{label}</p>
-        <p className="text-[#1a1c1c] font-medium">{value}</p>
+        <p className="text-[10px] font-bold text-[#775a19] uppercase tracking-wider">{label}</p>
+        <p className="text-base text-[#1a1c1c] font-medium">{value}</p>
       </div>
     </div>
   );

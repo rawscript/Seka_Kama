@@ -43,21 +43,21 @@ const nextConfig: NextConfig = {
     '@loaders.gl/schema'
   ],
 
-  // Set the Turbopack workspace root explicitly to silence the multi-lockfile warning.
-  // Without this, Next.js infers the repo root because it detects multiple package-lock.json files.
+  // Turbopack configuration
   turbopack: {
     root: __dirname,
+    resolveAlias: {
+      'parquet-wasm': path.resolve(__dirname, 'empty-module.js'),
+    },
   },
 
   webpack: (config, { isServer }) => {
-    // Disable minification to prevent SWC WorkerError crashes with massive deck.gl chunks
     config.optimization.minimize = false;
 
-    // Alias react-dom to our shim ONLY on the client to fix findDOMNode missing in React 19.
-    // On the server we must keep the real react-dom to avoid a null React instance during SSR.
     if (!isServer) {
       config.resolve.alias = {
         ...config.resolve.alias,
+        'parquet-wasm': path.resolve(process.cwd(), 'empty-module.js'),
         'react-dom-lib': path.resolve(process.cwd(), 'node_modules/react-dom'),
         'react-dom$': path.resolve(process.cwd(), 'react-dom-shim.js'),
       };
@@ -73,7 +73,6 @@ const nextConfig: NextConfig = {
       os: false,
       net: false,
       tls: false,
-      // Optional native deps of `ws` â€” not available in the browser/edge bundle
       bufferutil: false,
       'utf-8-validate': false,
     };
@@ -85,8 +84,6 @@ const nextConfig: NextConfig = {
     workerThreads: false,
     memoryBasedWorkersCount: true,
   },
-  // NOTE: ignoreBuildErrors was removed. Fix TypeScript errors rather than hiding them.
-  // Re-enable temporarily only if you need an emergency deploy: typescript: { ignoreBuildErrors: true }
 };
 
 export default nextConfig;

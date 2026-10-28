@@ -13,8 +13,6 @@ interface Statistic {
   changeType: 'negative' | 'positive' | 'neutral';
 }
 
-
-
 const capabilities = [
   {
     num: '01',
@@ -111,7 +109,7 @@ export default function LandingPage() {
            setStats(data);
         } else throw new Error(`Statistics unavailable (HTTP ${response.status}).`);
       } catch (error: any) {
-        if (error.name === 'AbortError') return; // Clean exit on unmount/navigation
+        if (error.name === 'AbortError') return;
         console.warn("Failed to load initial stats:", error);
         setStatsError(error instanceof Error ? error.message : 'Could not load landscape statistics.');
       }
@@ -121,7 +119,7 @@ export default function LandingPage() {
     loadInitialData();
 
     return () => {
-      abortController.abort(); // Cancel request immediately when navigating away
+      abortController.abort();
     };
   }, [statsRetry]);
 
@@ -129,10 +127,11 @@ export default function LandingPage() {
   const consoleLabel = isAuthenticated ? 'Dashboard' : 'Launch Console';
 
   return (
-    <div className="bg-[#f9f9f9] text-[#1a1c1c] overflow-x-hidden antialiased selection:bg-[#775a19]/10 selection:text-[#4e3700]">
+    <div className="bg-[#f9f9f9] text-[#1a1c1c] overflow-x-hidden antialiased selection:bg-[#775a19]/10 selection:text-[#4e3700] w-full">
       <Navbar />
 
-      <header className="relative w-full min-h-screen flex items-center overflow-hidden bg-[#f9f9f9]">
+      {/* Hero: edge-to-edge spread */}
+      <header className="relative w-full min-h-[85vh] flex items-center overflow-hidden bg-[#f9f9f9] px-6 lg:px-12 py-16">
         <div className="absolute inset-0 z-0 select-none pointer-events-none bg-[#e9e4d8]">
           <div
             className="absolute inset-0 opacity-70"
@@ -147,8 +146,8 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-[#f3f0e8]/45" />
         </div>
 
-        <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 md:px-10 py-20">
-          <div className={`max-w-2xl border-l-2 border-[#775a19] bg-[#f9f8f3]/90 px-6 py-8 shadow-enterprise backdrop-blur-[2px] md:px-10 md:py-10 ${mounted ? "animate-in" : "opacity-0"}`}>
+        <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className={`lg:col-span-8 border-l-2 border-[#775a19] bg-[#f9f8f3]/95 p-8 md:p-12 shadow-enterprise backdrop-blur-[2px] ${mounted ? "animate-in" : "opacity-0"}`}>
             <p className="text-[11px] font-bold text-[#775a19] mb-4 tracking-[0.3em] uppercase">
               INTELLIGENCE-DRIVEN CONSERVATION
             </p>
@@ -158,10 +157,10 @@ export default function LandingPage() {
                 The Digital Twin
               </span>
             </h1>
-            <p className="text-base md:text-lg leading-relaxed text-[#4e4639] mb-10 max-w-lg font-light">
+            <p className="text-base md:text-lg leading-relaxed text-[#4e4639] mb-10 font-light">
               A precision Digital Twin for the Greater Mara ecosystem,
               leveraging real-time geospatial intelligence and predictive
-              ecology to secure future biodiversity.
+              ecology to secure future biodiversity across 271,211 spatial cells.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
@@ -178,11 +177,20 @@ export default function LandingPage() {
               </Link>
             </div>
           </div>
+          <div className="hidden lg:flex lg:col-span-4 flex-col justify-end items-end text-right space-y-4">
+            <div className="bg-[#1a1c1c]/90 text-white p-6 backdrop-blur-md border border-white/10 w-full max-w-sm">
+              <span className="text-[10px] font-mono text-[#c5a059] uppercase tracking-widest block mb-1">Spatial Framework</span>
+              <p className="text-xs text-white/80 font-light">
+                Continuous ingestion of telemetry vectors across 1km² resolution grids in Kenya and Tanzania.
+              </p>
+            </div>
+          </div>
         </div>
       </header>
 
-      <section className="bg-white py-16 border-y border-[#d1c5b4]/60">
-        <div className="max-w-[1440px] mx-auto px-6 md:px-10 grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6">
+      {/* Landscape stats strip: full-bleed grid */}
+      <section className="bg-white py-12 border-y border-[#d1c5b4]/60 w-full px-6 lg:px-12">
+        <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-6">
           {statsError && (
             <p
               role="alert"
@@ -204,7 +212,7 @@ export default function LandingPage() {
           {statsList.map((stat, idx) => (
             <div
               key={stat.label}
-              className={`flex flex-col items-start text-left p-4 md:border-r border-[#d1c5b4]/50 last:border-0 ${mounted ? "animate-in" : "opacity-0"}`}
+              className={`flex flex-col items-start text-left p-4 lg:p-6 bg-[#f9f9f9] border border-[#d1c5b4]/40 ${mounted ? "animate-in" : "opacity-0"}`}
               style={{
                 animationDelay: `${idx * 75}ms`,
                 animationFillMode: "both",
@@ -234,29 +242,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-[#f9f9f9] py-20 px-6 overflow-hidden">
-        <div
-          className={`max-w-[1440px] mx-auto md:px-4 ${mounted ? "animate-in" : "opacity-0"}`}
-          style={{ animationDelay: "200ms", animationFillMode: "both" }}
-        >
-          <span className="text-[#c5a059]/60 text-6xl block mb-2 font-serif italic select-none">
-            “
-          </span>
-          <h2 className="text-3xl md:text-4xl md:leading-relaxed italic text-[#1a1c1c] font-light max-w-3xl">
-            Intelligence is the silent guardian of the wild.
-          </h2>
-          <div className="mt-8 flex items-center gap-4">
-            <div className="h-[1px] w-10 bg-[#d1c5b4]" />
+      {/* Vision banner: full-bleed */}
+      <section className="bg-[#f9f9f9] py-16 px-6 lg:px-12 w-full border-b border-[#d1c5b4]/40">
+        <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div>
+            <span className="text-[#c5a059]/60 text-4xl font-serif italic select-none">“</span>
+            <h2 className="text-2xl md:text-3xl italic text-[#1a1c1c] font-light">
+              Intelligence is the silent guardian of the wild.
+            </h2>
+          </div>
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <div className="h-[1px] w-12 bg-[#d1c5b4]" />
             <span className="text-[10px] font-bold tracking-[0.25em] text-[#7f7667] uppercase">
               THE SCIENTIFIC VISION
             </span>
-            <div className="h-[1px] w-10 bg-[#d1c5b4]" />
           </div>
         </div>
       </section>
 
-      <section className="bg-[#f3f3f3] py-20 border-t border-[#d1c5b4]/40">
-        <div className="max-w-[1440px] mx-auto px-6 md:px-10">
+      {/* Platform Capabilities: full-bleed spread */}
+      <section className="bg-[#f3f3f3] py-20 border-b border-[#d1c5b4]/40 w-full px-6 lg:px-12">
+        <div className="w-full">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-12 border-b border-[#d1c5b4] pb-6">
             <div>
               <span className="text-[11px] font-bold text-[#775a19] tracking-widest uppercase">
@@ -266,16 +272,16 @@ export default function LandingPage() {
                 Platform Capabilities
               </h3>
             </div>
-            <p className="text-sm text-[#4e4639] max-w-xs mt-3 sm:mt-0 sm:text-right font-light">
+            <p className="text-sm text-[#4e4639] mt-3 sm:mt-0 font-light">
               Advanced biological computation meeting world-class surveillance.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             {capabilities.map((item, idx) => (
               <div
                 key={item.num}
-                className={`enterprise-card bg-white group flex flex-col justify-between ${mounted ? "animate-in" : "opacity-0"}`}
+                className={`enterprise-card bg-white group flex flex-col justify-between p-8 border border-[#d1c5b4]/50 ${mounted ? "animate-in" : "opacity-0"}`}
                 style={{
                   animationDelay: `${idx * 100}ms`,
                   animationFillMode: "both",
@@ -315,72 +321,71 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-[#f9f9f9] py-20 border-t border-[#d1c5b4]/40 overflow-hidden">
-        <div className="max-w-[1440px] mx-auto px-6 md:px-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className={mounted ? "animate-in" : "opacity-0"}>
-              <span className="text-[11px] font-bold text-[#775a19] tracking-widest mb-3 block uppercase">
-                THE ARCHITECTURE
-              </span>
-              <h2 className="text-3xl md:text-4xl text-[#1a1c1c] font-normal mb-6 tracking-tight">
-                Engineered with Precision
-              </h2>
-              <p className="text-base text-[#4e4639] mb-10 font-light leading-relaxed">
-                The Seka Kama framework mirrors the complexity of the natural
-                world. Utilizing XGBoost modeling and PostGIS spatial databases
-                to protect biodiversity vectors.
-              </p>
+      {/* Architecture: full-bleed grid */}
+      <section className="bg-[#f9f9f9] py-20 w-full px-6 lg:px-12">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className={mounted ? "animate-in" : "opacity-0"}>
+            <span className="text-[11px] font-bold text-[#775a19] tracking-widest mb-3 block uppercase">
+              THE ARCHITECTURE
+            </span>
+            <h2 className="text-3xl md:text-4xl text-[#1a1c1c] font-normal mb-6 tracking-tight">
+              Engineered with Precision
+            </h2>
+            <p className="text-base text-[#4e4639] mb-10 font-light leading-relaxed">
+              The Seka Kama framework mirrors the complexity of the natural
+              world. Utilizing XGBoost modeling and PostGIS spatial databases
+              to protect biodiversity vectors.
+            </p>
 
-              <div className="space-y-6">
-                <div className="flex gap-6 pb-6 border-b border-[#d1c5b4]/60">
-                  <div className="text-[10px] font-mono font-bold text-[#775a19] pt-1.5 tracking-wider">
-                    CORE-A
-                  </div>
-                  <div>
-                    <h5 className="text-lg font-serif font-medium text-[#1a1c1c] mb-1">
-                      Geospatial Analytics
-                    </h5>
-                    <p className="text-sm text-[#4e4639] font-light">
-                      High-performance Kepler.gl visualization layers engineered
-                      for spatial exploration pipelines.
-                    </p>
-                  </div>
+            <div className="space-y-6">
+              <div className="flex gap-6 pb-6 border-b border-[#d1c5b4]/60">
+                <div className="text-[10px] font-mono font-bold text-[#775a19] pt-1.5 tracking-wider">
+                  CORE-A
                 </div>
-                <div className="flex gap-6 pb-6 border-b border-[#d1c5b4]/60">
-                  <div className="text-[10px] font-mono font-bold text-[#775a19] pt-1.5 tracking-wider">
-                    CORE-B
-                  </div>
-                  <div>
-                    <h5 className="text-lg font-serif font-medium text-[#1a1c1c] mb-1">
-                      Intelligence Layer
-                    </h5>
-                    <p className="text-sm text-[#4e4639] font-light">
-                      FastAPI enterprise architecture deeply integrated with
-                      StepFun AI contextual mapping solutions.
-                    </p>
-                  </div>
+                <div>
+                  <h5 className="text-lg font-serif font-medium text-[#1a1c1c] mb-1">
+                    Geospatial Analytics
+                  </h5>
+                  <p className="text-sm text-[#4e4639] font-light">
+                    High-performance Kepler.gl visualization layers engineered
+                    for spatial exploration pipelines across all regional boundaries.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-6 pb-6 border-b border-[#d1c5b4]/60">
+                <div className="text-[10px] font-mono font-bold text-[#775a19] pt-1.5 tracking-wider">
+                  CORE-B
+                </div>
+                <div>
+                  <h5 className="text-lg font-serif font-medium text-[#1a1c1c] mb-1">
+                    Intelligence Layer
+                  </h5>
+                  <p className="text-sm text-[#4e4639] font-light">
+                    FastAPI enterprise architecture deeply integrated with
+                    StepFun AI contextual mapping solutions.
+                  </p>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div
-              className={`relative group ${mounted ? "animate-in" : "opacity-0"}`}
-              style={{ animationDelay: "150ms", animationFillMode: "both" }}
-            >
-              <div className="absolute -inset-3 border border-[#775a19] opacity-15 group-hover:opacity-30 transition-opacity duration-500" />
-              <img
-                alt="High-tech conservation mapping monitor setup"
-                className="w-full h-[540px] object-cover filter contrast-[1.02] brightness-[0.98] transition-all duration-700"
-                src="https://lh3.googleusercontent.com/aida/ADBb0ujjSjkRp9Jb551KPzT8I5-PKodLluB7t0nG_MGTL2Yra0oom8aRVQvGl7PmcoZA-V8T1Ayef5iI2ZsY-WAMefYMHDE7Ll2rEqVlKOcWE02P8VmjNBOmyzhoD5YpljSQjjECKXtaqh_HaSnn3xtZ6RWBnc0Q4MHrY_TGHg7Ma_P-MDx5xMObpIxkuhWZ74vVdVU3yC9yjIT9gZ4A3wQwTmmcdHW0kDg-ImAe_4rmek3LJ_RaxeVesIqafpg"
-              />
-              <div className="absolute bottom-6 right-6 bg-white/95 backdrop-blur-md p-5 shadow-xl border border-[#d1c5b4]/80">
-                <p className="text-[10px] font-mono font-bold text-[#1a1c1c] mb-1 tracking-widest">
-                  STATUS: SYSTEM OPTIMAL
-                </p>
-                <p className="text-xs text-[#4e4639] font-light">
-                  Seka Kama Computational Interface v4.2
-                </p>
-              </div>
+          <div
+            className={`relative group ${mounted ? "animate-in" : "opacity-0"}`}
+            style={{ animationDelay: "150ms", animationFillMode: "both" }}
+          >
+            <div className="absolute -inset-2 border border-[#775a19] opacity-15 group-hover:opacity-30 transition-opacity duration-500" />
+            <img
+              alt="High-tech conservation mapping monitor setup"
+              className="w-full h-[520px] object-cover filter contrast-[1.02] brightness-[0.98] transition-all duration-700"
+              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1400"
+            />
+            <div className="absolute bottom-6 right-6 bg-white/95 backdrop-blur-md p-5 shadow-xl border border-[#d1c5b4]/80">
+              <p className="text-[10px] font-mono font-bold text-[#1a1c1c] mb-1 tracking-widest">
+                STATUS: SYSTEM OPTIMAL
+              </p>
+              <p className="text-xs text-[#4e4639] font-light">
+                Seka Kama Computational Interface v4.2
+              </p>
             </div>
           </div>
         </div>

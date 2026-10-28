@@ -1,51 +1,22 @@
-'use client';
+﻿'use client';
 
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Play, ArrowRight, Zap, Globe, BarChart3, Pause } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { ArrowRight, Zap, Globe, BarChart3 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function DemoPage() {
   const [mounted, setMounted] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Set mounted safely after hydration to trigger animations smoothly
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Handle play/pause logic via effect to avoid promise interruptions
-  useEffect(() => {
-    if (!videoRef.current) return;
-
-    const video = videoRef.current;
-
-    if (isPlaying) {
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          // Log and reset state if playback fails
-          if (error.name !== 'AbortError') {
-            console.error("Playback failed:", error);
-            setIsPlaying(false);
-          }
-        });
-      }
-    } else {
-      video.pause();
-    }
-  }, [isPlaying]);
-
-  const togglePlay = () => {
-    setIsPlaying(prev => !prev);
-  };
 
   return (
     <div className="bg-[#f9f9f9] min-h-screen flex flex-col selection:bg-[#775a19]/10 selection:text-[#4e3700]">
       <Navbar />
 
-      <main className="max-w-[1440px] mx-auto px-6 md:px-20 py-24 flex-grow w-full text-center">
+      <main className="w-full px-6 lg:px-12 py-16 flex-grow text-left">
         {/* Header Hero Section */}
         <div
           className={`space-y-8 mb-20 transition-all duration-1000 transform ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
@@ -54,60 +25,32 @@ export default function DemoPage() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#775a19]/5 border border-[#775a19]/20 text-[#775a19] text-[11px] font-bold uppercase tracking-[0.2em]">
             INTERACTIVE PREVIEW
           </div>
-          <h1 className="text-5xl md:text-7xl font-normal text-[#1a1c1c] tracking-tight max-w-5xl mx-auto leading-tight">
+          <h1 className="text-5xl md:text-7xl font-normal text-[#1a1c1c] tracking-tight w-full leading-tight">
             Experience the <span className="italic font-light text-[#4e3700]">Greater Mara</span> <br /> like never before.
           </h1>
-          <p className="text-[#4e4639] text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-light">
-            The demo allows you to explore the baseline lion density and see how SekaNet interprets
-            environmental shifts in real-time.
+          <p className="text-[#4e4639] text-lg md:text-xl max-w-4xl leading-relaxed font-light">
+            Explore baseline lion density distributions and observe how SekaNet interprets
+            environmental shifts in real-time across 271,000+ spatial cells.
           </p>
         </div>
 
         {/* Video Player Section */}
         <div
-          className={`relative aspect-video w-full max-w-5xl mx-auto rounded-sm overflow-hidden border border-[#d1c5b4]/60 shadow-2xl group bg-white/5 backdrop-blur-sm transition-all duration-1000 transform ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          className={`relative aspect-video w-full w-full rounded-sm overflow-hidden border border-[#d1c5b4]/60 shadow-2xl bg-[#1a1c1c] transition-all duration-1000 transform ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
             }`}
           style={{ transitionDelay: '150ms' }}
         >
-          <video
-            ref={videoRef}
-            className="w-full h-full object-cover"
-            poster="https://images.unsplash.com/photo-1546182990-dffeafbe841d?auto=format&fit=crop&q=80&w=2000"
-            loop
-            muted={true}
-            playsInline
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            src="https://assets.mixkit.co/videos/preview/mixkit-lion-walking-in-the-grass-4040-large.mp4"
-          >
-            Your browser does not support the video tag.
-          </video>
-
-          {/* UI Control Overlay */}
-          <div className={`absolute inset-0 bg-black/20 transition-opacity duration-500 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
-              <button
-                onClick={togglePlay}
-                aria-label={isPlaying ? 'Pause Overview Video' : 'Play Overview Video'}
-                className="w-24 h-24 rounded-full bg-[#775a19] flex items-center justify-center shadow-2xl text-white hover:scale-110 transition-transform relative group/btn"
-              >
-                {isPlaying ? (
-                  <Pause className="w-10 h-10 fill-current" />
-                ) : (
-                  <>
-                    <div className="absolute inset-0 rounded-full bg-[#775a19] animate-ping opacity-20" />
-                    <Play className="w-10 h-10 fill-current ml-1" />
-                  </>
-                )}
-              </button>
-              {!isPlaying && (
-                <p className="text-sm font-bold uppercase tracking-[0.4em] text-white drop-shadow-md">Watch Platform Walkthrough</p>
-              )}
-            </div>
-          </div>
+          <iframe
+            src="https://player.vimeo.com/video/76979871?autoplay=0&loop=1&title=0&byline=0&portrait=0&color=775a19"
+            className="w-full h-full"
+            frameBorder="0"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            title="Seka Kama — Greater Mara Digital Twin Platform Overview"
+          />
 
           {/* Brand Watermark */}
-          <div className="absolute top-8 left-8 flex items-center gap-2 opacity-50 select-none">
+          <div className="absolute top-8 left-8 flex items-center gap-2 opacity-50 select-none pointer-events-none">
             <div className="w-3 h-3 rounded-full bg-[#775a19]" />
             <span className="text-[10px] font-bold text-white uppercase tracking-widest">Seka Kama Intelligence v4.2</span>
           </div>
@@ -115,9 +58,9 @@ export default function DemoPage() {
 
         {/* Features Subgrid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-24">
-          <DemoFeature icon={Globe} title="Regional Insights" desc="Explore 271,000+ cells of ecological data at 1km² resolution." delay="300ms" mounted={mounted} />
-          <DemoFeature icon={Zap} title="Predictive AI" desc="Simulate impacts of infrastructure on wildlife with 84% accuracy." delay="450ms" mounted={mounted} />
-          <DemoFeature icon={BarChart3} title="Risk Matrices" desc="Identify high-priority conservation corridors automatically." delay="600ms" mounted={mounted} />
+          <DemoFeature icon={Globe} title="Regional Insights" desc="Explore 271,000+ cells of ecological data at 1km² resolution across the Greater Mara ecosystem." delay="300ms" mounted={mounted} />
+          <DemoFeature icon={Zap} title="Predictive Intelligence" desc="Simulate cascading impacts of infrastructure pressure on wildlife distribution across the ecosystem." delay="450ms" mounted={mounted} />
+          <DemoFeature icon={BarChart3} title="Risk Matrices" desc="Identify high-priority conservation corridors and ecological stress zones automatically." delay="600ms" mounted={mounted} />
         </div>
 
         {/* Closing Call To Action Block */}

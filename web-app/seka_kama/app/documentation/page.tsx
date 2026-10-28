@@ -227,7 +227,7 @@ export default function DocumentationPage() {
     <div className="bg-[#f9f9f9] min-h-screen flex flex-col selection:bg-[#775a19]/10 selection:text-[#4e3700]">
       <Navbar />
 
-      <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-12 py-20 px-6 md:px-20 w-full flex-grow">
+      <div className="w-full flex flex-col lg:flex-row gap-8 py-12 px-6 lg:px-12 flex-grow">
         {/* ── Sidebar Navigation ─────────────────────────────────── */}
         <aside className={`w-full lg:w-72 flex-shrink-0 space-y-8 lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto ${mounted ? 'animate-in' : 'opacity-0'}`}>
           {navSections.map((section) => (

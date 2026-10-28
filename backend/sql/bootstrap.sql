@@ -219,6 +219,24 @@ BEGIN
             FOR ALL USING (auth.role() = 'service_role');
     END IF;
     
+    -- Policy: allow user self-registration (anon insert)
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Enable insert for anon registration' AND tablename = 'users') THEN
+        CREATE POLICY "Enable insert for anon registration" ON public.users
+            FOR INSERT WITH CHECK (true);
+    END IF;
+
+    -- Policy: allow users to read profiles by email or id
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Enable select for registration check' AND tablename = 'users') THEN
+        CREATE POLICY "Enable select for registration check" ON public.users
+            FOR SELECT USING (true);
+    END IF;
+
+    -- Policy: service role bypass for users table
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Service role full access on users' AND tablename = 'users') THEN
+        CREATE POLICY "Service role full access on users" ON public.users
+            FOR ALL USING (auth.role() = 'service_role');
+    END IF;
+
     -- Policy: anyone can submit contact forms (anonymous submissions)
     IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Anyone can submit contact forms' AND tablename = 'contact_submissions') THEN
         CREATE POLICY "Anyone can submit contact forms" ON public.contact_submissions

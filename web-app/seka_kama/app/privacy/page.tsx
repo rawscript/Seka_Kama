@@ -13,7 +13,7 @@ export default function PrivacyPage() {
     <div className="bg-[#f9f9f9] min-h-screen flex flex-col selection:bg-[#775a19]/10 selection:text-[#4e3700]">
       <Navbar />
 
-      <main className="max-w-4xl mx-auto py-24 px-6 md:px-20 space-y-16 flex-grow w-full">
+      <main className="w-full py-16 px-6 lg:px-12 space-y-16 flex-grow">
         <div className={`space-y-4 ${mounted ? 'animate-in' : 'opacity-0'}`}>
           <p className="text-[11px] font-bold text-[#775a19] mb-4 tracking-[0.3em] uppercase">LEGAL</p>
           <h1 className="text-5xl font-normal text-[#1a1c1c] tracking-tight leading-tight">Privacy <span className="italic font-light text-[#4e3700]">Policy</span></h1>
@@ -63,7 +63,7 @@ function PrivacySection({ icon: Icon, title, content, delay }: { icon: any, titl
         <Icon className="w-6 h-6" />
         <h2 className="text-2xl font-serif font-medium tracking-tight text-[#1a1c1c]">{title}</h2>
       </div>
-      <p className="text-[#4e4639] leading-relaxed font-light text-base max-w-3xl">
+      <p className="text-[#4e4639] leading-relaxed font-light text-base w-full">
         {content}
       </p>
     </section>
