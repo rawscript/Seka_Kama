@@ -24,33 +24,43 @@ logger = logging.getLogger(__name__)
 supabase_breaker = CircuitBreaker("supabase", failure_threshold=5, recovery_timeout=60)
 model_breaker = CircuitBreaker("ml_model", failure_threshold=3, recovery_timeout=120)
 
+import threading
+
 _state = {"model": None, "scaler": None, "feature_names": None, "supabase": None, "prediction_service": None, "initialized": False}
 
-def lazy_init():
-    if _state["initialized"]:
-        return
-    logger.info("Lazy init starting...")
+# Initialize lightweight Supabase client immediately at startup so auth and stats respond instantly
+try:
+    if os.getenv("SUPABASE_URL") and (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")):
+        _state["supabase"] = init_supabase()
+        logger.info("Supabase client initialized at startup")
+except Exception as e:
+    logger.error(f"Supabase startup init failed: {e}")
+
+def _load_ml_models_async():
+    """Load heavy ML models in background thread to never block HTTP requests or login."""
     try:
         from pathlib import Path
         mp, sp, fp = Path(settings.MODEL_PATH), Path(settings.SCALER_PATH), Path(settings.FEATURE_NAMES_PATH)
         if mp.exists() and sp.exists() and fp.exists():
-            _state["model"], _state["scaler"], _state["feature_names"] = joblib.load(mp), joblib.load(sp), joblib.load(fp)
-            logger.info(f"Models loaded: {len(_state['feature_names'])} features")
-    except Exception as e:
-        logger.error(f"Model load failed: {e}")
-    try:
-        if os.getenv("SUPABASE_URL") and os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
-            _state["supabase"] = init_supabase()
-    except Exception as e:
-        logger.error(f"Supabase init failed: {e}")
-    if _state["model"] and _state["feature_names"]:
-        try:
+            logger.info("Background loading ML model artefacts...")
+            _state["model"] = joblib.load(mp)
+            _state["scaler"] = joblib.load(sp)
+            _state["feature_names"] = joblib.load(fp)
+            logger.info(f"ML models loaded: {len(_state['feature_names'])} features")
             from services.prediction_service import PredictionService
             _state["prediction_service"] = PredictionService(_state["model"], _state["scaler"], _state["feature_names"])
-        except Exception as e:
-            logger.error(f"Prediction service failed: {e}")
-    _state["initialized"] = True
-    logger.info("Lazy init complete")
+            logger.info("Prediction service ready")
+    except Exception as e:
+        logger.error(f"Background model load failed: {e}")
+    finally:
+        _state["initialized"] = True
+
+# Start background loading thread so requests are never blocked
+threading.Thread(target=_load_ml_models_async, daemon=True, name="ml-model-loader").start()
+
+def lazy_init():
+    # Kept for backward compatibility if called directly
+    pass
 
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
@@ -67,7 +77,6 @@ app = FastAPI(
 
 @app.middleware("http")
 async def init_middleware(request: Request, call_next):
-    lazy_init()
     request.app.state.model = _state["model"]
     request.app.state.scaler = _state["scaler"]
     request.app.state.feature_names = _state["feature_names"]

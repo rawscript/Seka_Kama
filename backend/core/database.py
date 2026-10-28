@@ -314,14 +314,14 @@ class SupabaseService:
         if year:
             year_query = query.eq("year", year)
             result = year_query.execute()
-            return sum(cell.get("baseline_lion_density", 0) for cell in (result.data or []))
+            return sum((cell.get("baseline_lion_density") or 0.0) for cell in (result.data or []))
 
         result = query.execute()
         
         if not result.data:
             return 0.0
         
-        return sum(cell.get("baseline_lion_density", 0) for cell in result.data)
+        return sum((cell.get("baseline_lion_density") or 0.0) for cell in (result.data or []))
     
     def get_management_units(self) -> List[str]:
         """
@@ -381,7 +381,7 @@ class SupabaseService:
             high_risk_cells = risk_res.count or len(risk_res.data or [])
         except Exception as e:
             logger.warning("Could not calculate high-risk cells: %s", e)
-        base_nightlight = summary.get("avg_nightlight", 0)
+        base_nightlight = summary.get("avg_nightlight") or 0.0
         
         return {
             "total_lions": round(total_lions, 1),

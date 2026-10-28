@@ -184,8 +184,9 @@ function KeplerMapInner({ managementUnit, scenarioData, onCellSelect, onScenario
     );
   }
 
+  const Manager = StyleSheetManager as any;
   return (
-    <StyleSheetManager shouldForwardProp={(prop) => prop !== 'testId'}>
+    <Manager shouldForwardProp={(prop: string) => prop !== 'testId'}>
       <div 
         ref={mapContainerRef} 
         id="kepler-container"
@@ -246,7 +247,7 @@ function KeplerMapInner({ managementUnit, scenarioData, onCellSelect, onScenario
           }
         `}} />
       </div>
-    </StyleSheetManager>
+    </Manager>
   );
 }
 

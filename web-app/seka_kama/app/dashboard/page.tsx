@@ -48,12 +48,12 @@ const SekaMap = dynamic(() => import('@/components/SekaMap'), {
   ),
 });
 
-const ScenarioResultPanel = dynamic(() => import('@/components/ScenarioResultPanel'), { ssr: false });
-const ScenarioHistoryPanel = dynamic(() => import('@/components/ScenarioHistoryPanel'), { ssr: false });
-const TrendChart = dynamic(() => import('@/components/TrendChart'), { ssr: false });
-const NotificationPanel = dynamic(() => import('@/components/NotificationPanel'), { ssr: false });
-const AnalystPanel = dynamic(() => import('@/components/AnalystPanel'), { ssr: false });
-const EcosystemIndicatorsPanel = dynamic(() => import('@/components/EcosystemIndicatorsPanel'), { ssr: false });
+import ScenarioResultPanel from '@/components/ScenarioResultPanel';
+import ScenarioHistoryPanel from '@/components/ScenarioHistoryPanel';
+import TrendChart from '@/components/TrendChart';
+import NotificationPanel from '@/components/NotificationPanel';
+import AnalystPanel from '@/components/AnalystPanel';
+import EcosystemIndicatorsPanel from '@/components/EcosystemIndicatorsPanel';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MIN_YEAR = 2020;

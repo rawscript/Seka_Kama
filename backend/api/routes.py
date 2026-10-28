@@ -244,9 +244,9 @@ async def get_landscape_summary(
         if cells:
             enriched_cells = await enrich_cells_with_live_data(cells, year)
             # Use enriched metrics for the summary context
-            avg_rainfall = sum(c.get("annual_rainfall_mm", 0) for c in enriched_cells) / len(enriched_cells)
-            avg_prey = sum(c.get("prey_density", 0) for c in enriched_cells) / len(enriched_cells)
-            avg_hwc = sum(c.get("hwc_risk_score", 0) for c in enriched_cells) / len(enriched_cells)
+            avg_rainfall = sum((c.get("annual_rainfall_mm") or 0.0) for c in enriched_cells) / len(enriched_cells)
+            avg_prey = sum((c.get("prey_density") or 0.0) for c in enriched_cells) / len(enriched_cells)
+            avg_hwc = sum((c.get("hwc_risk_score") or 0.0) for c in enriched_cells) / len(enriched_cells)
         else:
             avg_rainfall, avg_prey, avg_hwc = 850.0, 2.5, 0.15
     except Exception as e:
@@ -882,10 +882,10 @@ async def get_statistics(
     
     # Get protected area coverage (doesn't change by year)
     protected_areas = db.get_protected_areas(limit=1000)
-    protected_area_km2 = sum(pa.get("area_km2", 0) for pa in protected_areas)
+    protected_area_km2 = sum((pa.get("area_km2") or 0.0) for pa in protected_areas)
     
     # Stored spatial summary, without time extrapolation.
-    avg_nightlight_trend = stats.get("avg_nightlight", 0)
+    avg_nightlight_trend = stats.get("avg_nightlight") or 0.0
     
     return {
         "total_lions": stats.get("total_lions", 0),
