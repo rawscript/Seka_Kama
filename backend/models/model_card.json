@@ -1,7 +1,8 @@
 {
   "model_version": "sekanet-shp-unversioned",
   "status": "legacy-artifact-provenance-incomplete",
-  "target": "lion density (description in baseline prediction script)",
+  "target_field": null,
+  "target": "unknown; target notebook/export absent",
   "target_unit": null,
   "cell_size": null,
   "training_period": null,
@@ -12,6 +13,7 @@
   "git_commit": null,
   "date": "2026-10-27",
   "limitations": [
+    "The user-referenced data/training folder was absent from the checkout at the time this manifest was updated.",
     "Training data and target-generation code are not present in the repository.",
     "Target unit and per-cell area are unverified.",
     "Feature ranges and training percentiles are unavailable.",

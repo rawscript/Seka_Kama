@@ -18,6 +18,16 @@ BACKEND_DIR="backend"
 FRONTEND_DIR="web-app/seka_kama"
 DEPLOY_ENV="${DEPLOY_ENV:-production}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKEND_TEST_RESULT="NOT RUN"
+FRONTEND_BUILD_RESULT="NOT RUN"
+DATABASE_CHECK_RESULT="NOT RUN"
+BACKEND_HEALTH_RESULT="NOT RUN"
+FRONTEND_HEALTH_RESULT="NOT RUN"
+
+version_at_least() {
+    local actual="$1" required="$2"
+    [[ "$(printf '%s\n%s\n' "$required" "$actual" | sort -V | head -n1)" == "$required" ]]
+}
 
 # Logging functions
 log_info() {
@@ -47,14 +57,14 @@ check_prerequisites() {
     
     # Check Python version
     local python_version=$(python3 --version | cut -d' ' -f2)
-    if [[ "$python_version" < "3.11" ]]; then
+    if ! version_at_least "$python_version" "3.11"; then
         log_error "Python 3.11+ required, found $python_version"
         exit 1
     fi
     
     # Check Node version
     local node_version=$(node --version | cut -d'v' -f2)
-    if [[ "$node_version" < "18.0" ]]; then
+    if ! version_at_least "$node_version" "18.0"; then
         log_error "Node.js 18+ required, found $node_version"
         exit 1
     fi
@@ -88,7 +98,8 @@ validate_environment() {
     
     # Check JWT secret strength
     if [[ ${#JWT_SECRET_KEY} -lt 32 ]]; then
-        log_warn "JWT_SECRET_KEY is less than 32 characters - consider using a stronger secret"
+        log_error "JWT_SECRET_KEY must contain at least 32 characters"
+        exit 1
     fi
     
     log_info "✓ Environment validated"
@@ -117,9 +128,11 @@ build_backend() {
     # Run tests
     log_info "Running backend tests..."
     if ! python -m pytest --cov=. --cov-report=term-missing -v; then
+        BACKEND_TEST_RESULT="FAILED"
         log_error "Backend tests failed"
         exit 1
     fi
+    BACKEND_TEST_RESULT="PASSED"
     
     # Build Docker image
     log_info "Building backend Docker image..."
@@ -140,7 +153,7 @@ build_frontend() {
     
     # Install dependencies
     log_info "Installing Node.js dependencies..."
-    npm ci --only=production
+    npm ci
     
     # Build Next.js application
     log_info "Building Next.js application..."
@@ -149,6 +162,7 @@ build_frontend() {
     else
         NODE_ENV=development npm run build
     fi
+    FRONTEND_BUILD_RESULT="PASSED"
     
     # Build Docker image
     log_info "Building frontend Docker image..."
@@ -182,19 +196,17 @@ try:
     db = SupabaseService()
     print('✓ Database connection successful')
     
-    # Check if tables exist
-    tables = ['grid_cells', 'api_keys', 'scenario_runs', 'audit_logs']
+    # Verify the authoritative Supabase-backed schema table names.
+    tables = ['grid_cells', 'api_keys', 'scenario_history', 'audit_logs']
     for table in tables:
-        try:
-            result = db.client.table(table).select('*').limit(1).execute()
-            print(f'✓ Table {table} exists')
-        except Exception as e:
-            print(f'✗ Table {table} missing or error: {e}')
+        result = db.client.table(table).select('*').limit(1).execute()
+        print(f'✓ Table {table} query passed')
             
 except Exception as e:
     print(f'✗ Database setup failed: {e}')
     sys.exit(1)
 "
+    DATABASE_CHECK_RESULT="PASSED"
     
     deactivate
     cd ..
@@ -217,8 +229,10 @@ run_health_checks() {
     # Check backend health
     local backend_url="http://localhost:8000/health"
     if curl -f "$backend_url" &> /dev/null; then
+        BACKEND_HEALTH_RESULT="PASSED"
         log_info "✓ Backend health check passed"
     else
+        BACKEND_HEALTH_RESULT="FAILED"
         log_error "Backend health check failed"
         docker-compose -f docker-compose.prod.yml logs backend
         exit 1
@@ -227,8 +241,10 @@ run_health_checks() {
     # Check frontend health (if running)
     local frontend_url="http://localhost:3000"
     if curl -f "$frontend_url" &> /dev/null; then
+        FRONTEND_HEALTH_RESULT="PASSED"
         log_info "✓ Frontend health check passed"
     else
+        FRONTEND_HEALTH_RESULT="FAILED"
         log_warn "Frontend health check failed - may still be starting"
     fi
     
@@ -252,22 +268,21 @@ generate_deployment_report() {
 1. **Backend API**
    - Version: $(cd $BACKEND_DIR && git rev-parse --short HEAD)
    - Docker Image: $APP_NAME-backend:$TIMESTAMP
-   - Status: ✅ Built and tested
+   - Build: $BACKEND_TEST_RESULT
 
 2. **Frontend Application**
    - Version: $(cd $FRONTEND_DIR && git rev-parse --short HEAD)
    - Docker Image: $APP_NAME-frontend:$TIMESTAMP
-   - Status: ✅ Built
+   - Build: $FRONTEND_BUILD_RESULT
 
 ## Environment Validation
-- �� All required environment variables present
-- ✅ Database connectivity verified
-- ✅ Security checks passed
+- Environment validation: passed (deployment proceeds only after validation)
+- Database check: $DATABASE_CHECK_RESULT
 
 ## Health Status
-- ✅ Backend API: Healthy
-- ✅ Frontend Application: Healthy
-- ✅ Database: Connected
+- Backend API: $BACKEND_HEALTH_RESULT
+- Frontend Application: $FRONTEND_HEALTH_RESULT
+- Database: $DATABASE_CHECK_RESULT
 
 ## Next Steps
 1. Push Docker images to registry:

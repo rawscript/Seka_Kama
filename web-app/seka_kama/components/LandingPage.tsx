@@ -107,7 +107,8 @@ export default function LandingPage() {
            setStats(data);
         } else throw new Error(`Statistics unavailable (HTTP ${response.status}).`);
       } catch (error) {
-        console.error("Failed to load initial stats:", error);
+        // Warn rather than error — expected when the backend is not yet running locally.
+        console.warn("Failed to load initial stats:", error);
         setStatsError(error instanceof Error ? error.message : 'Could not load landscape statistics.');
       }
     };

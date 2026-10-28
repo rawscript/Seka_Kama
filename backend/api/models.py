@@ -2,6 +2,7 @@
 from pydantic import BaseModel, field_validator, Field
 from typing import List, Dict, Optional, Any
 from datetime import datetime
+from shapely.geometry import shape
 
 
 class ScenarioRequest(BaseModel):
@@ -26,9 +27,12 @@ class ScenarioRequest(BaseModel):
     @field_validator('geometry')
     @classmethod
     def validate_geometry_size(cls, v: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate that geometry is not excessively large."""
+        """Validate RFC 7946 longitude/latitude polygon geometry and size."""
+        geometry = v.get("geometry") if v.get("type") == "Feature" else v
+        if not isinstance(geometry, dict) or geometry.get("type") not in ("Polygon", "MultiPolygon"):
+            raise ValueError("Geometry must be an RFC 7946 Polygon or MultiPolygon")
         # Check if coordinates exist
-        coords = v.get('coordinates', [])
+        coords = geometry.get('coordinates', [])
         
         # Recursively count coordinates
         def count_coords(obj):
@@ -46,6 +50,28 @@ class ScenarioRequest(BaseModel):
                 f"Geometry too complex: {coord_count} coordinates. "
                 f"Maximum allowed: 10,000 coordinate pairs."
             )
+
+        def visit_positions(obj):
+            if isinstance(obj, list) and len(obj) >= 2 and all(isinstance(x, (int, float)) for x in obj[:2]):
+                lon, lat = obj[0], obj[1]
+                if not (-180 <= lon <= 180 and -90 <= lat <= 90):
+                    raise ValueError("Coordinates must be RFC 7946 longitude, latitude in degrees")
+                return
+            if isinstance(obj, list):
+                for child in obj:
+                    visit_positions(child)
+
+        visit_positions(geometry.get("coordinates", []))
+        try:
+            polygons = [geometry.get("coordinates", [])] if geometry["type"] == "Polygon" else geometry.get("coordinates", [])
+            for rings in polygons:
+                if not rings or any(not ring or ring[0] != ring[-1] for ring in rings):
+                    raise ValueError("Every GeoJSON polygon ring must be closed")
+            polygon = shape(geometry)
+        except Exception as exc:
+            raise ValueError(f"Malformed GeoJSON geometry: {exc}") from exc
+        if polygon.is_empty or not polygon.is_valid:
+            raise ValueError("Polygon must be non-empty, have closed rings, and contain no self-intersections")
         
         return v
     

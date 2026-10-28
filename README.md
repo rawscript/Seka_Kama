@@ -40,12 +40,12 @@ The diagram below illustrates the logic flow from raw data to predictive simulat
 
 ## 5. Technical Foundation & Impact
 
-Seka Kama is a high-performance Digital Twin built for ecological resilience. The system integrates advanced spatial analysis with predictive modeling to provide a comprehensive decision-support environment for conservationists, researchers, and government agencies.
+Seka Kama is a research interface for spatial conservation data. The checked-in predictive model lacks verified training provenance and validation; it should not be used to claim validated forecasts.
 
 ### Scientific Core
 
 - **Spatial Synthesis** – Precision mapping of human activity layers and habitat fragmentation across the Greater Mara.
-- **Predictive Modeling** – Statistical frameworks built on XGBoost to simulate multi-year population viability.
+- **Legacy model artifact** – An XGBoost bundle is present, but multi-year population viability forecasting is not validated and scenario execution is disabled.
 - **Ecological Intelligence** – Data-driven insights into predator movement patterns and biological corridors.
 
 ### Roadmap  

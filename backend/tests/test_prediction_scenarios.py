@@ -41,3 +41,17 @@ def test_baseline_cells_are_not_mutated():
     _service().calculate_scenario_impact(cells, {"x": 0.1})
     after = hashlib.sha256(repr(cells).encode()).hexdigest()
     assert before == after
+
+
+def test_prediction_failure_propagates_without_returning_estimates():
+    class FailingModel:
+        def predict(self, values):
+            raise RuntimeError("injected model failure")
+
+    service = PredictionService(FailingModel(), IdentityScaler(), ["x", "y"])
+    try:
+        service.calculate_scenario_impact([{"x": 1.0, "y": 2.0}], {})
+    except RuntimeError as exc:
+        assert "injected model failure" in str(exc)
+    else:
+        raise AssertionError("model failure should not produce scenario estimates")

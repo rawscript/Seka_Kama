@@ -80,11 +80,7 @@ class Settings(BaseSettings):
     # CORS Configuration (Production-ready)
     # ALLOWED_ORIGINS is the canonical name. Retain CORS_ALLOWED_ORIGINS as a
     # compatibility alias for existing container-host environment templates.
-    ALLOWED_ORIGINS: str = (
-        os.getenv("ALLOWED_ORIGINS")
-        or os.getenv("CORS_ALLOWED_ORIGINS")
-        or "http://localhost:3000,https://seka-kama.vercel.app"
-    )
+    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "")
     ALLOW_ALL_ORIGINS: bool = os.getenv("ALLOW_ALL_ORIGINS", "false").lower() in ("true", "1", "yes", "on")
     
     @property
@@ -113,7 +109,7 @@ class Settings(BaseSettings):
     
     # Feature Flags (Production-ready)
     FEATURE_LIVE_MODE_ENABLED: bool = os.getenv("FEATURE_LIVE_MODE_ENABLED", "true").lower() in ("true", "1", "yes", "on")
-    FEATURE_SCENARIO_SIMULATION_ENABLED: bool = os.getenv("FEATURE_SCENARIO_SIMULATION_ENABLED", "true").lower() in ("true", "1", "yes", "on")
+    FEATURE_SCENARIO_SIMULATION_ENABLED: bool = os.getenv("FEATURE_SCENARIO_SIMULATION_ENABLED", "false").lower() in ("true", "1", "yes", "on")
     FEATURE_AI_NARRATIVES_ENABLED: bool = os.getenv("FEATURE_AI_NARRATIVES_ENABLED", "true").lower() in ("true", "1", "yes", "on")
     FEATURE_REAL_TIME_UPDATES_ENABLED: bool = os.getenv("FEATURE_REAL_TIME_UPDATES_ENABLED", "false").lower() in ("true", "1", "yes", "on")
     
@@ -147,6 +143,9 @@ class Settings(BaseSettings):
             
             if not self.JWT_SECRET_KEY:
                 raise ValueError("JWT_SECRET_KEY must be set in production")
+
+            if not self.allowed_origins_list:
+                raise ValueError("ALLOWED_ORIGINS must contain at least one production origin")
             
             if len(self.JWT_SECRET_KEY) < 32:
                 logger.warning("JWT_SECRET_KEY is less than 32 characters - consider using a stronger secret")

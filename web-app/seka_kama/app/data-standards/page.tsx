@@ -12,7 +12,7 @@ export default function DataStandardsPage() {
   const standards = [
     {
       title: 'Spatial Resolution',
-      desc: 'The Digital Twin operates on a 1km² (30 arc-second) resolution using the WGS84 (EPSG:4326) coordinate system.',
+      desc: 'The grid geometry is stored in WGS84 (EPSG:4326). The checked-in model bundle does not verify cell dimensions or equal-area cell area; see the model card.',
       icon: Ruler
     },
     {

@@ -2,8 +2,15 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+ARG NEXT_PUBLIC_ENABLE_SCENARIOS=false
+ARG NEXT_PUBLIC_MAP_STYLE_URL=
+ARG NEXT_PUBLIC_MAP_TILE_URL=https://tile.openstreetmap.org/{z}/{x}/{y}.png
+ENV NEXT_PUBLIC_ENABLE_SCENARIOS=$NEXT_PUBLIC_ENABLE_SCENARIOS \
+    NEXT_PUBLIC_MAP_STYLE_URL=$NEXT_PUBLIC_MAP_STYLE_URL \
+    NEXT_PUBLIC_MAP_TILE_URL=$NEXT_PUBLIC_MAP_TILE_URL
+
 # Install dependencies first (layer-cached)
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 RUN npm ci
 
 # Copy the rest of the source

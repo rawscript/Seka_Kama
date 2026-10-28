@@ -1,27 +1,30 @@
 services:
-  postgis:
-    image: postgis/postgis:16-3.4
-    environment:
-      POSTGRES_DB: sekakama
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgis_data:/var/lib/postgresql/data
-  
   fastapi:
     build: ./backend
     environment:
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_KEY: ${SUPABASE_KEY}
-      MODEL_PATH: /models/sekanet_xgboost_2026.pkl
+      SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL is required}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY is required}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?ALLOWED_ORIGINS is required}
+      MODELS_DIR: /app/models
+      FEATURE_SCENARIO_SIMULATION_ENABLED: ${FEATURE_SCENARIO_SIMULATION_ENABLED:-false}
+    volumes:
+      - ./backend/models:/app/models:ro
     ports:
       - "8000:8000"
-    depends_on:
-      - postgis
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
   
   frontend:
-    build: ./web-app/seka_kama
+    build:
+      context: ./web-app/seka_kama
+      args:
+        NEXT_PUBLIC_ENABLE_SCENARIOS: ${NEXT_PUBLIC_ENABLE_SCENARIOS:-false}
+        NEXT_PUBLIC_MAP_STYLE_URL: ${NEXT_PUBLIC_MAP_STYLE_URL:-}
+        NEXT_PUBLIC_MAP_TILE_URL: ${NEXT_PUBLIC_MAP_TILE_URL:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}
     ports:
       - "3000:3000"
 
-volumes:
-  postgis_data:

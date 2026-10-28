@@ -4,15 +4,22 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json .npmrc ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci
 
 # Rebuild stage
 FROM node:20-alpine AS builder
 
 WORKDIR /app
+
+ARG NEXT_PUBLIC_ENABLE_SCENARIOS=false
+ARG NEXT_PUBLIC_MAP_STYLE_URL=
+ARG NEXT_PUBLIC_MAP_TILE_URL=https://tile.openstreetmap.org/{z}/{x}/{y}.png
+ENV NEXT_PUBLIC_ENABLE_SCENARIOS=$NEXT_PUBLIC_ENABLE_SCENARIOS \
+    NEXT_PUBLIC_MAP_STYLE_URL=$NEXT_PUBLIC_MAP_STYLE_URL \
+    NEXT_PUBLIC_MAP_TILE_URL=$NEXT_PUBLIC_MAP_TILE_URL
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

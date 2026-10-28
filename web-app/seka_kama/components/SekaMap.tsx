@@ -104,24 +104,29 @@ function SekaMapContent({
   const [scenarioResult, setScenarioResult] = useState<any>(null);
   const envLandXUrl = process.env.NEXT_PUBLIC_LANDX_TILE_URL || '';
   const landXSourceUrl = getDirectDriveLink(envLandXUrl);
+  const mapStyleUrl = process.env.NEXT_PUBLIC_MAP_STYLE_URL || '';
+  const mapTileUrl = process.env.NEXT_PUBLIC_MAP_TILE_URL ||
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const scenariosEnabled = process.env.NEXT_PUBLIC_ENABLE_SCENARIOS === 'true';
 
   // Derive the selected year from the slider value
   const selectedYear = sliderToYear(timeValue);
 
-  // Map style switches between satellite and vector topographic
+  // Use a configurable style when supplied; otherwise use OpenStreetMap's
+  // openly licensed raster tiles with visible attribution.
   const currentMapStyle: any =
-    activeLayer === 'VECTOR (TOPOGRAPHIC)'
-      ? 'https://demotiles.maplibre.org/style.json'
+    activeLayer === 'VECTOR (TOPOGRAPHIC)' && mapStyleUrl
+      ? mapStyleUrl
       : {
           version: 8,
           sources: {
             satellite: {
               type: 'raster',
               tiles: [
-                'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                mapTileUrl,
               ],
               tileSize: 256,
-              attribution: 'Esri, Maxar',
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
             },
           },
           layers: [
@@ -488,7 +493,7 @@ function SekaMapContent({
           </>
         )}
 
-        <ScenarioDrawer
+        {scenariosEnabled ? <ScenarioDrawer
           onScenarioRun={(res) => {
             console.log('Scenario execution completed with predictions:', {
               baseline: res.baseline_total_lions,
@@ -500,7 +505,11 @@ function SekaMapContent({
             onScenarioRun?.(res);
           }}
           selectedUnit={selectedUnit}
-        />
+        /> : (
+          <div className="absolute bottom-5 left-5 z-40 max-w-sm rounded-lg border border-amber-300 bg-white/95 p-3 text-sm text-slate-800 shadow">
+            Scenario analysis is disabled while model units, training ranges, and validation data are checked.
+          </div>
+        )}
 
         {/* Clear Scenario Button */}
         {scenarioResult && (
@@ -684,7 +693,6 @@ function SekaMapContent({
 
       <style dangerouslySetInnerHTML={{
         __html: `
-          .maplibregl-ctrl-attrib { display: none !important; }
           .maplibregl-canvas { outline: none !important; }
         `,
       }} />

@@ -2,11 +2,17 @@
 
 ## Model target provenance (blocks count-valued scenario claims and unit-aware totals)
 
-Needed: the original training table and target-generation code or signed-off target specification stating the target field, whether it is count or density, the density denominator/unit, observation period, and how every grid cell's area was measured. Also needed: verified cell geometries/areas or the intended equal-area CRS and cell-area calculation. Current checked-in artifacts do not contain this provenance; baseline prediction code only calls the output “lion density”.
+The user indicated that data and a notebook export would be provided in `data/training/`, but that directory does not exist in this checkout (checked at repository root and its parent on 2026-10-27). No target field, target type, unit, cell size, or per-cell area can be resolved from the referenced files because they are absent.
+
+Needed: add the complete `data/training/` folder, including its README, notebook export and training table, plus any files those materials refer to. Then record the target derivation, unit, time period, and geometry inputs from that folder. Do not infer any of these from names in the old model or prior documentation.
+
+Needed for GeoJSON FR3: approved study-area boundary data/geometry and expected API behavior for input extending beyond it. RFC 7946 coordinate order, bounds, polygon ring closure, and self-intersection checks are implemented, but no boundary was present to validate containment against.
+
+Needed for FR5/FR9/FR10/NFR2/NFR4 full acceptance: test PostGIS/Supabase fixture data for at least three named areas, an explicit role/privilege matrix with audit expectations, the NFR2 p95 limit, and NFR4 failure cases. These requirements have no thresholds/fixtures in the checked-in docs, so tests must not fabricate expected values.
 
 ## Retraining and habitat scenarios
 
-Needed: the training labels/table with management-unit IDs and time fields, the original train/validation split or spatial-block definitions, complete covariate join keys, and rights/licences plus acquisition/version metadata for the NDVI, land-cover, rainfall, and prey inputs. The repository has raster files and ingestion scripts but no reproducible training labels or training pipeline. Habitat scenarios must remain disabled until the dataset is supplied, covariates are constructed and spatially validated, and sensitivity analysis supports specific interventions.
+Needed: the training labels/table with management-unit IDs and time fields, the original validation method or spatial-block definitions, and the intended cell_id/year join convention from the missing `data/training/` material. Also needed: rights/licences and acquisition/version metadata for NDVI, land-cover and rainfall. Habitat scenarios must remain disabled until inputs are available, covariates are constructed and spatially validated, and sensitivity analysis supports specific interventions.
 
 ## Feature bounds and ranges
 

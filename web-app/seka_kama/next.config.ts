@@ -43,8 +43,11 @@ const nextConfig: NextConfig = {
     '@loaders.gl/schema'
   ],
 
-  // Bypasses Next.js 16's strict Turbopack enforcement out of the box
-  turbopack: {},
+  // Set the Turbopack workspace root explicitly to silence the multi-lockfile warning.
+  // Without this, Next.js infers the repo root because it detects multiple package-lock.json files.
+  turbopack: {
+    root: __dirname,
+  },
 
   webpack: (config, { isServer }) => {
     // Disable minification to prevent SWC WorkerError crashes with massive deck.gl chunks
@@ -70,7 +73,7 @@ const nextConfig: NextConfig = {
       os: false,
       net: false,
       tls: false,
-      // Optional native deps of `ws` — not available in the browser/edge bundle
+      // Optional native deps of `ws` â€” not available in the browser/edge bundle
       bufferutil: false,
       'utf-8-validate': false,
     };

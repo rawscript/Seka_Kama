@@ -61,6 +61,8 @@ app = FastAPI(
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc",  # Available in production for API consumers
     openapi_url="/openapi.json",  # Required for Redoc
+    # Disable automatic trailing-slash redirects; they convert POST→GET (405).
+    redirect_slashes=False,
 )
 
 @app.middleware("http")
@@ -83,24 +85,34 @@ async def init_middleware(request: Request, call_next):
     
     return await call_next(request)
 
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+# Build CORS origin list.
+# The .env may use CORS_ALLOWED_ORIGINS (legacy) or ALLOWED_ORIGINS (canonical).
+# Accept both so local dev and production deploys both work without editing .env.
+_origins_raw = os.getenv("ALLOWED_ORIGINS") or os.getenv("CORS_ALLOWED_ORIGINS", "")
+allowed_origins = [o.strip() for o in _origins_raw.split(",") if o.strip()]
 
-allowed_origins = list(settings.allowed_origins_list)
 if os.getenv("VERCEL_URL"):
     vo = f"https://{os.getenv('VERCEL_URL')}"
     if vo not in allowed_origins:
         allowed_origins.append(vo)
+
+# Always include localhost ports in development so the frontend dev server can reach the API.
 for p in [3000, 3001, 8000]:
     lo = f"http://localhost:{p}"
     if lo not in allowed_origins:
         allowed_origins.append(lo)
 
-# Always allow the main frontend
+# Always allow the main production frontend.
 if "https://seka-kama.vercel.app" not in allowed_origins:
-    allowed_origins.append("https://seka-kama.vercel.app" or 'FRONTEND_URL')
+    allowed_origins.append("https://seka-kama.vercel.app")
 
 logger.info(f"CORS allowed origins: {allowed_origins}")
 
+# IMPORTANT: CORSMiddleware must be added BEFORE ProxyHeadersMiddleware.
+# In Starlette, add_middleware() stacks are applied last-added = outermost,
+# so the last call here becomes the first middleware to run. CORS must run
+# before anything else so that preflight OPTIONS requests are handled correctly.
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"], expose_headers=["*"], max_age=600)
 
 # Proxy security allowlist - specific hosts for GeoJSON data sources

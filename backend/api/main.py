@@ -80,18 +80,6 @@ async def init_middleware(request: Request, call_next):
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 allowed_origins = list(settings.allowed_origins_list)
-if os.getenv("VERCEL_URL"):
-    vo = f"https://{os.getenv('VERCEL_URL')}"
-    if vo not in allowed_origins:
-        allowed_origins.append(vo)
-for p in [3000, 3001, 8000]:
-    lo = f"http://localhost:{p}"
-    if lo not in allowed_origins:
-        allowed_origins.append(lo)
-
-# Always allow the main frontend
-if "https://seka-kama.vercel.app" not in allowed_origins:
-    allowed_origins.append("https://seka-kama.vercel.app")
 
 logger.info(f"CORS allowed origins: {allowed_origins}")
 

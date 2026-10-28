@@ -21,6 +21,7 @@ from services.audit_service import audit_service
 from core.database import get_db, SupabaseService
 from core.auth import get_current_user, TokenData, require_admin
 from core.rate_limiting import check_rate_limit
+from core.config import settings
 
 router = APIRouter()
 
@@ -403,6 +404,12 @@ async def run_scenario(
     """
     # Apply rate limiting for expensive operations (Issue 21)
     await check_rate_limit(request, limiter_type="expensive")
+
+    if not settings.FEATURE_SCENARIO_SIMULATION_ENABLED:
+        raise HTTPException(
+            status_code=503,
+            detail="Scenario simulation is disabled by FEATURE_SCENARIO_SIMULATION_ENABLED.",
+        )
 
     # The checked-in model has no documented target unit or training ranges,
     # so totals cannot safely be represented as animal counts and no feature

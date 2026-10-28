@@ -1,7 +1,7 @@
 # Seka Kama User Guide
 
 ## Overview
-Seka Kama is an ecological digital twin platform for monitoring and predicting lion population dynamics in the Greater Mara ecosystem. This guide helps you get started with using the platform effectively.
+Seka Kama is a research interface for viewing spatial conservation data in the Greater Mara. The bundled model is not validated for lion population forecasts, and scenario execution is currently disabled. This guide describes the available interface without implying prediction validity.
 
 ## Quick Start
 
