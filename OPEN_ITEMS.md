@@ -1,35 +1,118 @@
 # Open items
 
-## Model target provenance (blocks count-valued scenario claims and unit-aware totals)
+## Blocking (user must provide)
 
-The user indicated that data and a notebook export would be provided in `data/training/`, but that directory does not exist in this checkout (checked at repository root and its parent on 2026-10-27). No target field, target type, unit, cell size, or per-cell area can be resolved from the referenced files because they are absent.
+These items cannot be resolved from repository contents. Documentation accurately reflects "unknown" or "user must provide" for each.
 
-Needed: add the complete `data/training/` folder, including its README, notebook export and training table, plus any files those materials refer to. Then record the target derivation, unit, time period, and geometry inputs from that folder. Do not infer any of these from names in the old model or prior documentation.
+### Training data and model provenance
 
-Needed for GeoJSON FR3: approved study-area boundary data/geometry and expected API behavior for input extending beyond it. RFC 7946 coordinate order, bounds, polygon ring closure, and self-intersection checks are implemented, but no boundary was present to validate containment against.
+- `data/training/` folder with notebook export and training table
+- Target field, unit, and derivation formula from training
+- Training period, labels, and spatial-block validation definitions
+- Feature minima, maxima, and percentiles from training data
 
-Needed for FR5/FR9/FR10/NFR2/NFR4 full acceptance: test PostGIS/Supabase fixture data for at least three named areas, an explicit role/privilege matrix with audit expectations, the NFR2 p95 limit, and NFR4 failure cases. These requirements have no thresholds/fixtures in the checked-in docs, so tests must not fabricate expected values.
+### HWC risk score validation
 
-## Retraining and habitat scenarios
+- Validation evidence for weight coefficients (0.50, 0.35, 0.15)
+- Calibration evidence for thresholds (proximity_threshold_km=10, rainfall_baseline_mm=800)
+- Missing-value behavior justification (neutral fallback 0.075 is arbitrary)
 
-Needed: the training labels/table with management-unit IDs and time fields, the original validation method or spatial-block definitions, and the intended cell_id/year join convention from the missing `data/training/` material. Also needed: rights/licences and acquisition/version metadata for NDVI, land-cover and rainfall. Habitat scenarios must remain disabled until inputs are available, covariates are constructed and spatially validated, and sensitivity analysis supports specific interventions.
+**Note:** The HWC risk score formula EXISTS and is implemented in `backend/services/ecological_data_service.py` (`derive_hwc_risk()` function). It is NOT a model input feature. Status: formula implemented but not validated against ground truth.
 
-## Feature bounds and ranges
+### Source licenses and provenance
 
-Needed: the training feature matrix or model bundle metadata containing training minima, maxima, and percentiles for every ordered feature, plus authoritative feature units/meaning. These cannot be reconstructed reliably from the serialized model and feature-name list alone.
+- Source licenses and acquisition dates for external data:
+  - NDVI (`tif/SekaKama_MaraGrid_NDVI_2025.shp`): provider/product unknown
+  - Land cover (`tif/Mara_LandCover_10m.tif`): provider/product unknown
+  - Rainfall (NASA POWER/CHIRPS): license terms
+  - WDPA: release month and license
+  - Prey proxy (GBIF): usage terms
 
-## HWC risk definition
+### Spatial data
 
-Needed: the approved formula for `hwc_risk_score`, including source fields, coefficients/normalization, time window, missing-value behavior, and validation evidence. Schema only establishes a float with default zero; it does not define the score.
+- Study-area boundary GeoJSON for FR3 containment validation
+- Actual grid cell areas (in km²) — "1 km" is a comment/assumption, not validated from source data
 
-## Baseline and supplementary data provenance
+### Test fixtures and credentials
 
-Needed: source/product/version/licence/download dates for lion baseline and prey inputs; rainfall product and time period; exact grid-cell area; WDPA release month; and source CRS/resolution/transformation records. `baseline_lion_density`, `prey_density`, `annual_rainfall_mm`, and `dist_to_protected_km` are not adequately defined in the checked-in docs/code.
+- PostGIS test fixtures and credentials for integration testing
+- Role/privilege matrix with audit expectations
+- NFR2 p95 limit and NFR4 failure cases
 
-## Runtime database and clean Compose verification
+## Actionable when data arrives
 
-Needed: an authorized clean-checkout integration environment with Docker available and a decision to migrate runtime data access/schema from Supabase/PostgREST RPC to direct PostGIS, or a Supabase-backed deployment configuration and credentials suitable for non-production verification. Runtime currently uses Supabase while Compose also defines incomplete PostgreSQL instances. No Docker daemon/credentials are established in this checkout.
+These items would become actionable if the training folder or other missing data were provided.
 
-## Sensitive location policy and test fixtures
+### Retraining and habitat scenarios
 
-Needed: role matrix for precise locations/exports and non-sensitive expected fixture areas for independent PostGIS selection tests. Need an available test PostGIS service to run integration and 500-cell p95 checks.
+- Retraining pipeline (blocked by training data)
+- Habitat scenario feature enablement (blocked by training ranges, sensitivity evidence)
+- Feature bounds and ranges for scenario validation
+
+### Count-valued scenario claims
+
+- Reliable interpretation of prediction sums as lion counts (blocked by target unit and actual cell areas)
+
+### Source licensing and provenance
+
+- Complete source register entries (blocked by provider/product/license information)
+
+## Items addressed/clarified
+
+### HWC risk score definition
+
+**Status:** Formula EXISTS in `derive_hwc_risk()` function.
+
+- Location: `backend/services/ecological_data_service.py` lines 113–141
+- Inputs: nightlight intensity, distance to protected area (km), rainfall_mm
+- Weights: settlement_weight=0.50, proximity_weight=0.35, rainfall_weight=0.15
+- Formula: `min(light + prox + rain, 1.0)` where:
+  - `light = min(nightlight, 1.0) * 0.50`
+  - `prox = max(0, (10 - dist_protected_km) / 10) * 0.35`
+  - `rain = max(0, (800 - rainfall_mm) / 800) * 0.15` (or 0.075 neutral fallback)
+- Returns: float in range [0, 1], rounded to 4 decimals
+- Default: 0 (when enrichment has not run or rainfall unavailable)
+- **Not a model input feature** (confirmed by `docs/data_dictionary.md`)
+- **Validation evidence required** for weights and thresholds
+
+### Baseline lion density provenance
+
+**Status:** Documented as model output, not ground truth.
+
+- Written by `backend/scripts/run_baseline_predictions.py`
+- Negative predictions clipped to 0 (`np.clip(preds, 0.0, None)`)
+- Target unit remains unknown
+
+### Scenario endpoint behavior
+
+**Status:** Returns 503 intentionally.
+
+- Two checks in `backend/api/routes.py` lines 409–421
+- `backend/config/scenario_features.yaml` has `enabled: false`
+- Rationale documented: no feature has verified units, training ranges, and sensitivity evidence
+
+### CORS configuration
+
+**Status:** Clarified.
+
+- `backend/api/main.py`: reads ONLY from `settings.allowed_origins_list` (strict)
+- `backend/main.py`: reads ALLOWED_ORIGINS BUT ALSO appends localhost ports and production frontend
+
+### Grid cell size
+
+**Status:** "1 km" is comment/assumption, not validated.
+
+- No cell-area validation in `backend/sql/bootstrap.sql` or `backend/scripts/import_grid_cells.py`
+- Actual cell areas unknown without computing from geometry
+
+### Raster files in tif/
+
+**Status:** Files exist, provenance unknown.
+
+| File | Size | Known |
+|---|---|---|
+|`Mara_LandCover_10m.tif`|~3 MB|10m resolution by filename|
+|`SekaKama_MaraGrid_NDVI_2025.*` (6 files)|~16 KB|2025 by filename|
+|`seka_kama_historical_trends.csv`|320 bytes|Purpose unknown|
+
+Licenses, providers, acquisition dates: unknown.

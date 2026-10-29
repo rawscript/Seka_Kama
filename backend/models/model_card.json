@@ -12,11 +12,87 @@
   "metrics": null,
   "git_commit": null,
   "date": "2026-10-27",
+  "input_features": [
+    "longterm_slope_mean",
+    "longterm_slope_std",
+    "all_skew_mean",
+    "all_skew_std",
+    "all_mean_mean",
+    "all_mean_std",
+    "all_kurtosis_mean",
+    "all_kurtosis_std",
+    "all_median_mean",
+    "all_median_std",
+    "all_variance_mean",
+    "all_variance_std",
+    "licorr_slope_mean",
+    "licorr_slope_std",
+    "longterm_intercept_mean",
+    "longterm_intercept_std",
+    "longterm_r2_mean",
+    "longterm_r2_std",
+    "pop2018_mean",
+    "pop2018_std",
+    "primary_acf_mean",
+    "primary_acf_std",
+    "primary_prominence_mean",
+    "primary_prominence_std",
+    "secondary_acf_mean",
+    "secondary_acf_std",
+    "secondary_prominence_mean",
+    "secondary_prominence_std",
+    "ann_amp_mean",
+    "ann_amp_std",
+    "ann_cv_mean",
+    "ann_cv_std",
+    "ann_peak_month_mean",
+    "ann_peak_month_std",
+    "ann_trend_mean",
+    "ann_trend_std",
+    "ann_mean_mean",
+    "ann_mean_std",
+    "density_code",
+    "hist_lag1",
+    "hist_lag2",
+    "cheetah_abundance",
+    "dist_to_protected_km"
+  ],
+  "artifact_files": [
+    {
+      "filename": "sekanet_xgboost_shp.pkl",
+      "size_bytes": 107232,
+      "description": "Trained XGBoost model"
+    },
+    {
+      "filename": "sekanet_scaler_shp.pkl",
+      "size_bytes": 1631,
+      "description": "Feature scaler (StandardScaler)"
+    },
+    {
+      "filename": "feature_names.pkl",
+      "size_bytes": 819,
+      "description": "Ordered list of 43 feature names"
+    },
+    {
+      "filename": "model_card.json",
+      "size_bytes": 792,
+      "description": "This model card manifest"
+    }
+  ],
+  "disabled_features": {
+    "habitat_scenarios": {
+      "enabled": false,
+      "config_file": "backend/config/scenario_features.yaml",
+      "disabled_reason": "No feature has verified units, training ranges, and sensitivity evidence in the checked-in model bundle",
+      "features": []
+    }
+  },
   "limitations": [
     "The user-referenced data/training folder was absent from the checkout at the time this manifest was updated.",
     "Training data and target-generation code are not present in the repository.",
     "Target unit and per-cell area are unverified.",
     "Feature ranges and training percentiles are unavailable.",
-    "Habitat covariates are absent from the 43-feature model input."
+    "Habitat covariates are absent from the 43-feature model input.",
+    "hwc_risk_score is NOT a model input feature; it is derived separately via ecological_data_service.derive_hwc_risk() with configurable weights (settlement_weight=0.50, proximity_weight=0.35, rainfall_weight=0.15). The formula is implemented but not validated against ground truth. Default value is 0 when enrichment has not run."
   ]
 }

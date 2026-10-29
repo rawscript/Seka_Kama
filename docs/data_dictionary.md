@@ -55,7 +55,7 @@ Mean/std sibling columns above are paired descriptives; scenarios may not modify
 | Field | Type/unit | Meaning / derivation | Status |
 |---|---|---|---|
 |baseline_lion_density|numeric; unit unresolved|Baseline model prediction written by `run_baseline_predictions.py`; target definition unavailable|Stored |
-|hwc_risk_score|numeric, nominal 0–1 in request spec only|Exact formula unavailable; column defaults to 0|Stored |
+|hwc_risk_score|numeric, range 0–1|Formula in `ecological_data_service.derive_hwc_risk()`; weights 0.50/0.35/0.15; not validated|Stored |
 |prey_density|numeric; unit unresolved|No validated derivation found|Stored/optional enrichment |
 |annual_rainfall_mm|numeric; nominal mm/year by name|Product/period not fully specified in code|Stored/optional enrichment |
 |NDVI|numeric; product units/period unresolved|Raster/shapefile ingestion exists, but no explicit model feature|Optional input |
