@@ -1,0 +1,167 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "id": 1,
+      "severity": "HIGH",
+      "title": "PostGIS RPC Function Signature Mismatch",
+      "location": "Section 4: Spatial Validation Framework - CRS Contract Enforcement",
+      "problem": "Design assumes validation can transform geometry before RPC call, but actual get_cells_in_geometry RPC performs its own ST_GeomFromGeoJSON parsing. Validation must occur as input gate, not transformation.",
+      "fix": "Specify that SpatialContract.validate_geometry() runs BEFORE RPC call and raises HTTPException 400 on failure. Update code snippet to show validation -> RPC sequence."
+    },
+    {
+      "id": 2,
+      "severity": "HIGH",
+      "title": "Ambiguous Spatial Validation Implementation Pattern",
+      "location": "Section 4: Spatial Validation Framework (multiple subsections)",
+      "problem": "Design proposes TWO conflicting validation patterns (Python-side via SpatialContract AND database-side via CHECK constraints) without specifying precedence, error propagation, or migration risk.",
+      "fix": "Define clear validation architecture with LAYER 1 (API input validation) and LAYER 2 (DB constraint enforcement). Specify error translation and add migration validation script."
+    },
+    {
+      "id": 3,
+      "severity": "HIGH",
+      "title": "Circuit Breaker Implementation Incomplete",
+      "location": "Section 7: Circuit Breaker Pattern",
+      "problem": "Circuit breaker storage mechanism unspecified. Does not address: where instances are stored, persistence across worker restarts, per-worker vs shared state, manual reset mechanism.",
+      "fix": "Specify singleton registry pattern for circuit breaker storage. Document per-worker limitation. Add admin reset endpoint specification."
+    },
+    {
+      "id": 4,
+      "severity": "HIGH",
+      "title": "HWC Risk Validation Gate Returns Wrong Type",
+      "location": "Section 8: HWC Risk Score Validation Gate",
+      "problem": "Design changes derive_hwc_risk() return type from float to Tuple[float, Dict], which is a breaking change that will fail at all call sites (ecological_data_service.py line 262-263).",
+      "fix": "Keep existing derive_hwc_risk() signature unchanged. Create NEW wrapper function derive_hwc_risk_with_metadata() that returns tuple. Update API routes to call wrapper when metadata needed."
+    },
+    {
+      "id": 5,
+      "severity": "HIGH",
+      "title": "Grid Cell Area Validation Missing Migration Strategy",
+      "location": "Section 4: Grid Cell Area Validation",
+      "problem": "Adding GENERATED STORED column rewrites entire table (expensive). Design does not specify migration duration, maintenance window requirement, timeout handling, or validation of computed values.",
+      "fix": "Add explicit migration strategy with timing estimate (1-2 min per 100K rows), CONCURRENTLY index creation, and validation query to detect NULL or outlier areas."
+    },
+    {
+      "id": 6,
+      "severity": "HIGH",
+      "title": "Response Schema Enforcement Breaking Change",
+      "location": "Section 2: Response Schema Enforcement",
+      "problem": "Wrapping all routes in SuccessResponse breaks frontend consumers. Current /baseline returns BaselineResponse directly; new format adds wrapping object. No migration strategy specified.",
+      "fix": "Specify versioned API migration with ?v=2 query parameter, backward compatibility period (3 months), and deprecation warning header. OR keep domain-specific models for existing routes."
+    },
+    {
+      "id": 7,
+      "severity": "HIGH",
+      "title": "Frontend Tailwind Config Creation Unverified",
+      "location": "Section 6: Hardcoded Color Elimination",
+      "problem": "Design proposes creating tailwind.config.js but globals.css uses @theme directive (Tailwind v4), which replaces traditional config. Conflicts with actual implementation pattern.",
+      "fix": "Verify Tailwind version. If v4, extend @theme in globals.css instead of creating config file. Update design to use CSS custom properties in arbitrary values."
+    },
+    {
+      "id": 8,
+      "severity": "HIGH",
+      "title": "Source Registry YAML Schema Undefined",
+      "location": "Section 8: Source Registry",
+      "problem": "Proposes YAML file but does not specify formal schema, validation on load, required fields, allowed enum values, or enforcement mechanism for updates.",
+      "fix": "Define Pydantic schema (DataSourceMetadata, ModelMetadata, SourceRegistry). Add validation in config.py load function with error handling for malformed/missing YAML."
+    },
+    {
+      "id": 9,
+      "severity": "MEDIUM",
+      "title": "Directory Reorganization Breaks Relative Links",
+      "location": "Section 1: Directory Structure Reorganization",
+      "problem": "Moving docs from root to docs/ will break GitHub badges, hardcoded paths in code/scripts, and external documentation links. Design says 'update cross-references' but doesn't specify how to find them or handle external links.",
+      "fix": "Specify grep search pattern for all references. Add redirect stubs in root (e.g., AUDIT.md contains 'Moved to docs/AUDIT.md'). Document breaking change in commit message."
+    },
+    {
+      "id": 10,
+      "severity": "MEDIUM",
+      "title": "Backend Scripts Reorganization Missing __init__.py Specifications",
+      "location": "Section 1: Backend Scripts Organization",
+      "problem": "Proposes subdirectories with __init__.py but does not specify exact content of each file, whether scripts remain executable, or complete list of import path updates needed.",
+      "fix": "Specify exact __init__.py content for each subdirectory with module docstrings. Create migration checklist with all files to move and imports to update."
+    },
+    {
+      "id": 11,
+      "severity": "MEDIUM",
+      "title": "Query Plan Analysis Function Signature Mismatch",
+      "location": "Section 5: Query Plan Analysis",
+      "problem": "Design shows 'result = await query_func()' but query_func is not specified as async. Will fail at runtime with 'object is not awaitable' error.",
+      "fix": "Either make query_func sync (remove await) OR require Callable[..., Awaitable] type hint. Specify which pattern is used throughout the design."
+    },
+    {
+      "id": 12,
+      "severity": "MEDIUM",
+      "title": "Emoji Removal Pattern Too Broad",
+      "location": "Section 6: Emoji Elimination",
+      "problem": "Regex pattern will match emoji in string literals (correct), JSON user data (incorrect - should preserve), and test fixtures (incorrect - may be intentional). No distinction specified.",
+      "fix": "Narrow scope to 'Remove emoji from console.log and UI labels only'. Specify search pattern for console.log only. Explicitly exclude database content and test files."
+    },
+    {
+      "id": 13,
+      "severity": "MEDIUM",
+      "title": "Feature Flag Toggling Logic Incomplete",
+      "location": "Section 10: Service Faucets",
+      "problem": "Proposes feature flags but does not specify: flag evaluation timing (startup vs per-request), race condition handling, or user communication when disabled.",
+      "fix": "Specify flags are read once at startup and stored in app.state. Add early-return pattern with logging when disabled. Update /services/status endpoint to show flag values."
+    },
+    {
+      "id": 14,
+      "severity": "MEDIUM",
+      "title": "Fallback Strategy for Enrichment Errors Unclear",
+      "location": "Section 7: Graceful Degradation",
+      "problem": "Shows fallback to stored value but doesn't specify: behavior when stored value also missing/zero, whether to skip cell from prediction, or whether to return partial result vs fail entire request.",
+      "fix": "Specify fallback priority: live API -> stored value -> regional average -> ecosystem default. Add rainfall_metadata field with source, confidence, last_updated."
+    },
+    {
+      "id": 15,
+      "severity": "MEDIUM",
+      "title": "Code Simplification Targets Not Prioritized",
+      "location": "Section 9: Code Simplification Targets",
+      "problem": "Lists two refactoring targets but does not estimate complexity/risk, prioritize them, or specify acceptance criteria for verifying equivalence.",
+      "fix": "Add priority and risk assessment table. Specify acceptance criteria (tests pass, performance ≤ baseline). Require unit test coverage BEFORE refactoring."
+    },
+    {
+      "id": 16,
+      "severity": "NIT",
+      "title": "Inconsistent SQL Function Naming Convention",
+      "location": "Section 4: Study Area Boundary Validation",
+      "problem": "Proposes validate_within_study_area() as Python function but other spatial ops use SQL RPC. Inconsistent pattern unclear whether intentional.",
+      "recommendation": "Clarify that study area validation stays in Python (client-side) to avoid RPC roundtrips. Document this architectural decision."
+    },
+    {
+      "id": 17,
+      "severity": "NIT",
+      "title": "Missing Example for OpenAPI Operation IDs",
+      "location": "Section 2: OpenAPI Enhancement",
+      "problem": "Shows operation_id example but does not specify naming convention (snake_case vs camelCase, match function name or not).",
+      "recommendation": "Add naming convention: 'Operation IDs use snake_case matching route function name. Example: get_baseline -> operation_id=get_baseline_grid'"
+    },
+    {
+      "id": 18,
+      "severity": "NIT",
+      "title": "Logging Level Specification Vague",
+      "location": "Section 7: Structured Logging",
+      "problem": "Shows example log calls but does not specify WHEN to use each level (DEBUG, INFO, WARNING, ERROR, CRITICAL).",
+      "recommendation": "Add logging level guidelines: DEBUG=payloads, INFO=successful ops, WARNING=recoverable errors, ERROR=operation failures, CRITICAL=system failures."
+    },
+    {
+      "id": 19,
+      "severity": "NIT",
+      "title": "SQL Migration Numbering Not Specified",
+      "location": "Section 4, 14",
+      "problem": "Mentions numbered migrations (001, 002) but does not specify numbering scheme or execution mechanism (manual vs framework like Alembic).",
+      "recommendation": "Clarify: 'Migrations numbered sequentially (001, 002, ...) executed manually via Supabase SQL Editor. Add migration log table to track applied migrations.'"
+    }
+  ],
+  "reviewDoc": "d:\\projects\\seka_kama\\Seka_Kama\\.agents\\tasks\\design-review.md",
+  "summary": {
+    "totalFindings": 19,
+    "highSeverity": 8,
+    "mediumSeverity": 7,
+    "nitSeverity": 4,
+    "verifiedAssumptions": 12,
+    "unverifiedAssumptions": 8
+  },
+  "recommendation": "The design is comprehensive and well-structured, but contains critical specification gaps that must be resolved before implementation. Most issues are missing concrete details rather than fundamental flaws. Addressing the HIGH and MEDIUM findings will make the design implementation-ready. Estimated revision time: 2-4 hours."
+}
