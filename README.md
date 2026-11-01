@@ -15,13 +15,34 @@ SekaKama is a research interface for exploring spatial data related to human dev
 
 ## 2. Vision
 
-> **Model status (2026-10-27):** The checked-in legacy XGBoost artifact has no verified target unit, training data, feature ranges, or habitat inputs. Scenario simulation is therefore disabled in the API pending the data and provenance listed in [OPEN_ITEMS.md](OPEN_ITEMS.md). The model must not be interpreted as a validated count of lions or as a causal forecast. See [MODEL_CARD.md](MODEL_CARD.md) and [docs/data_dictionary.md](docs/data_dictionary.md).
+> **Model status (2026-10-27):** The checked-in legacy XGBoost artifact has no verified target unit, training data, feature ranges, or habitat inputs. Scenario simulation is therefore disabled in the API pending the data and provenance listed in [docs/OPEN_ITEMS.md](docs/OPEN_ITEMS.md). The model must not be interpreted as a validated count of lions or as a causal forecast. See [docs/MODEL_CARD.md](docs/MODEL_CARD.md) and [docs/data_dictionary.md](docs/data_dictionary.md).
 
-The repository contains a legacy XGBoost model and spatial analysis interface. Its training target, units, and validation are not documented well enough to support population viability forecasts. See the model status note above and [MODEL_CARD.md](MODEL_CARD.md).
+The repository contains a legacy XGBoost model and spatial analysis interface. Its training target, units, and validation are not documented well enough to support population viability forecasts. See the model status note above and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
 
 Scenario simulation remains disabled until the documented data and model requirements are met.
 
 ## 3. Documentation and Resources
+
+### Repository Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [docs/AUDIT.md](docs/AUDIT.md) | Repository audit findings covering model provenance, database configuration, and production readiness |
+| [docs/OPEN_ITEMS.md](docs/OPEN_ITEMS.md) | Blocking items requiring user input (training data, source licenses, validation evidence) |
+| [docs/MODEL_CARD.md](docs/MODEL_CARD.md) | Model artifact inventory, input features, and HWC risk score formula |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | Change log for specification tasks and feature status |
+| [docs/SECURITY.md](docs/SECURITY.md) | Security policy and vulnerability reporting procedures |
+| [docs/CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md) | Contributor code of conduct and data responsibilities |
+
+### Phase 1 Audit Reports
+
+| Report | Purpose |
+|--------|---------|
+| [docs/api_consistency_audit.md](docs/api_consistency_audit.md) | API route consistency, response schemas, error handling, and input validation audit |
+| [docs/frontend_visual_audit.md](docs/frontend_visual_audit.md) | Frontend visual consistency audit covering colors, spacing, and layout patterns |
+| [docs/mock_behavior_inventory.md](docs/mock_behavior_inventory.md) | Inventory of mock behaviors, placeholders, and disabled features requiring implementation |
+
+### External Resources
 
 The following documents provide the foundational logic, raw data parameters, and research methodology:
 

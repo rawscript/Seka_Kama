@@ -14,7 +14,7 @@
 
 ## Task 3 — Habitat inputs and retraining
 
-- `docs/data_dictionary.md`, `backend/models/model_card.json`, and `MODEL_CARD.md` record that habitat variables are not model inputs and provenance is missing.
+- `data_dictionary.md`, `backend/models/model_card.json`, and `MODEL_CARD.md` record that habitat variables are not model inputs and provenance is missing.
 - Open: training table/labels, temporal joins and source licences are needed. No fabricated training pipeline, metrics, or response curves were created. Habitat scenarios remain disabled.
 
 ## Task 4 — Result honesty and uncertainty
@@ -24,7 +24,7 @@
 
 ## Task 5 — Definitions and provenance
 
-- `docs/data_dictionary.md` and `docs/source_register.md` explicitly identify unresolved units/formulas and source metadata.
+- `data_dictionary.md` and `source_register.md` explicitly identify unresolved units/formulas and source metadata.
 - Open: exact HWC formula, baseline/prey/rainfall units, projected distance method, data source licences/acquisition dates, and WDPA release month.
 
 ## Task 6 — Infrastructure
@@ -39,5 +39,5 @@
 
 ## Task 8 — Documentation sync
 
-- Added `AUDIT.md`, `OPEN_ITEMS.md`, `MODEL_CARD.md`, `docs/data_dictionary.md`, `docs/source_register.md`; added a model-status note to `README.md`.
+- Added `AUDIT.md`, `OPEN_ITEMS.md`, `MODEL_CARD.md`, `data_dictionary.md`, `source_register.md`; added a model-status note to `README.md`.
 - The project documentation's unsupported claims about direct scenario effects, validated lion counts, and habitat support must be corrected against the open items before re-enabling those capabilities.

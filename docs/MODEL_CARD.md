@@ -1,6 +1,6 @@
 # Model card
 
-The checked-in artifact is the legacy SekaNet XGBoost bundle (`backend/models/sekanet_xgboost_shp.pkl`, scaler and ordered feature list). Its ordered inputs are documented in [docs/data_dictionary.md](docs/data_dictionary.md). The user-referenced `data/training/` directory was not present in this checkout when this card was updated, so no target metadata or training metrics could be extracted from it.
+The checked-in artifact is the legacy SekaNet XGBoost bundle (`backend/models/sekanet_xgboost_shp.pkl`, scaler and ordered feature list). Its ordered inputs are documented in [data_dictionary.md](data_dictionary.md). The user-referenced `data/training/` directory was not present in this checkout when this card was updated, so no target metadata or training metrics could be extracted from it.
 
 | Item | Status |
 |---|---|
@@ -27,7 +27,7 @@ Four files in `backend/models/`:
 
 ## Input features (43 total)
 
-The model expects 43 features in the exact order defined in `feature_names.pkl`. Feature units are unknown unless noted. See [docs/data_dictionary.md](docs/data_dictionary.md) for full inventory.
+The model expects 43 features in the exact order defined in `feature_names.pkl`. Feature units are unknown unless noted. See [data_dictionary.md](data_dictionary.md) for full inventory.
 
 ## Disabled features
 
@@ -45,4 +45,4 @@ Scenario modifications are disabled (`backend/config/scenario_features.yaml` has
 - **Status:** Formula implemented but not validated against ground truth
 - **Default:** 0 (when enrichment has not run or rainfall unavailable)
 
-This artifact is not currently suitable for defensible count-valued scenario comparisons, habitat interventions, or user-facing causal claims. Requirements to reproduce and validate it are in [OPEN_ITEMS.md](OPEN_ITEMS.md).
+This artifact is not currently suitable for defensible count-valued scenario comparisons, habitat interventions, or user-facing causal claims. Requirements to reproduce and validate it are in [OPEN_ITEMS.md](OPEN_ITEMS.md) (same directory).

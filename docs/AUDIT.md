@@ -33,7 +33,7 @@ Audit date: 2026-10-27. Paths and line numbers refer to this checkout at audit t
 
 ## Feature inventory
 
-The 43 model features, exact pickle order, and categorical/paired-column status are listed in `docs/data_dictionary.md`. Explicit NDVI, land-cover, rainfall, and prey variables are absent. `baseline_lion_density` and `hwc_risk_score` also are not model features in this bundle.
+The 43 model features, exact pickle order, and categorical/paired-column status are listed in `data_dictionary.md`. Explicit NDVI, land-cover, rainfall, and prey variables are absent. `baseline_lion_density` and `hwc_risk_score` also are not model features in this bundle.
 
 ## HWC risk score
 
