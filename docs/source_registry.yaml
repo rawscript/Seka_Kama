@@ -1,0 +1,109 @@
+sources:
+  ndvi:
+    file: "tif/SekaKama_MaraGrid_NDVI_2025.shp"
+    product: "unknown"
+    provider: "unknown"
+    license: "unknown"
+    status: "pending_documentation"
+    acquisition_date: null
+    temporal_coverage: "2025 (from filename)"
+    resolution: "unknown"
+    notes: "NDVI shapefile used for vegetation analysis. Provenance documentation required."
+  
+  landcover:
+    file: "tif/Mara_LandCover_10m.tif"
+    product: "unknown"
+    provider: "unknown"
+    license: "unknown"
+    status: "pending_documentation"
+    acquisition_date: null
+    temporal_coverage: "unknown"
+    resolution: "10m (from filename)"
+    notes: "Land cover raster at 10m resolution. Provider and license information required."
+  
+  rainfall_nasa_power:
+    api_endpoint: "https://power.larc.nasa.gov/api/temporal/daily/point"
+    product: "NASA POWER PRECTOTCORR"
+    provider: "NASA Langley Research Center"
+    license: "pending_license_verification"
+    status: "pending_license_verification"
+    acquisition_date: "live_api"
+    temporal_coverage: "1981-present"
+    resolution: "0.5° x 0.5°"
+    notes: "Primary rainfall data source. Verify terms of use for production deployment."
+  
+  rainfall_chirps:
+    product: "CHIRPS (Climate Hazards Group InfraRed Precipitation with Station data)"
+    provider: "UCSB Climate Hazards Center"
+    license: "pending_license_verification"
+    status: "pending_license_verification"
+    acquisition_date: "pending"
+    temporal_coverage: "1981-present"
+    resolution: "0.05° x 0.05°"
+    notes: "Fallback rainfall source. Implementation pending. License: likely CC BY 4.0, verify."
+  
+  wdpa:
+    product: "World Database on Protected Areas"
+    provider: "UNEP-WCMC and IUCN"
+    license: "pending_license_verification"
+    status: "pending_license_verification"
+    acquisition_date: "unknown"
+    temporal_coverage: "unknown"
+    resolution: "vector"
+    notes: "Protected areas geometries. Verify attribution requirements and terms of use."
+  
+  gbif_prey:
+    api_endpoint: "https://api.gbif.org/v1/occurrence/search"
+    product: "GBIF Occurrence Records"
+    provider: "Global Biodiversity Information Facility"
+    license: "pending_license_verification"
+    status: "pending_license_verification"
+    acquisition_date: "live_api"
+    temporal_coverage: "species-dependent"
+    resolution: "point occurrences"
+    notes: "Herbivore occurrence data for prey density estimation. Verify attribution and citation requirements."
+  
+  nightlight_viirs:
+    product: "unknown"
+    provider: "unknown (likely NOAA VIIRS)"
+    license: "unknown"
+    status: "pending_documentation"
+    acquisition_date: "unknown"
+    temporal_coverage: "unknown"
+    resolution: "unknown"
+    notes: "Nighttime light data used for human settlement proxy. Source documentation required."
+
+model:
+  artifact: "backend/models/sekanet_xgboost_shp.pkl"
+  algorithm: "XGBoost"
+  target_field: "unknown"
+  target_unit: "unknown"
+  training_data: "data/training/ (not present in repository)"
+  training_period: "unknown"
+  spatial_validation: "unknown"
+  feature_count: 43
+  features_file: "backend/models/feature_names.pkl"
+  scaler_file: "backend/models/sekanet_scaler_shp.pkl"
+  status: "pending_provenance"
+  notes: "Lion density prediction model. Training data provenance, target variable definition, and spatial cross-validation methodology require documentation."
+
+validation_gates:
+  - gate: "training_provenance"
+    status: "blocking"
+    required_for: "model_card_completion"
+    description: "Document training data sources, collection methods, and temporal coverage"
+  
+  - gate: "hwc_risk_calibration"
+    status: "blocking"
+    required_for: "production_deployment"
+    description: "Validate HWC risk score formula against ground truth conflict incidents"
+  
+  - gate: "source_licenses"
+    status: "blocking"
+    required_for: "public_deployment"
+    description: "Verify all data source licenses permit production use and document attribution requirements"
+  
+  - gate: "spatial_validation"
+    status: "blocking"
+    required_for: "scientific_publication"
+    description: "Document spatial cross-validation methodology used in model training"
