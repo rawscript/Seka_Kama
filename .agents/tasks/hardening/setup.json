@@ -1,0 +1,18 @@
+{
+  "workdir": "d:/projects/seka_kama/Seka_Kama",
+  "created_timestamp": "2025-01-29T10:12:00Z",
+  "audit_reports": {
+    "frontend_visual_audit": {
+      "path": "d:/projects/seka_kama/Seka_Kama/docs/frontend_visual_audit.md",
+      "found": true
+    },
+    "api_consistency_audit": {
+      "path": "d:/projects/seka_kama/Seka_Kama/docs/api_consistency_audit.md",
+      "found": true
+    },
+    "mock_behavior_inventory": {
+      "path": "d:/projects/seka_kama/Seka_Kama/docs/mock_behavior_inventory.md",
+      "found": true
+    }
+  }
+}
