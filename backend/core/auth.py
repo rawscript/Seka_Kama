@@ -114,6 +114,13 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        if not value or "@" not in value:
+            raise ValueError("Invalid email format")
+        return value.strip().lower()
+
 class UserResponse(BaseModel):
     id: int
     email: str

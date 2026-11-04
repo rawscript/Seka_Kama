@@ -18,6 +18,57 @@ from core.auth import (
 router = APIRouter(prefix="/auth", tags=["authentication"])
 logger = logging.getLogger(__name__)
 
+
+def _authenticate_user(email: str, password: str, invalid_detail: str, failure_detail: str) -> Token:
+    supabase = get_supabase_client()
+
+    try:
+        result = supabase.table("users").select("*").eq("email", email.strip().lower()).execute()
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=invalid_detail,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        db_user = result.data[0]
+        try:
+            password_matches = verify_password(password, db_user["password_hash"])
+        except (TypeError, ValueError):
+            password_matches = False
+
+        if not password_matches:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=invalid_detail,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        if not db_user.get("is_active", True):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account disabled")
+
+        access_token = create_access_token(
+            data={"sub": db_user["email"], "user_id": db_user["id"], "role": db_user["role"]}
+        )
+        supabase.table("users").update({
+            "last_login": datetime.now(timezone.utc).isoformat()
+        }).eq("id", db_user["id"]).execute()
+
+        return Token(
+            access_token=access_token,
+            token_type="bearer",
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Authentication failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=failure_detail,
+        ) from exc
+
+
 class ProfileUpdate(BaseModel):
     full_name: str = Field(min_length=1, max_length=200)
     organization: str = Field(min_length=1, max_length=200)
@@ -53,7 +104,7 @@ async def register(user: UserCreate):
             "password_hash": hashed_password,
             "full_name": user.full_name,
             "organization": user.organization,
-            "role": user.role,
+            "role": "analyst",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "is_active": True
         }
@@ -100,109 +151,22 @@ async def register(user: UserCreate):
 
 @router.post("/login", response_model=Token)
 async def login(user: UserLogin):
-    supabase = get_supabase_client()
-    
-    try:
-        result = supabase.table("users").select("*").eq("email", user.email).execute()
-        
-        if not result.data:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password"
-            )
-        
-        db_user = result.data[0]
-        
-        try:
-            if not verify_password(user.password, db_user["password_hash"]):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid email or password"
-                )
-        except HTTPException:
-            raise
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password"
-            )
-        
-        if not db_user.get("is_active", True):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Account disabled"
-            )
-        
-        access_token = create_access_token(
-            data={"sub": db_user["email"], "user_id": db_user["id"], "role": db_user["role"]}
-        )
-        
-        supabase.table("users").update({
-            "last_login": datetime.now(timezone.utc).isoformat()
-        }).eq("id", db_user["id"]).execute()
-        
-        return Token(
-            access_token=access_token,
-            token_type="bearer",
-            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60  # seconds, per OAuth2 spec
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Login failed"
-        )
+    return _authenticate_user(
+        user.email,
+        user.password,
+        invalid_detail="Invalid email or password",
+        failure_detail="Login failed",
+    )
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     """OAuth2 compatible token login, retrieving an access token."""
-    supabase = get_supabase_client()
-    
-    try:
-        result = supabase.table("users").select("*").eq("email", form_data.username).execute()
-        
-        if not result.data:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-            
-        db_user = result.data[0]
-        
-        try:
-            if not verify_password(form_data.password, db_user["password_hash"]):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Incorrect email or password",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-        except HTTPException:
-            raise
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        
-        access_token = create_access_token(
-            data={"sub": db_user["email"], "user_id": db_user["id"], "role": db_user["role"]}
-        )
-        
-        return Token(
-            access_token=access_token,
-            token_type="bearer",
-            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60  # seconds, per OAuth2 spec
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Token generation failed"
-        )
+    return _authenticate_user(
+        form_data.username,
+        form_data.password,
+        invalid_detail="Incorrect email or password",
+        failure_detail="Token generation failed",
+    )
 
 @router.post("/logout")
 async def logout(
@@ -621,4 +585,3 @@ async def refresh_token(request: RefreshTokenRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to refresh token"
         )
-

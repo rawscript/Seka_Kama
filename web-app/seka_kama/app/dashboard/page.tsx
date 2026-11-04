@@ -58,6 +58,7 @@ import EcosystemIndicatorsPanel from '@/components/EcosystemIndicatorsPanel';
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MIN_YEAR = 2020;
 const MAX_YEAR = 2026;
+const FEATURED_MANAGEMENT_UNITS = ['Mara North', 'Olare-Motorogi', 'Naboisho', 'Ol Kinyei'];
 
 function sliderToYear(v: number) {
   return Math.round(MIN_YEAR + (v / 100) * (MAX_YEAR - MIN_YEAR));
@@ -182,6 +183,9 @@ function DashboardContent() {
   const [trendsLoading, setTrendsLoading] = useState(false);
 
   const [availableUnits, setAvailableUnits] = useState<string[]>([]);
+  const managementUnitOptions = Array.from(
+    new Set([...FEATURED_MANAGEMENT_UNITS, ...availableUnits])
+  );
   const [unitsError, setUnitsError] = useState<string | null>(null);
   const [trendsError, setTrendsError] = useState<string | null>(null);
   const [retryRequest, setRetryRequest] = useState(0);
@@ -324,7 +328,6 @@ function DashboardContent() {
         <ErrorBoundary label="Spatial Map" onRetry={() => window.location.reload()}>
           <SekaMap
             selectedUnit={selectedUnit}
-            onUnitChange={setSelectedUnit}
             onViewStateChange={handleViewStateChange}
             onScenarioRun={setScenarioResult}
             activeLayer={activeLayer}
@@ -554,14 +557,24 @@ function DashboardContent() {
                       <span className="material-symbols-outlined text-[16px]">public</span>
                       All Management Units
                     </button>
-                    {availableUnits.map((u) => (
+                    {managementUnitOptions.map((u) => (
                       <button
                         key={u}
                         onClick={() => { setSelectedUnit(u); setIsZoneMenuOpen(false); }}
-                        className="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-primary/10 hover:text-primary transition-colors font-medium flex items-center gap-2"
+                        aria-pressed={selectedUnit === u}
+                        className={`w-full text-left px-3 py-2 text-xs transition-colors font-medium flex items-center justify-between gap-2 ${
+                          selectedUnit === u
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-slate-600 hover:bg-primary/10 hover:text-primary'
+                        }`}
                       >
-                        <span className="material-symbols-outlined text-[16px]">location_on</span>
-                        {u}
+                        <span className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[16px]">location_on</span>
+                          {u}
+                        </span>
+                        {selectedUnit === u && (
+                          <span className="material-symbols-outlined text-[16px]">check</span>
+                        )}
                       </button>
                     ))}
                   </div>

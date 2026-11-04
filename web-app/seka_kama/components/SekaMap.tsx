@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Map, { Source, Layer, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { ShieldCheck, Info, Target, X } from 'lucide-react';
+import { ShieldCheck, Info, X } from 'lucide-react';
 import { api } from '@/services/api';
 import { getApiUrl } from '@/services/config';
 import ScenarioDrawer from './ScenarioDrawer';
@@ -30,7 +30,6 @@ function getDirectDriveLink(url: string) {
 export interface SekaMapProps {
   onScenarioRun?: (result: any) => void;
   selectedUnit?: string;
-  onUnitChange?: (unit: string) => void;
   onViewStateChange?: (viewState: any) => void;
   activeLayer?: string;
   /** 0–100 slider value mapped to the data year range (2020–2026) */
@@ -88,7 +87,6 @@ export default function SekaMap(props: SekaMapProps) {
 function SekaMapContent({
   onScenarioRun,
   selectedUnit,
-  onUnitChange,
   onViewStateChange,
   activeLayer,
   timeValue = 66,
@@ -227,21 +225,6 @@ function SekaMapContent({
       });
     }
   }, [selectedUnit, mapMain]);
-
-  // ---------------------------------------------------------------------------
-  // Overview control
-  // ---------------------------------------------------------------------------
-  const handleOverviewClick = useCallback(() => {
-    if (!mapMain) return;
-    mapMain.flyTo({
-      center: [35.1, -1.25],
-      zoom: 9.2,
-      duration: 2000,
-      essential: true,
-      pitch: 45,
-      bearing: -10,
-    });
-  }, [mapMain]);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -629,55 +612,6 @@ function SekaMapContent({
           </div>
         </div>
       )}
-
-      {/* Regional Overview Control - moved to left side below status area */}
-      <div 
-        className="absolute top-24 left-8 z-30 flex flex-col gap-2"
-        style={{ pointerEvents: 'auto' }}
-      >
-        {/* Regional Overview Button */}
-        <div className="p-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 min-w-[160px]">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[9px] text-slate-700 font-medium tracking-wider uppercase">Regional Overview</span>
-            <button
-              onClick={handleOverviewClick}
-              className="px-2 py-0.5 text-[7px] font-bold uppercase tracking-widest rounded border bg-emerald-100 border-emerald-300 text-emerald-700 hover:bg-emerald-200 transition-all"
-              title="Reset to regional overview"
-            >
-              <Target className="w-2.5 h-2.5 inline mr-1" />
-              Reset View
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5">
-            {Object.entries(CONSERVANCY_COORDS).map(([unit]) => (
-              <button
-                key={unit}
-                onClick={() => onUnitChange?.(unit)}
-                className={`px-1.5 py-1.5 text-[8px] rounded border transition-all relative overflow-hidden ${
-                  selectedUnit === unit
-                    ? 'bg-emerald-100 border-emerald-400 text-emerald-800 shadow-[0_0_8px_rgba(16,185,129,0.15)]'
-                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-emerald-300'
-                }`}
-              >
-                {selectedUnit === unit && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-100/50 to-transparent animate-pulse" />
-                )}
-                {unit}
-              </button>
-            ))}
-          </div>
-          {/* Status indicator */}
-          <div className="mt-3 flex items-center justify-between gap-2 text-[7px] text-slate-600">
-            <div className="flex items-center gap-1">
-              <div className={`w-1.5 h-1.5 rounded-full ${selectedUnit ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-              <span>{selectedUnit ? `${selectedUnit} selected` : 'Regional view'}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-slate-500">Click to view</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* ── Map Legend ────────────────────────────────────────────── */}
       <MapLegend 

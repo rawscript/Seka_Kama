@@ -77,7 +77,10 @@ async def identify_ecological_corridors(
 ) -> Dict[str, Any]:
     """
     Identifies high-suitability patches and proposes corridors between them.
-    Returns a GeoJSON FeatureCollection of proposed corridor segments.
+
+    Protected-area anchors are currently skipped because the protected_areas
+    table does not provide centroids. Until centroid support or a node-to-node
+    fallback is implemented, no corridor segments are generated.
     
     Args:
         supabase: Supabase client instance
@@ -87,7 +90,8 @@ async def identify_ecological_corridors(
         nightlight_threshold: Maximum nightlight intensity for corridor suitability (default: 0.1)
     
     Returns:
-        GeoJSON FeatureCollection with corridor line features
+        GeoJSON FeatureCollection with corridor line features and metadata
+        indicating when unavailable protected-area anchors prevent generation.
     """
     # Use configured defaults if not specified
     density_threshold = threshold if threshold is not None else CORRIDOR_DENSITY_THRESHOLD
@@ -104,16 +108,13 @@ async def identify_ecological_corridors(
     
     try:
         # 1. Fetch protected areas as anchor points
-        pa_result = supabase.table("protected_areas").select("site_name, centroid, geom").execute()
+        # Note: The protected_areas table doesn't have a centroid column.
+        # TODO: Add centroid support or a node-to-node fallback before generating corridors.
+        anchor_warning = (
+            "Protected-area anchors are unavailable; corridors were not generated."
+        )
+        logger.warning(anchor_warning)
         anchor_points = []
-        for pa in pa_result.data:
-            if pa.get('centroid'):
-                parsed = _parse_centroid(pa['centroid'])
-                if parsed:
-                    anchor_points.append({
-                        "name": pa['site_name'],
-                        **parsed
-                    })
 
         # 2. Fetch high-suitability cells (Safe passage nodes)
         query = supabase.table("grid_cells").select("cell_id, centroid, baseline_lion_density, all_mean_mean")
@@ -160,6 +161,10 @@ async def identify_ecological_corridors(
             "metadata": {
                 "nodes_identified": len(nodes),
                 "anchors_connected": len(anchor_points),
+                "status": "degraded",
+                "anchors_available": False,
+                "corridors_generated": False,
+                "warning": anchor_warning,
                 "thresholds_used": {
                     "density_threshold": density_threshold,
                     "max_distance_km": max_dist_deg * 111,

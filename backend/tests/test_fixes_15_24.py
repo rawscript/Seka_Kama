@@ -135,6 +135,35 @@ class TestIssue18InputValidation:
         print("✅ Zero threshold rejected with proper error")
 
 
+class TestCorridorAnchorAvailability:
+    """Test degraded corridor metadata when protected-area anchors are unavailable."""
+
+    @pytest.mark.asyncio
+    async def test_missing_anchors_are_reported_and_generate_no_corridors(self, caplog):
+        from services.corridor_service import identify_ecological_corridors
+
+        mock_supabase = Mock()
+        query = Mock()
+        mock_supabase.table.return_value.select.return_value = query
+        query.gt.return_value.lt.return_value.limit.return_value.execute.return_value = Mock(
+            data=[{
+                "cell_id": 1,
+                "centroid": "POINT(35.5 -1.2)",
+                "baseline_lion_density": 10,
+            }]
+        )
+
+        with caplog.at_level("WARNING", logger="services.corridor_service"):
+            result = await identify_ecological_corridors(mock_supabase)
+
+        assert result["features"] == []
+        assert result["metadata"]["status"] == "degraded"
+        assert result["metadata"]["anchors_available"] is False
+        assert result["metadata"]["corridors_generated"] is False
+        assert "anchors are unavailable" in result["metadata"]["warning"]
+        assert "anchors are unavailable" in caplog.text
+
+
 class TestIssue19RobustParsing:
     """Test robust centroid parsing."""
     

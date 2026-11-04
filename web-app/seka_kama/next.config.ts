@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
     resolveAlias: {
-      'parquet-wasm': path.resolve(__dirname, 'empty-module.js'),
+      'parquet-wasm': './empty-module.js',
     },
   },
 
@@ -57,9 +57,9 @@ const nextConfig: NextConfig = {
     if (!isServer) {
       config.resolve.alias = {
         ...config.resolve.alias,
-        'parquet-wasm': path.resolve(process.cwd(), 'empty-module.js'),
-        'react-dom-lib': path.resolve(process.cwd(), 'node_modules/react-dom'),
-        'react-dom$': path.resolve(process.cwd(), 'react-dom-shim.js'),
+        'parquet-wasm': path.resolve(__dirname, 'empty-module.js'),
+        'react-dom-lib': path.resolve(__dirname, 'node_modules/react-dom'),
+        'react-dom$': path.resolve(__dirname, 'react-dom-shim.js'),
       };
     }
 

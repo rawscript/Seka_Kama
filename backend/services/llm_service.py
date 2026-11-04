@@ -386,8 +386,6 @@ async def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:
     client = _get_client()
 
     # Use async with await (Issue 22)
-
-
     stream = await client.chat.completions.create(
         model       = _LLM_MODEL,
         messages    = [{"role": "user", "content": prompt}],
@@ -398,7 +396,8 @@ async def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:
     )
 
     parts: list[str] = []
-    for chunk in stream:
+    # FIX: Use async for to iterate over AsyncStream
+    async for chunk in stream:
         if not getattr(chunk, "choices", None):
             continue
         delta = chunk.choices[0].delta

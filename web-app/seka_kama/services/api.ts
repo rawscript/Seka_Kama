@@ -177,10 +177,11 @@ export const api = {
     if (token) headers.set('Authorization', `Bearer ${token}`);
 
     const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const apiUrl = getApiUrl();
 
     let response: Response;
     try {
-      response = await fetch(`${getApiUrl()}${normalizedEndpoint}`, {
+      response = await fetch(`${apiUrl}${normalizedEndpoint}`, {
         ...options,
         headers,
       });
@@ -191,6 +192,13 @@ export const api = {
         corsErrorDetected = true;
         corsErrorStartTime = Date.now();
         console.error('CORS Error detected - stopping API retries for 30 seconds', err);
+      }
+      if (err instanceof TypeError) {
+        const frontendOrigin =
+          typeof window !== 'undefined' ? window.location.origin : 'the frontend origin';
+        throw new Error(
+          `Could not connect to the backend API for ${endpoint}. Verify that the backend is running and allows requests from ${frontendOrigin}.`
+        );
       }
       throw err;
     }
@@ -314,6 +322,15 @@ export const api = {
 
   async getManagementUnits(): Promise<string[]> {
     return this.get('/management-units');
+  },
+
+  async getLionPopulation(managementUnit?: string, year?: number, format: 'json' | 'geojson' = 'json'): Promise<any> {
+    const p = new URLSearchParams();
+    if (year) p.append('year', year.toString());
+    if (managementUnit) p.append('management_unit', managementUnit);
+    p.append('format', format);
+    const qs = p.toString();
+    return this.get(`/lion-population?${qs}`);
   },
 
   // ── Scenario engine ─────────────────────────────────────────────────────

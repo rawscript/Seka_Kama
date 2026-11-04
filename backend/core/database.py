@@ -304,18 +304,34 @@ class SupabaseService:
     
     def get_total_lion_population(self, management_unit: Optional[str] = None, year: Optional[int] = None) -> float:
         """
-        Calculate total lion population from stored grid-cell observations only.
+        Calculate total lion population from stored observations.
+        
+        If year is specified: queries grid_cell_lion_counts (temporal GBIF data)
+        If year is None: sums baseline_lion_density from grid_cells (legacy/XGBoost)
         """
-        query = self.client.table("grid_cells").select("baseline_lion_density, year")
+        if year is not None:
+            # Use temporal data from GBIF integration
+            try:
+                query = self.client.table("grid_cell_lion_counts")\
+                    .select("occurrence_count, grid_cells!inner(management_unit)")\
+                    .eq("year", year)
+                
+                if management_unit:
+                    query = query.eq("grid_cells.management_unit", management_unit)
+                
+                result = query.execute()
+                return sum(row.get("occurrence_count", 0) for row in (result.data or []))
+            except Exception as e:
+                logger.warning(f"Failed to query temporal lion data for year {year}: {e}")
+                # Fallback to baseline_lion_density
+                pass
+        
+        # Legacy: sum baseline_lion_density from grid_cells
+        query = self.client.table("grid_cells").select("baseline_lion_density")
         
         if management_unit:
             query = query.eq("management_unit", management_unit)
         
-        if year:
-            year_query = query.eq("year", year)
-            result = year_query.execute()
-            return sum((cell.get("baseline_lion_density") or 0.0) for cell in (result.data or []))
-
         result = query.execute()
         
         if not result.data:

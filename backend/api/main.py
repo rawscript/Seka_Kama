@@ -79,7 +79,39 @@ async def init_middleware(request: Request, call_next):
 
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
-allowed_origins = list(settings.allowed_origins_list)
+def _build_allowed_origins(
+    configured_origins: List[str],
+    environment: str,
+    vercel_url: Optional[str] = None,
+) -> List[str]:
+    origins = list(configured_origins)
+    if environment.lower() not in {"production", "prod"}:
+        for port in (3000, 3001):
+            origin = f"http://localhost:{port}"
+            if origin not in origins:
+                origins.append(origin)
+
+    if vercel_url:
+        preview_origin = f"https://{vercel_url}"
+        if preview_origin not in origins:
+            origins.append(preview_origin)
+
+    return origins
+
+
+configured_origins = list(settings.allowed_origins_list)
+if not configured_origins:
+    configured_origins = [
+        origin.strip()
+        for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
+
+allowed_origins = _build_allowed_origins(
+    configured_origins,
+    settings.ENVIRONMENT,
+    os.getenv("VERCEL_URL"),
+)
 
 logger.info(f"CORS allowed origins: {allowed_origins}")
 

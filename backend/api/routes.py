@@ -867,6 +867,114 @@ async def get_management_units(
     return db.get_management_units()
 
 
+@router.get("/lion-population")
+async def get_lion_population(
+    year: int = Query(..., ge=2015, le=2030, description="Year to query lion occurrences"),
+    management_unit: Optional[str] = Query(None, description="Filter by management unit"),
+    format: str = Query("json", regex="^(json|geojson)$", description="Response format"),
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Get lion occurrence counts by year from GBIF data.
+    Aggregated at grid cell level from grid_cell_lion_counts table.
+    
+    This endpoint provides year-specific lion population data sourced from GBIF API.
+    Use this for temporal analysis and year-filtered dashboards.
+    """
+    try:
+        # Query temporal lion counts
+        query = db.client.table("grid_cell_lion_counts")\
+            .select("*, grid_cells!inner(management_unit, geom, pt_lon, pt_lat)")\
+            .eq("year", year)
+        
+        if management_unit:
+            query = query.eq("grid_cells.management_unit", management_unit)
+        
+        result = query.execute()
+        
+        if not result.data:
+            # No data for this year
+            return {
+                "year": year,
+                "management_unit": management_unit,
+                "total_occurrences": 0,
+                "cells_with_lions": 0,
+                "avg_density": 0.0,
+                "data_source": "GBIF",
+                "data_available": False,
+                "message": f"No lion occurrence data available for year {year}",
+                "by_grid_cell": []
+            }
+        
+        # Calculate summary statistics
+        total_occurrences = sum(row["occurrence_count"] for row in result.data)
+        cells_with_lions = sum(1 for row in result.data if row["occurrence_count"] > 0)
+        avg_density = total_occurrences / len(result.data) if result.data else 0.0
+        
+        # Build response based on format
+        if format == "geojson":
+            # GeoJSON FeatureCollection
+            features = []
+            for row in result.data:
+                grid_cell = row.get("grid_cells", {})
+                geom = json.loads(grid_cell["geom"]) if isinstance(grid_cell["geom"], str) else grid_cell["geom"]
+                
+                features.append({
+                    "type": "Feature",
+                    "geometry": geom,
+                    "properties": {
+                        "cell_id": row["cell_id"],
+                        "year": row["year"],
+                        "occurrence_count": row["occurrence_count"],
+                        "management_unit": grid_cell.get("management_unit"),
+                        "data_source": row.get("data_source", "GBIF")
+                    }
+                })
+            
+            return {
+                "type": "FeatureCollection",
+                "features": features,
+                "metadata": {
+                    "year": year,
+                    "total_occurrences": total_occurrences,
+                    "cells_with_lions": cells_with_lions,
+                    "management_unit": management_unit
+                }
+            }
+        else:
+            # JSON summary format
+            by_grid_cell = []
+            for row in result.data:
+                if row["occurrence_count"] > 0:  # Only include cells with lions
+                    grid_cell = row.get("grid_cells", {})
+                    by_grid_cell.append({
+                        "cell_id": row["cell_id"],
+                        "occurrence_count": row["occurrence_count"],
+                        "lat": grid_cell.get("pt_lat"),
+                        "lon": grid_cell.get("pt_lon"),
+                        "management_unit": grid_cell.get("management_unit")
+                    })
+            
+            return {
+                "year": year,
+                "management_unit": management_unit,
+                "total_occurrences": total_occurrences,
+                "cells_with_lions": cells_with_lions,
+                "avg_density": round(avg_density, 4),
+                "data_source": "GBIF",
+                "data_available": True,
+                "last_updated": result.data[0].get("last_updated") if result.data else None,
+                "by_grid_cell": by_grid_cell[:100]  # Limit to first 100 cells for performance
+            }
+    
+    except Exception as e:
+        logger.error(f"Error fetching lion population for year {year}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch lion population data: {str(e)}"
+        )
+
+
 @router.get("/statistics")
 async def get_statistics(
     management_unit: Optional[str] = Query(None),
