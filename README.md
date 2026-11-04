@@ -2,6 +2,15 @@
 
 *An open-source research initiative investigating the spatial relationship between human expansion and apex predator viability. The apex predictors in question is East African Lion*
 
+## Quick Links
+
+- 🦁 **[Lion Population Data Setup](#5-lion-population-data-gbif-integration)** - Sync real GBIF occurrence data
+- 📚 **[Documentation](#3-documentation-and-resources)** - Technical guides and references
+- 🔧 **[Model Status](#2-vision)** - Current limitations and requirements
+- 🗺️ **[Visual Guide](#4-visual-guide)** - System architecture diagram
+
+---
+
 ## 1. Challenge
 ![Logo](https://res.cloudinary.com/dp7vwr0av/image/upload/v1778346341/Seka_Kama_qxf0dm.png)
 
@@ -59,7 +68,152 @@ The following documents provide the foundational logic, raw data parameters, and
 The diagram below illustrates the logic flow from raw data to predictive simulations:
 ![logic](https://res.cloudinary.com/dp7vwr0av/image/upload/v1778585612/Seka_Net_o4fvcf.png)
 
-## 5. Technical Foundation & Impact
+## 5. Lion Population Data (GBIF Integration)
+
+**Status**: ✅ Integrated | **Data Source**: GBIF API | **Years Available**: 2015-2024
+
+### Table of Contents
+- [Quick Start](#quick-start-sync-real-lion-occurrence-data)
+- [Sync Commands Reference](#sync-script-commands-reference)
+- [Advanced Options](#advanced-options)
+- [Maintenance & Monitoring](#maintenance--monitoring)
+- [Troubleshooting](#troubleshooting)
+- [Database Migration](#database-migration-required)
+- [Verification](#verify-data-loaded)
+
+---
+
+### Quick Start: Sync Real Lion Occurrence Data
+
+The platform integrates real lion occurrence data from GBIF (Global Biodiversity Information Facility). After running the database migration, sync historical data:
+
+```bash
+cd backend
+
+# Full sync (all years 2020-2024) - Recommended
+python scripts/sync_gbif_lions.py --start-year 2020 --end-year 2024
+
+# Single year (faster test)
+python scripts/sync_gbif_lions.py --year 2023
+
+# Check sync status
+python scripts/sync_gbif_lions.py --status
+```
+
+**Expected Duration**: 3-5 minutes for full sync (5 years)
+
+**Expected Output**: 1,000-1,500 lion occurrences across 400-600 grid cells
+
+### Sync Script Commands Reference
+
+#### Basic Commands
+
+```bash
+# Sync specific year range
+python scripts/sync_gbif_lions.py --start-year 2020 --end-year 2024
+
+# Sync single year
+python scripts/sync_gbif_lions.py --year 2023
+
+# Check current sync status (which years have data)
+python scripts/sync_gbif_lions.py --status
+```
+
+#### Advanced Options
+
+```bash
+# Force refresh (skip cache, re-fetch from GBIF)
+python scripts/sync_gbif_lions.py --year 2023 --force-refresh
+
+# Re-aggregate only (don't fetch from GBIF, use existing data)
+python scripts/sync_gbif_lions.py --aggregate-only --start-year 2020 --end-year 2024
+
+# Clear cache before syncing
+python scripts/sync_gbif_lions.py --clear-cache --year 2023
+```
+
+#### Maintenance & Monitoring
+
+```bash
+# View sync logs
+cat backend/logs/gbif_sync.log
+
+# Test API endpoint after sync
+curl "http://localhost:8000/api/lion-population?year=2023"
+
+# Test statistics endpoint with year parameter
+curl "http://localhost:8000/api/statistics?year=2023"
+```
+
+### Weekly Auto-Update (Cron)
+
+Add to crontab for automatic weekly updates of current year data:
+
+```bash
+# Sunday 2 AM - sync current year
+0 2 * * 0 cd /path/to/backend && python scripts/sync_gbif_lions.py --year 2024 >> logs/weekly_sync.log 2>&1
+```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `ModuleNotFoundError: httpx` | Run `pip install httpx` |
+| `SUPABASE_URL must be set` | Check `.env` file has Supabase credentials |
+| GBIF API timeout | Normal for slow API - script has retries, just wait |
+| Dashboard still shows 0 lions | Run `--status` to verify data synced, restart backend |
+| Rate limit error (429) | Wait 5 minutes, script has exponential backoff |
+
+### Database Migration Required
+
+Before first sync, run the migration to create required tables:
+
+```sql
+-- Run in Supabase SQL Editor
+backend/sql/migrations/001_add_lion_temporal_tables.sql
+```
+
+This creates:
+- `lion_occurrences` - Raw GBIF occurrence records
+- `grid_cell_lion_counts` - Aggregated counts per grid cell per year
+- PostGIS spatial aggregation function
+- Performance indexes
+
+### Verify Data Loaded
+
+After sync, check database:
+
+```sql
+-- Check occurrences by year
+SELECT year, COUNT(*) as occurrences
+FROM lion_occurrences
+GROUP BY year
+ORDER BY year DESC;
+
+-- Check aggregated counts
+SELECT year, SUM(occurrence_count) as total, COUNT(*) as cells
+FROM grid_cell_lion_counts
+GROUP BY year
+ORDER BY year DESC;
+```
+
+### Documentation
+
+- **Quick Start Guide**: `GBIF_QUICKSTART.md` (5-step deployment)
+- **Full API Documentation**: `backend/services/README_GBIF.md`
+- **Technical Design**: `.agents/tasks/lion-gbif/design.md`
+
+### Data Source
+
+**GBIF**: Global Biodiversity Information Facility (https://www.gbif.org/)  
+**Species**: *Panthera leo* (African Lion)  
+**Geographic Scope**: Kenya (country code: KE)  
+**Temporal Range**: 2015-2024  
+**License**: Data from GBIF.org under CC0 1.0 Universal
+
+---
+
+## 6. Technical Foundation & Impact
 
 Seka Kama is a research interface for spatial conservation data. The checked-in predictive model lacks verified training provenance and validation; it should not be used to claim validated forecasts.
 
