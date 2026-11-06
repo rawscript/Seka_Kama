@@ -59,7 +59,6 @@ def _load_ml_models_async():
 threading.Thread(target=_load_ml_models_async, daemon=True, name="ml-model-loader").start()
 
 def lazy_init():
-    # Kept for backward compatibility if called directly
     pass
 
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
