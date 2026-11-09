@@ -153,9 +153,9 @@ function KeplerMapInner({ managementUnit, scenarioData, onCellSelect, onScenario
         } as any)
       );
       
-      console.log('✅ Kepler.gl loaded with', datasets.length, 'datasets');
+      console.log('[SUCCESS] Kepler.gl loaded with', datasets.length, 'datasets');
     } catch (err) {
-      console.error('❌ Kepler loading error:', err);
+      console.error('[ERROR] Kepler loading error:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize database');
     } finally {
       setIsLoading(false);

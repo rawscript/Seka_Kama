@@ -1,847 +1,652 @@
 # Production Hardening Design Review
 
-**Date:** 2026-11-02  
-**Design Version:** 2.0 (Revised)  
+**Review Date:** 2025-01-30  
+**Design Version:** 3.0  
 **Reviewer:** Design Review Subagent  
-**Status:** CHANGES REQUESTED
+**Status:** CHANGES_REQUESTED
 
 ---
 
 ## Verdict Summary
 
-**CHANGES REQUESTED** - 8 HIGH findings, 12 MEDIUM findings
+**Verdict:** CHANGES_REQUESTED  
+**HIGH Findings:** 7  
+**MEDIUM Findings:** 11  
+**NIT Findings:** 3
 
-The design document contains several critical ambiguities, unverified assumptions, and missing implementation details that would block successful production hardening. While the document shows improved structure from iteration 1, it fails to verify key assumptions against the actual codebase and introduces conflicting information between sections.
+The design is comprehensive and addresses many audit findings, but contains critical unverified assumptions, ambiguous implementation details, and several gaps that must be resolved before implementation.
 
 ---
 
 ## HIGH SEVERITY FINDINGS
 
-### 1. FALSE CLAIM: Silent Exception Handlers Don't Exist (Lines 1047, 1177, 1212, 1248)
+### HIGH-1: Silent Exception Handler Claims Are FALSE
 
-**Location:** Phase 1, Task 1.4
+**Location:** Task 1.4, Line ~1177, 1212, 1248 claims
 
-**Problem:** Design claims `backend/api/routes.py` lines 1047, 1177, 1212, 1248 have `except: pass` blocks. Actual codebase verification shows:
-- Line ~1047: `except Exception: pass` (bare `pass`, not logging)
-- Line ~1177: `try: db.table(...).update(...) except: pass` (swallowing DB errors)
-- Line ~1212: `try: db.table(...).update(...) except: pass` (swallowing DB errors)
-- Line ~1248: `try: db.table(...).update(...) except: pass` (swallowing DB errors)
+**Problem:** The design claims "Lines 1177, 1212, 1248 in routes.py have `except: pass` swallowing DB update errors" but verification shows:
+- `grep_search` for `except.*pass` in routes.py returns **NO MATCHES**
+- The actual code at line 1177+ uses try/except but NOT silent pass blocks
+- The mock_behavior_inventory.md correctly identifies these as "Silent exception handling `except: pass`" but they may have already been fixed
 
-**Issue:** These ARE silent exception handlers (using `except:` not `except Exception` as claimed), but they're in status update operations for contact form submissions, not model file loading. The design incorrectly identifies the error types and provides wrong replacements.
-
-**Fix Required:** Verify actual exception locations and provide correct remediation:
-```python
-# Line ~1177 (actual code from routes.py:1177)
-try:
-    db.client.table("contact_submissions").update({"status": "email_sent"}).eq("id", submission_data["id"]).execute()
-except Exception as e:
-    logger.error(
-        f"Failed to update contact submission email status",
-        extra={"submission_id": submission_data.get("id"), "error": str(e)},
-        exc_info=True
-    )
-```
-
-Apply same pattern to lines ~1212 (SendGrid status) and ~1248 (webhook status).
-
----
-
-### 2. INCORRECT MIGRATION REFERENCE
-
-**Location:** Phase 1, Task 1.1; Phase 5
-
-**Problem:** Design states "NO CHANGES NEEDED" for JWT validation and references "using existing migration 001". Actual verification:
-- JWT validation in `auth.py:36-37` uses `RuntimeError` not `ValueError` as design claims
-- `config.py:149-155` only has a `logger.warning`, not a startup validation error
-- Migration `001_add_area_validation.sql` EXISTS but is for grid cell area validation, NOT for JWT or auth
-
-**Issue:** The design conflates JWT validation (security) with spatial validation (migration 001). Migration 001 has nothing to do with authentication.
+**Impact:** The entire Task 1.4 is based on a false premise. The code snippets provided attempt to fix something that may not exist.
 
 **Fix Required:**
-1. Correct the JWT validation claim - `auth.py` already validates correctly with `RuntimeError`
-2. Remove false reference to migration 001 for security validation
-3. In Phase 5 spatial validation, correctly reference migration 001 for area_km2 column
+1. READ the actual routes.py file at lines 1177, 1212, 1248 to verify current state
+2. If exceptions ARE being logged, remove Task 1.4 entirely
+3. If they are silent, provide the ACTUAL current code in the design, not assumed code
+4. Update audit finding #5 in mock_behavior_inventory.md if already resolved
 
 ---
 
-### 3. MISSING WEBSOCKET IMPLEMENTATION
+### HIGH-2: Migration 001 Uses GENERATED COLUMN, Not Manual UPDATE
 
-**Location:** Phase 4 "WebSocket Real-Time Updates"
+**Location:** Phase 5, Task 5.2
 
-**Problem:** Design describes WebSocket authentication strategy (first-message auth) and user isolation (`send_to_user()`) but provides NO implementation code. Search of entire backend codebase shows no WebSocket endpoints exist (`@router.websocket` not found in application code).
+**Problem:** The design proposes this migration:
+```sql
+UPDATE grid_cells
+SET area_km2 = ST_Area(geography(geom)) / 1000000.0
+WHERE area_km2 IS NULL;
+```
 
-**Issue:** This is a greenfield feature, not a hardening task. The design omits:
-- WebSocket endpoint definition
-- Connection manager implementation
-- Authentication flow (first-message vs query param)
-- Message routing logic
-- Error handling for WebSocket failures
-- Client-side WebSocket integration
+But the ACTUAL migration file (001_add_area_validation.sql) uses:
+```sql
+ALTER TABLE public.grid_cells ADD COLUMN IF NOT EXISTS 
+    area_km2 FLOAT GENERATED ALWAYS AS (
+        ST_Area(geom::geography) / 1000000.0
+    ) STORED;
+```
 
-**Fix Required:** Either:
-1. Provide complete WebSocket implementation with all signatures and flows, OR
-2. Remove from scope as a new feature beyond production hardening, OR
-3. Clarify as "stub implementation" with feature flag disabled by default
-
----
-
-### 4. HARDCODED COLORS EXIST, NOT "NO EMOJIS"
-
-**Location:** Phase 3 "Frontend Visual Standardization"
-
-**Problem:** Design claims "no emojis in codebase" is a success criterion. Actual verification:
-- ✅ No emojis found (search for Unicode emoji ranges returned no matches)
-- ❌ MANY hardcoded hex colors found: `bg-[#775a19]`, `bg-[#1a1c1c]`, `bg-[#f5f0e8]`, `text-[#4e3700]` etc. in multiple files:
-  - `AnalystPanel.tsx`: `bg-[#775a19]`, `bg-[#4e3700]`
-  - `documentation/page.tsx`: `bg-[#1a1c1c]`, `bg-[#f5f0e8]`, `bg-[#f9f9f9]`
-  - `settings/page.tsx`: `bg-[#775a19]`
-  - `EcosystemIndicatorsPanel.tsx`: `bg-[#775a19]`
-  - `demo/page.tsx`: `bg-[#775a19]`, `bg-[#1a1c1c]`
-  - `register/page.tsx`: Multiple hardcoded colors
-
-**Issue:** The design focuses on a non-existent problem (emojis) while missing the actual violation (hardcoded colors). Phase 3 lacks a concrete color replacement strategy.
+**Impact:** The design provides completely wrong migration code. A GENERATED ALWAYS column cannot be manually updated. The design's "idempotent" UPDATE approach doesn't match reality.
 
 **Fix Required:**
-1. Remove "no emojis" from success criteria (already satisfied)
-2. Add comprehensive color audit with file-by-file replacement plan
-3. Define complete CSS custom property mapping:
-```css
-:root {
-  --color-primary: #775a19;
-  --color-primary-dark: #4e3700;
-  --color-bg-primary: #f9f9f9;
-  --color-bg-card: #f5f0e8;
-  --color-bg-dark: #1a1c1c;
-  /* ... complete mapping ... */
-}
-```
-4. Provide regex find/replace commands for each color
+1. Replace the entire Task 5.2 migration code with the ACTUAL migration that exists
+2. Remove the UPDATE and DO $$ block that references `WHERE area_km2 IS NULL` — generated columns are never NULL unless geom is NULL
+3. Clarify that rerunning this migration is safe (ALTER TABLE IF NOT EXISTS is idempotent)
+4. Note that the migration already includes validation logging via RAISE NOTICE
 
 ---
 
-### 5. CONFLICTING VALIDATION STRATEGY
+### HIGH-3: RequestTrackingMiddleware and ErrorResponseCompatibilityMiddleware Don't Exist
 
-**Location:** Phase 2, Task 2.2; Design Review Finding #12
+**Location:** Task 1.3, "Update main.py (CORRECT middleware order - MEDIUM #11)"
 
-**Problem:** Design "resolves" validation conflict by saying "Use Pydantic models with `Depends()` for complex validation, plain `Query()` for simple constraints" but then provides examples mixing both:
-- `BBoxParams(BaseModel)` with `Depends()` - correct
-- `validate_year` using `Query(None, ge=2000, le=...)` returning Optional[int] - also uses Depends()
-- `VALID_MANAGEMENT_UNITS` hardcoded list in `validators.py`
+**Problem:** The design shows:
+```python
+from core.middleware import RequestTrackingMiddleware, ErrorResponseCompatibilityMiddleware
+app.add_middleware(RequestTrackingMiddleware)
+app.add_middleware(ErrorResponseCompatibilityMiddleware)
+```
 
-**Issue:** 
-1. No definition of "complex" vs "simple" validation
-2. Management units hardcoded in Python instead of queried from database
-3. Missing validation for other constrained enums (status values, feature names, etc.)
+Verification shows: `grep_search` for these classes returns **NO MATCHES**. These middleware classes do not exist in the codebase.
+
+**Impact:** The design references and orders middleware that must be created in Task 1.3 but presents them as if they already exist in the "Update main.py" section.
 
 **Fix Required:**
-```python
-# validators.py - Add clear decision matrix comment
-"""
-Validation Strategy:
-- Pydantic BaseModel + Depends(): Multi-field validation, cross-field constraints
-- Query() with constraints: Single-field numeric/string constraints
-- Database lookup: Enum values that may change (management_units, feature_names)
-"""
-
-# Management units should NOT be hardcoded
-async def validate_management_unit(
-    management_unit: Optional[str] = Query(None),
-    db: SupabaseService = Depends(get_db)
-) -> Optional[str]:
-    if management_unit:
-        result = db.table("management_units").select("name").eq("name", management_unit).execute()
-        if not result.data:
-            raise HTTPException(400, detail=f"Unknown management unit: {management_unit}")
-    return management_unit
-```
+1. Clarify that core/middleware.py does NOT exist and must be created (currently says "create new" for error_handlers.py but not for middleware.py)
+2. Show the CURRENT main.py middleware setup (if any) before showing the proposed change
+3. Make it explicit: "CREATE backend/core/middleware.py (new file)" before showing the code
+4. Do the same for core/error_handlers.py
 
 ---
 
-### 6. ERROR RESPONSE SCHEMA CONFLICT
+### HIGH-4: BBoxParams Validator Doesn't Exist, But Design Uses It
 
-**Location:** Phase 1, Task 1.3
+**Location:** Task 2.2, "Usage in endpoints"
 
-**Problem:** Design shows `ErrorResponse` and `ErrorDetail` schemas but:
-1. `backend/core/response_schemas.py` already defines these schemas
-2. Design's version adds `path` field, existing version doesn't have it
-3. Design version uses `request_id`, existing uses `request_id` (same)
-4. Design version includes `timestamp`, existing includes `timestamp` (same)
-
-But design ALSO shows different usage in error handlers - `error_response.model_dump(mode="json")` when existing code likely uses `.dict()` or `.model_dump()`.
-
-**Issue:** Not clear if design intends to:
-- Extend existing schema (breaking change)
-- Replace existing schema (breaking change)
-- Create new schema and migrate (needs migration plan)
-
-**Fix Required:** Explicit migration strategy:
+**Problem:** The design shows usage example:
 ```python
-# Option A: Extend existing schema (backwards compatible)
-class ErrorResponse(BaseModel):  # Extend existing
-    path: Optional[str] = Field(default=None)  # NEW field
-    
-# Option B: Create v2 schema
-class ErrorResponseV2(BaseModel):  # New schema
-    # ... with path field
-    
-# Then specify: "Use ErrorResponse (existing) and add path field via schema evolution"
+@router.get("/baseline")
+async def get_baseline(
+    bbox: BBoxParams = Depends(),
+    ...
 ```
 
----
+Verification: `grep_search` for `class BBoxParams` returns **NO MATCHES**. This validator doesn't exist.
 
-### 7. REDIS FAIL-OPEN NO FALLBACK STRATEGY
-
-**Location:** Phase 1, Task 1.2
-
-**Problem:** Design implements fail-open Redis rate limiting with `degraded_mode` flag and monitoring, but provides NO strategy for what happens when Redis is degraded for extended periods. The in-memory fallback is explicitly noted as "not suitable for multi-instance deployments" yet that's the production failure mode.
-
-**Issue:**
-1. Railway deployments can have multiple instances
-2. In-memory rate limiting per-instance means 2 instances = 2x rate limit
-3. No alerting mechanism defined for degraded mode
-4. No automatic recovery attempt after initial failure
-5. Health check shows "degraded" but no remediation steps
+**Impact:** The design shows endpoint usage of a validator that it proposes creating, but doesn't clearly distinguish "current state" from "proposed state." It's ambiguous whether endpoints already use BBoxParams or if they need to be updated.
 
 **Fix Required:**
-```python
-class RateLimiter:
-    def __init__(self, ...):
-        self.degraded_mode = False
-        self.degraded_since = None  # NEW: Track degradation start
-        self.recovery_check_interval = 60  # NEW: Retry every 60s
-        self.last_recovery_attempt = 0  # NEW
-        
-    def _check_redis(self, key: str, current_time: float) -> bool:
-        try:
-            # ... existing logic ...
-        except Exception as e:
-            if not self.degraded_mode:
-                self.degraded_since = current_time
-                logger.critical(f"Rate limiter entering degraded mode: {e}")
-                # TODO: Send alert to monitoring service (PagerDuty, Sentry)
-            
-            # Attempt recovery periodically
-            if current_time - self.last_recovery_attempt > self.recovery_check_interval:
-                self._attempt_recovery()
-            
-            return self._check_memory(key, current_time)  # Fallback
-            
-    def _attempt_recovery(self):
-        """Try to reconnect to Redis"""
-        try:
-            import redis
-            self.redis_client = redis.from_url(settings.REDIS_URL, ...)
-            self.redis_client.ping()
-            logger.info("Rate limiter recovered from degraded mode")
-            self.degraded_mode = False
-            self.degraded_since = None
-        except Exception:
-            pass
-        finally:
-            self.last_recovery_attempt = time.time()
-```
+1. Show the CURRENT endpoint signature for GET /baseline before showing the proposed change
+2. Make clear that this is a TWO-STEP change: (1) create validators.py with BBoxParams, (2) update all endpoints to use it
+3. List which endpoints need updating (baseline, baseline/enriched, predict/landscape, protected-areas, etc.)
+4. Specify whether these are breaking changes (probably not, since they're query params)
 
 ---
 
-### 8. PHASE DEPENDENCIES INCONSISTENT
+### HIGH-5: RATE_LIMIT_EXPENSIVE_REQUESTS Not in Config, But Design Says "Add to config.py Settings class"
 
-**Location:** Execution Timeline (end of document)
+**Location:** Task 1.2, "Add to config.py Settings class (MEDIUM #13)"
 
-**Problem:** Timeline shows:
-- Phase 3 can run parallel (no dependencies)
-- Phase 5 can run parallel (no dependencies)
-- But Phase 3 includes "theme token system" which Phase 4's "WebSocket real-time updates" might depend on (status colors, UI feedback)
-- Phase 5 includes spatial validation that Phase 2 API standardization should use (bbox validation in `validators.py`)
-
-**Issue:** Dependency analysis incomplete. Risks:
-1. Phase 2 implementing bbox validation without Phase 5's spatial validator
-2. Phase 4 WebSocket implementing status updates with hardcoded colors before Phase 3 theme
-3. Phase 6 PostGIS optimization without Phase 5's validation framework in place
-
-**Fix Required:** Revised dependency graph:
-```
-Phase 1 (Security)     → Phase 2 (API Std)
-Phase 5 (Spatial Val)  → Phase 2 (API Std)  [bbox validation needs spatial utils]
-Phase 3 (Frontend)     → Phase 4 (WebSocket) [theme needed for status colors]
-Phase 1 + Phase 5      → Phase 6 (PostGIS)   [validation before optimization]
-Phase 2 + Phase 4 + Phase 6 → Phase 7 (Simplification)
-Phase 7 → Phase 8 (Docs)
+**Problem:** The design says "Add to config.py Settings class" and shows:
+```python
+RATE_LIMIT_REQUESTS: int = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+RATE_LIMIT_PERIOD: int = int(os.getenv("RATE_LIMIT_PERIOD", "60"))
+RATE_LIMIT_EXPENSIVE_REQUESTS: int = int(os.getenv("RATE_LIMIT_EXPENSIVE_REQUESTS", "10"))
 ```
 
-Critical path: P1 → P5 → P2 → P6 → P7 → P8 AND P3 → P4 → P7 = ~26 days
+Verification: Config.py ALREADY has RATE_LIMIT_REQUESTS and RATE_LIMIT_PERIOD (lines 107-108), but does NOT have RATE_LIMIT_EXPENSIVE_REQUESTS.
+
+**Impact:** The design shows adding all three settings, but two already exist. This creates confusion about what is NEW versus what is EXISTING.
+
+**Fix Required:**
+1. State: "Config.py already has RATE_LIMIT_REQUESTS and RATE_LIMIT_PERIOD (verified lines 107-108)"
+2. Show ONLY the new setting to add: `RATE_LIMIT_EXPENSIVE_REQUESTS: int = ...`
+3. Update the "Add to config.py" section to show only the incremental change, not a full block that mixes existing and new code
+
+---
+
+### HIGH-6: Health Endpoint Shows rate_limiter.get_status() Without Defining How to Access Limiter
+
+**Location:** Task 1.2, "Update health endpoint to show rate limiter status"
+
+**Problem:** The design shows:
+```python
+from core.rate_limiting import rate_limit
+
+limiter = RateLimiter(100, 60)
+
+@router.get("/health", response_model=HealthCheckResponse, tags=["System"])
+async def health_check(request: Request):
+    ...
+    services = {
+        ...
+        "rate_limiter": limiter.get_status()
+    }
+```
+
+But the provided RateLimiter class in Task 1.2 does NOT have a `get_status()` method.
+
+**Impact:** The code will fail at runtime with AttributeError.
+
+**Fix Required:**
+1. Add the `get_status()` method to the RateLimiter class in Task 1.2:
+```python
+def get_status(self) -> dict:
+    return {
+        "backend": "redis" if (self.redis_client and not self.degraded_mode) else "memory",
+        "degraded": self.degraded_mode,
+        "degraded_since": self.degraded_since,
+        "degraded_duration_seconds": (time.time() - self.degraded_since) if self.degraded_since else None
+    }
+```
+2. Clarify where `limiter = RateLimiter(100, 60)` should be instantiated (module-level in routes.py? In a service?)
+3. Show the FULL health_check function with all imports and context, not just a snippet
+
+---
+
+### HIGH-7: NASA POWER Retry Signature Conflict
+
+**Location:** Task 1.4, "NASA POWER retry (MEDIUM #9) - Line ~320-356 in ecological_data_service.py"
+
+**Problem:** The design proposes adding `max_retries: int = 3` and `initial_backoff: float = 1.0` parameters to `fetch_real_nasa_annual_rainfall()` but doesn't verify:
+1. Whether this function exists with that signature
+2. Whether changing the signature breaks existing callers
+3. Where this function is called and if those call sites need updating
+
+**Impact:** If existing code calls `fetch_real_nasa_annual_rainfall(lat, lon, year)` without the new parameters, it will work (defaults provided), but the design doesn't acknowledge this. If the function doesn't exist with that name, the entire task is wrong.
+
+**Fix Required:**
+1. READ ecological_data_service.py and find the ACTUAL function name and signature
+2. Show the CURRENT function signature before the proposed change
+3. Verify that adding default parameters is backward-compatible
+4. List all call sites and confirm they don't need changes (or specify required changes)
 
 ---
 
 ## MEDIUM SEVERITY FINDINGS
 
-### 9. NASA POWER SERVICE UNVERIFIED CLAIM
+### MEDIUM-1: JWT Secret Enforcement Marked "ALREADY IMPLEMENTED - No changes needed" Without Verification
 
-**Location:** Phase 4, Design Review Finding #8
+**Location:** Task 1.1
 
-**Problem:** Design states "NASA POWER retry exists: Verified existing, added only caching layer." Verification shows:
-- `ecological_data_service.py` DOES have retry logic (max_retries=3, exponential backoff)
-- Retry is in `fetch_complete_nasa_data()` NOT in `fetch_real_nasa_annual_rainfall()`
-- The rainfall function has NO retry logic
+**Problem:** The design claims:
+"Verified `backend/core/auth.py:30-50` and `backend/core/config.py:149-155`:
+- Validates JWT_SECRET_KEY at startup
+- Requires ≥32 characters in production"
 
-**Issue:** Partial verification. The commonly-used rainfall function is NOT protected by retry logic.
+But the review did NOT see evidence of reading these files. Config.py was read (200 lines) but auth.py was not verified.
 
-**Fix Required:** Either:
-1. Move retry logic to a wrapper that both functions use, OR
-2. Add retry to `fetch_real_nasa_annual_rainfall()` explicitly, OR
-3. Document that only `fetch_complete_nasa_data` has retry and rainfall calls may fail
-
----
-
-### 10. RESPONSE MODELS ALREADY EXIST
-
-**Location:** Phase 2, Task 2.1
-
-**Problem:** Design proposes adding response models to 8 endpoints, but verification shows:
-- `backend/api/routes.py` already has `response_model` on 5 endpoints:
-  - `/baseline` → `BaselineResponse`
-  - `/scenario` → `ScenarioResponse`
-  - `/explain` → `ExplanationResponse`
-  - `/management-units` → `List[str]`
-  - `/contact` → `ContactFormResponse`
-- Design proposes NEW models: `GeoJSONResponse`, `FeatureImportanceResponse`, `ModelMetadataResponse`, `StatisticsResponse`
-
-**Issue:** Design doesn't identify WHICH endpoints are missing response models. Unclear what work remains.
-
-**Fix Required:** Explicit gap analysis:
-```
-EXISTING (verified):
-✓ GET /baseline → BaselineResponse
-✓ POST /scenario → ScenarioResponse
-✓ POST /explain → ExplanationResponse
-✓ GET /management-units → List[str]
-✓ POST /contact → ContactFormResponse
-
-MISSING (need response_model):
-✗ GET /baseline/summary → needs BaselineSummaryResponse
-✗ GET /baseline/enriched → needs GeoJSONResponse
-✗ GET /corridors → needs CorridorResponse
-✗ GET /narrative/summary → needs NarrativeSummaryResponse
-✗ GET /feature-importance → needs FeatureImportanceResponse
-✗ GET /model/metadata → needs ModelMetadataResponse
-✗ GET /statistics → needs StatisticsResponse
-✗ GET /health → needs HealthCheckResponse (or update existing)
-```
-
----
-
-### 11. COMPATIBILITY MIDDLEWARE PRECEDENCE UNCLEAR
-
-**Location:** Phase 1, Task 1.3 (Error Response Compatibility)
-
-**Problem:** Design shows adding `ErrorResponseCompatibilityMiddleware` "before RequestTrackingMiddleware" in `main.py`, but middleware execution order in FastAPI/Starlette is LIFO (last added = outermost = runs first).
-
-If compatibility is added BEFORE tracking:
-```python
-app.add_middleware(ErrorResponseCompatibilityMiddleware)  # Runs SECOND
-app.add_middleware(RequestTrackingMiddleware)             # Runs FIRST
-```
-
-This means request_id is set AFTER compatibility check tries to read response body, potentially missing the request ID in legacy responses.
-
-**Issue:** Middleware order not validated against execution model.
+**Impact:** If the claim is wrong and JWT validation is NOT already implemented, then Task 1.1 should be "implement" not "verify and document." The design assumes it's done.
 
 **Fix Required:**
-```python
-# Correct order (tracking sets request_id FIRST)
-app.add_middleware(RequestTrackingMiddleware)             # Runs LAST (sets request_id)
-app.add_middleware(ErrorResponseCompatibilityMiddleware)  # Runs FIRST (reads response)
-```
-AND update design to specify: "Add RequestTrackingMiddleware FIRST, then ErrorResponseCompatibilityMiddleware"
+1. READ backend/core/auth.py lines 30-50
+2. READ backend/core/config.py lines 149-155
+3. If validation exists, quote the relevant code in the design to prove it
+4. If it doesn't exist, change Task 1.1 from "No changes needed" to "Implement JWT validation"
+5. The mock_behavior_inventory.md says "Development fallback JWT secret key" exists (Finding #4) — reconcile this with the claim that enforcement is "already implemented"
 
 ---
 
-### 12. FEATURE FLAG FOR WEBSOCKET NOT DEFINED
+### MEDIUM-2: WebSocket Resolution is Correct, But Leaves Open Question
 
-**Location:** Phase 4; Phase 1 config validation
+**Location:** Task 4.2
 
-**Problem:** `backend/core/config.py` already defines:
-- `FEATURE_LIVE_MODE_ENABLED`
-- `FEATURE_SCENARIO_SIMULATION_ENABLED`
-- `FEATURE_AI_NARRATIVES_ENABLED`
-- `FEATURE_REAL_TIME_UPDATES_ENABLED` (already exists!)
+**Problem:** The design correctly moves WebSocket to FUTURE_ENHANCEMENTS.md as out of scope. However, the audit finding (HIGH #3 in the original 20 findings) was about "WebSocket missing" and the design's resolution says "WebSocket is a NEW FEATURE, not production hardening."
 
-Design proposes WebSocket implementation under "real-time updates" but doesn't specify if `FEATURE_REAL_TIME_UPDATES_ENABLED` controls it or if a new flag is needed.
+This is correct, but the original user requirements say "address remaining issues once and for all" and "do not remove essential services but instead have 'faucets' to link up useful services."
 
-**Issue:** Flag collision. Existing flag is default `false` - does design intend to:
-1. Use existing flag (turn on WebSocket by enabling this)?
-2. Create new flag `FEATURE_WEBSOCKET_ENABLED`?
-3. Gate WebSocket behind both flags?
-
-**Fix Required:** Explicit flag strategy:
-```python
-# Option A: Reuse existing flag
-if settings.FEATURE_REAL_TIME_UPDATES_ENABLED:
-    app.add_api_websocket_route("/ws", websocket_endpoint)
-    
-# Option B: New flag with parent gate
-FEATURE_WEBSOCKET_ENABLED: bool = os.getenv("FEATURE_WEBSOCKET_ENABLED", "false").lower() in (...)
-
-if settings.FEATURE_REAL_TIME_UPDATES_ENABLED and settings.FEATURE_WEBSOCKET_ENABLED:
-    # Enable WebSocket
-```
-
----
-
-### 13. RATE LIMIT CONFIGURATION MISSING
-
-**Location:** Phase 1, Task 1.2; Phase 2, Task 2.3
-
-**Problem:** Design uses `settings.RATE_LIMIT_REQUESTS` and `settings.RATE_LIMIT_PERIOD` but these are not defined in `backend/core/config.py` (verified). Also uses `settings.REDIS_URL` (this IS defined).
-
-**Issue:** Missing configuration fields. Implementation would fail at startup.
-
-**Fix Required:** Add to `Settings` class in `config.py`:
-```python
-class Settings(BaseSettings):
-    # ... existing fields ...
-    
-    # Rate Limiting
-    RATE_LIMIT_REQUESTS: int = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
-    RATE_LIMIT_PERIOD: int = int(os.getenv("RATE_LIMIT_PERIOD", "60"))  # seconds
-    RATE_LIMIT_EXPENSIVE_REQUESTS: int = int(os.getenv("RATE_LIMIT_EXPENSIVE_REQUESTS", "10"))
-```
-
-AND add to `.env.template`:
-```env
-RATE_LIMIT_REQUESTS=100
-RATE_LIMIT_PERIOD=60
-RATE_LIMIT_EXPENSIVE_REQUESTS=10
-```
-
----
-
-### 14. BBOX VALIDATION FIELD NAMES INCONSISTENT
-
-**Location:** Phase 2, Task 2.2 (BBoxParams)
-
-**Problem:** Design proposes `BBoxParams` with fields `min_lon, min_lat, max_lon, max_lat`, but existing API likely uses different naming. Common variations:
-- `minX, minY, maxX, maxY` (PostGIS convention)
-- `west, south, east, north` (geographic convention)
-- `bbox` as comma-separated string (OGC WMS standard)
-
-**Issue:** Design doesn't verify current API contract. Breaking change risk if field names don't match existing clients.
+**Impact:** If the user considers real-time updates "essential," this resolution conflicts with requirements. The design doesn't justify WHY real-time updates are not essential for production readiness.
 
 **Fix Required:**
-1. Search existing code for bbox usage: `grep -r "bbox" backend/`
-2. Document current format
-3. If changing, add backward compatibility:
-```python
-class BBoxParams(BaseModel):
-    min_lon: float = Field(..., alias="minX")  # Support both names
-    # ...
-    
-    class Config:
-        populate_by_name = True  # Allow both field name and alias
-```
+1. Add a justification paragraph: "Real-time updates enhance UX but are not required for the platform to function in production. The platform can be deployed without WebSocket and users can manually refresh to see updated scenario statuses. This is a v2.1 enhancement, not a v2.0 blocker."
+2. Confirm that no current feature DEPENDS on WebSocket (e.g., dashboard doesn't break if WebSocket is unavailable)
+3. Note that the feature flag FEATURE_REAL_TIME_UPDATES_ENABLED=false already disables this correctly
 
 ---
 
-### 15. SQL MIGRATION IDEMPOTENCY CLAIM WRONG
+### MEDIUM-3: Error Response Compatibility Middleware Has No Implementation Logic
 
-**Location:** Phase 5; Design Review Finding #5
+**Location:** Task 1.3, ErrorResponseCompatibilityMiddleware
 
-**Problem:** Design claims migration 001 uses "schema_version tracking (already implemented)". Verification of `001_add_area_validation.sql` shows:
-- Uses `IF NOT EXISTS` for column and index (correct idempotency)
-- Uses validation script in `DO $$ ... END $$` block (runs every time)
-- NO schema_version table insert or check
-
-Search for schema_version in migrations:
-- `003_add_schema_version.sql` creates the schema_version table
-- Migration 001 predates the version tracking system
-
-**Issue:** Incorrect ordering claim. Migration 001 cannot use schema_version because 003 creates it.
-
-**Fix Required:**
-1. Correct the statement: "Migration 001 uses IF NOT EXISTS for idempotency, not schema_version"
-2. If version tracking is desired, add to migration 001:
-```sql
--- At end of 001_add_area_validation.sql
-INSERT INTO schema_version (version, description, applied_at)
-VALUES (1, 'Add grid cell area validation', NOW())
-ON CONFLICT (version) DO NOTHING;
-```
-
----
-
-### 16. MANAGEMENT UNIT VALIDATION MISSING DATABASE DEPENDENCY
-
-**Location:** Phase 2, Task 2.2 (validators.py)
-
-**Problem:** `validate_management_unit()` function uses `VALID_MANAGEMENT_UNITS` hardcoded list:
+**Problem:** The design shows:
 ```python
-VALID_MANAGEMENT_UNITS = ["Maasai Mara NR", "Mara Triangle", ...]
-```
-
-But there's an existing endpoint `GET /management-units` with response model `List[str]` (verified in routes.py), implying units are stored in database.
-
-**Issue:** Duplication and drift risk. If units are added to database, validator won't know about them.
-
-**Fix Required:** Query database for valid units:
-```python
-async def validate_management_unit(
-    management_unit: Optional[str] = Query(None),
-    db: SupabaseService = Depends(get_db)
-) -> Optional[str]:
-    if not management_unit:
-        return None
+class ErrorResponseCompatibilityMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
         
-    result = db.table("management_units").select("name").eq("name", management_unit).execute()
-    if not result.data:
-        # Fetch all valid units for error message
-        all_units = db.table("management_units").select("name").execute()
-        valid = [u["name"] for u in all_units.data]
-        raise HTTPException(400, detail=f"Invalid unit. Valid: {', '.join(valid)}")
-    
-    return management_unit
+        if response.status_code >= 400 and "application/json" in response.headers.get("content-type", ""):
+            pass
+        
+        return response
 ```
+
+This middleware does NOTHING. The compatibility logic is not implemented.
+
+**Impact:** The middleware serves no purpose. The design claims it provides "backward compatibility for 2 release cycles" but doesn't show HOW.
+
+**Fix Required:**
+1. Either implement the compatibility transformation (old format → new format wrapper) in the `if` block
+2. Or remove the middleware entirely and explain that compatibility is provided by the error handlers themselves (they already return ErrorResponse format)
+3. Clarify what "backward compatibility" means: Do old clients expect `{ detail: "..." }` and new clients expect `{ error: { message: "..." } }`? If so, how does the middleware know which format to return?
 
 ---
 
-### 17. HEALTH CHECK RESPONSE MODEL CONFLICT
+### MEDIUM-4: Middleware Order Explanation Is Insufficient
 
-**Location:** Phase 2, Task 2.1 (Response Models)
+**Location:** Task 1.3, "CORRECT middleware order - MEDIUM #11"
 
-**Problem:** Design proposes new response models including `HealthCheckResponse`. But:
-- `backend/core/response_schemas.py` already has `HealthCheckResponse` (verified)
-- `backend/api/models.py` has `HealthResponse` (verified)
-- Design proposes a THIRD definition in Task 2.1 with different fields
+**Problem:** The design says "RequestTrackingMiddleware FIRST (sets request_id), then ErrorResponseCompatibilityMiddleware (LIFO execution)" but doesn't explain:
+1. Why LIFO execution matters here (FastAPI middleware is FIFO for requests, LIFO for responses)
+2. Whether the order affects error handling
+3. What happens if an error occurs in RequestTrackingMiddleware itself
 
-Existing `HealthCheckResponse` has: status, timestamp, services, version, uptime_seconds
-Design's `HealthCheckResponse` has: status, services, version, timestamp (no uptime_seconds)
-Existing `HealthResponse` has: status, model_loaded, version
-
-**Issue:** Three conflicting health response schemas. Which one should be used?
+**Impact:** Implementer may not understand why this order is critical, leading to bugs if middleware is reordered later.
 
 **Fix Required:**
-1. Use existing `HealthCheckResponse` from `response_schemas.py`
-2. Update `/health` endpoint to return all required fields:
+1. Explain: "Middleware executes FIFO on request path, LIFO on response path. RequestTrackingMiddleware must run first to set request_id on request.state BEFORE any error handlers read it."
+2. Add diagram:
+```
+Request  → RequestTracking (sets request_id) → ErrorCompat → Route Handler
+Response ← RequestTracking (adds X-Request-ID header) ← ErrorCompat ← Route Handler
+```
+3. Note: If an exception occurs, error handlers run OUTSIDE middleware stack, so they read request.state.request_id set by RequestTrackingMiddleware
+
+---
+
+### MEDIUM-5: Contact Form Validation Check Will Fail Silently
+
+**Location:** Task 4.1
+
+**Problem:** The design shows:
 ```python
-@router.get("/health", response_model=HealthCheckResponse, tags=["System"])
-async def health_check(request: Request):
-    start_time = getattr(request.app.state, "start_time", time.time())
-    uptime = time.time() - start_time
-    # ... rest of logic ...
-    return HealthCheckResponse(
-        status=overall_status,
-        services=services,
-        version="2.0.0",
-        timestamp=datetime.utcnow(),
-        uptime_seconds=uptime
+smtp_configured = all([
+    os.environ.get("SMTP_HOST"),
+    os.environ.get("SMTP_PORT"),
+    os.environ.get("SMTP_USER"),
+    os.environ.get("SMTP_PASSWORD")
+])
+
+if not (smtp_configured or sendgrid_configured or webhook_configured):
+    raise HTTPException(
+        status_code=503,
+        detail="Email service not configured. Please contact the administrator."
     )
 ```
 
----
+But this check happens on EVERY form submission. If SMTP is misconfigured (e.g., wrong password), the check passes but email sending fails later. The design doesn't add "email delivery status" tracking as recommended in mock_behavior_inventory.md.
 
-### 18. NO VERIFICATION OF MODEL FILES
-
-**Location:** Phase 1, Task 1.1 (JWT Secret); All phases
-
-**Problem:** Design references `settings.MODEL_PATH`, `settings.SCALER_PATH`, `settings.FEATURE_NAMES_PATH` throughout. `config.py` validation shows these are checked at startup, but design never verifies:
-1. These files actually exist in the deployment
-2. What happens if they don't exist
-3. How to deploy them (Railway rootDirectory=backend means models at `./models/` not `../web-app/models/`)
-
-**Issue:** Model files are critical for prediction endpoints but not mentioned in Phase 8 deployment guide outline.
-
-**Fix Required:** Add to Phase 8:
-```markdown
-### Model File Deployment
-
-Railway deployment with `rootDirectory=backend` requires models in `backend/models/`:
-
-1. Copy models to backend directory:
-   ```bash
-   mkdir -p backend/models
-   cp web-app/models/*.pkl backend/models/
-   cp web-app/models/*.txt backend/models/
-   ```
-
-2. Update railway.toml:
-   ```toml
-   [build]
-   builder = "nixpacks"
-   rootDirectory = "backend"
-   
-   [deploy]
-   startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
-   
-   [[mounts]]
-   path = "/app/models"
-   ```
-
-3. Set environment variable:
-   ```
-   MODELS_DIR=/app/models
-   ```
-```
-
----
-
-### 19. QUERY OPTIMIZATION MISSING BASELINE METRICS
-
-**Location:** Phase 6, Design Review Finding #14
-
-**Problem:** Design states "EXPLAIN ANALYZE requirement, baseline metrics" resolved finding #14, but provides no actual baseline metrics, no EXPLAIN ANALYZE examples, and no performance thresholds.
-
-**Issue:** "Sub-second performance on common queries" is a success criterion but no definition of:
-- Which queries are "common"
-- Current performance (baseline)
-- Target performance (goal)
-- How to measure (tooling)
+**Impact:** Users get a success message but email is never sent. No admin notification of failed deliveries.
 
 **Fix Required:**
-```markdown
-### Phase 6: Query Baseline Metrics
+1. Add to Task 4.1: Create `contact_submissions.delivery_status` column (values: pending, sent, failed)
+2. Update status to 'sent' only AFTER successful email delivery
+3. Add admin notification endpoint or dashboard to monitor failed deliveries
+4. Add retry logic for transient failures (SMTP timeout)
 
-Common queries (>10 requests/minute in production):
+---
 
-1. GET /baseline (bbox query)
-   - Current: ~1200ms (no index on ST_Intersects)
-   - Target: <500ms
-   - Optimization: Add GIST index on geom
+### MEDIUM-6: Model File Deployment Instructions Are Ambiguous
 
-2. GET /scenario (spatial join)
-   - Current: ~3400ms (no index on management_unit)
-   - Target: <1000ms
-   - Optimization: Add B-tree index on management_unit
+**Location:** Task 8.3, DEPLOYMENT.md
 
-3. GET /corridors (ST_Buffer + intersection)
-   - Current: ~890ms (acceptable)
-   - Target: <800ms
-   - Optimization: Pre-compute buffers
+**Problem:** The design says:
+"Railway deployment with `rootDirectory=backend` requires models in `backend/models/`:
+```bash
+mkdir -p backend/models
+cp web-app/models/*.pkl backend/models/
+```
+Or set `MODELS_DIR=/app/models` environment variable."
 
-Measurement:
+This is ambiguous:
+1. WHO runs these commands? Developer before pushing? CI/CD pipeline? Deployment script?
+2. WHEN are they run? Before deployment? During build? At runtime?
+3. WHERE is web-app/models/ in a production container? Is it included in the Docker image?
+
+**Impact:** Deployment will fail if models are missing, and the guide doesn't clearly say how to prevent this.
+
+**Fix Required:**
+1. Clarify: "Before deploying, ensure model files are committed to backend/models/ OR set MODELS_DIR to point to an existing path"
+2. Add Railway-specific instructions: "If using Railway with rootDirectory=backend, either copy models to backend/models/ before pushing, or mount a persistent volume at /app/models"
+3. Add verification step: "After deployment, check /health endpoint to confirm model_loaded: true"
+
+---
+
+### MEDIUM-7: PostGIS Optimization Baseline Metrics Are Not Defined
+
+**Location:** Task 6.1
+
+**Problem:** The design shows three queries with "Current: Unknown" and "Target: <500ms" but doesn't explain:
+1. How to measure "Current" (EXPLAIN ANALYZE output? Actual runtime? 50th percentile? 95th percentile?)
+2. What to do if baseline is ALREADY faster than target (no optimization needed?)
+3. What to do if baseline is 10x slower than target (unrealistic target?)
+
+**Impact:** Phase 6 success criteria include "All common queries <1s (baseline documented)" but the design doesn't define what "baseline documented" means.
+
+**Fix Required:**
+1. Add to Task 6.1: "Run each query 10 times on production-like dataset, record median and p95 execution time"
+2. Add decision matrix:
+   - If median <target: Document and skip optimization
+   - If median 1-2x target: Apply optimization patterns from Task 6.3
+   - If median >2x target: Investigate data volume, indexes, query plan issues
+3. Specify output format: "Document in docs/performance_baseline.md with EXPLAIN ANALYZE output and runtime statistics"
+
+---
+
+### MEDIUM-8: Spatial Validation Framework Missing "repair" Parameter Decision
+
+**Location:** Task 5.1, validate_polygon_topology
+
+**Problem:** The design shows:
+```python
+def validate_polygon_topology(geom_wkt: str, repair: bool = False) -> str:
+```
+
+But doesn't specify:
+1. When should `repair=True` be used? User scenarios? Admin tools?
+2. What happens if repair fails? (design shows HTTPException, correct)
+3. Should the API expose the repair parameter or always try repair automatically?
+
+**Impact:** Implementation could expose `repair` as a query param, leading to users bypassing validation. Or could always auto-repair, making validation warnings invisible.
+
+**Fix Required:**
+1. Specify: "Never expose repair parameter to user-facing endpoints. Use repair=False for validation, repair=True only in admin tools or data ingestion pipelines"
+2. Add: "If validation fails with repair=False, log the error and return 400. Do not auto-repair user input"
+3. Add: "For trusted data sources (e.g., WDPA imports), use repair=True and log repairs for audit"
+
+---
+
+### MEDIUM-9: Response Model Gap Analysis Missing Verification
+
+**Location:** Task 2.1, "EXISTING (verified)"
+
+**Problem:** The design claims these endpoints have response models:
+- ✅ GET /baseline → BaselineResponse
+- ✅ POST /scenario → ScenarioResponse
+- ✅ POST /explain → ExplanationResponse
+- ✅ GET /management-units → List[str]
+- ✅ POST /contact → ContactFormResponse
+
+But there's no evidence that routes.py was read to verify these claims. The audit report (api_consistency_audit.md) says:
+- GET /baseline → BaselineResponse (confirmed)
+- GET /management-units → List[str] (confirmed)
+- POST /contact → ContactFormResponse (confirmed)
+
+But POST /scenario and POST /explain are not confirmed in the audit as having response_model declarations.
+
+**Impact:** If the "EXISTING" list is wrong, then the "MISSING" list is wrong, and Task 2.1 will either skip necessary work or duplicate existing work.
+
+**Fix Required:**
+1. READ routes.py and grep for `response_model=` on each endpoint
+2. For EXISTING endpoints, quote the actual decorator line to prove it exists
+3. For MISSING endpoints, show the current decorator (without response_model) before showing the proposed change
+
+---
+
+### MEDIUM-10: Code Simplification Lacks Concrete Targets
+
+**Location:** Task 7.2, "Simplify Complex Functions"
+
+**Problem:** The design says:
+"Priority files:
+- ecological_data_service.py (enrich_cells_with_live_data)
+- spatial_service.py (complex spatial queries)
+- routes.py (contact form handler)"
+
+But doesn't specify:
+1. WHICH functions in these files are complex (lines? function names?)
+2. HOW they should be simplified (split into what sub-functions?)
+3. WHAT the acceptance criteria is (lines reduced from X to Y? nesting reduced from N to M?)
+
+**Impact:** Task 7.2 is too vague to implement. "Simplify" is subjective without criteria.
+
+**Fix Required:**
+1. Specify: "enrich_cells_with_live_data (lines X-Y, currently 120 lines, target <50 lines per function)"
+2. Show concrete refactoring:
+   - Extract NASA POWER API call into separate function
+   - Extract GBIF API call into separate function
+   - Extract enrichment logic into separate function
+3. Define measurable criteria: "No function >50 lines, no nesting >3 levels, cyclomatic complexity <10"
+
+---
+
+### MEDIUM-11: Timeline Critical Path Calculation Is Wrong
+
+**Location:** "Phase Dependencies & Execution Order"
+
+**Problem:** The design shows:
+"Critical path: P5(6d) → P2(5d) → P4(13d) → P7(6d) → P8(3d) = 33 days"
+
+But the table shows P4 takes 13 days, and P4 can only start after P2 completes. P2 depends on P5. So:
+- P5: 6 days (ends day 6)
+- P2: 5 days (starts day 7, ends day 11)
+- P4: 13 days (starts day 12, ends day 24)
+- P7: 6 days (starts day 25, ends day 30)
+- P8: 3 days (starts day 31, ends day 33)
+
+This is 33 days total, but the table claims "Total Duration: 35 days with QA and contingency." Where do the extra 2 days come from? The table shows Week 7 with P8, but that's only day 33.
+
+**Impact:** Timeline may be underestimated, or the contingency buffer is not clearly explained.
+
+**Fix Required:**
+1. Show the critical path calculation step-by-step with day numbers
+2. Explain where the 2-day difference comes from (is it 8.5% contingency mentioned in Executive Summary? If so, 33 * 1.085 = 35.8 days)
+3. Update the table to show actual day numbers, not just "Week X"
+4. Clarify whether "35 days" includes weekends (7 weeks = 49 calendar days, not 35 business days)
+
+---
+
+## NIT FINDINGS
+
+### NIT-1: Inconsistent Error Code Naming
+
+**Location:** Task 1.3, ErrorDetail code field
+
+**Problem:** The design shows error codes like:
+- `HTTP_400`
+- `VALIDATION_ERROR`
+- `INTERNAL_SERVER_ERROR`
+
+But doesn't define a naming standard. Are they `HTTP_{status}` or semantic names? Both?
+
+**Fix:** Add a section "Error Code Standards" with examples:
+- HTTP errors: Use semantic names (VALIDATION_ERROR, NOT_FOUND, UNAUTHORIZED)
+- Application errors: Use SCREAMING_SNAKE_CASE (NASA_POWER_TIMEOUT, MODEL_NOT_LOADED)
+- Never use generic codes like ERROR_001
+
+---
+
+### NIT-2: SQL Migration Uses "CONCURRENTLY" Without Prerequisites Check
+
+**Location:** Task 5.2, migration 001
+
+**Problem:** The actual migration file uses:
 ```sql
--- Run before optimization
-EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
-SELECT * FROM grid_cells
-WHERE ST_Intersects(geom, ST_MakeEnvelope(34.5, -1.8, 35.5, -1.0, 4326));
-```
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_grid_cells_area ...
 ```
 
----
+CONCURRENTLY requires that the command is NOT run inside a transaction block. But the migration doesn't document this.
 
-### 20. DEADLINE COMPRESSION RISK
-
-**Location:** Execution Timeline
-
-**Problem:** Timeline shows:
-- 24 days total with parallelization
-- Critical path: 21 days
-- Buffer: 3 days (12.5%)
-
-Industry standard for software estimation is 50-100% buffer for complex system changes. Production hardening involves:
-- 8 phases
-- Multiple breaking changes
-- Cross-team coordination (frontend + backend)
-- QA testing not included in phase estimates
-
-**Issue:** Timeline doesn't account for:
-1. Integration testing between phases
-2. Regression testing after each phase
-3. Code review time (mentioned but not scheduled)
-4. Deployment staging windows
-5. Rollback procedures if issues found
-
-**Fix Required:**
-```markdown
-### Revised Timeline with Testing
-
-| Phase | Dev | Code Review | QA | Total | Dependencies |
-|-------|-----|-------------|-----|-------|--------------|
-| Phase 1 | 3d | 1d | 1d | 5d | None |
-| Phase 2 | 3d | 1d | 1d | 5d | Phase 1 |
-| Phase 3 | 4d | 1d | 1d | 6d | None |
-| Phase 4 | 9d | 2d | 2d | 13d | Phase 1, 3 |
-| Phase 5 | 4d | 1d | 1d | 6d | None |
-| Phase 6 | 4d | 1d | 1d | 6d | Phase 5 |
-| Phase 7 | 4d | 1d | 1d | 6d | Phase 2, 4, 6 |
-| Phase 8 | 2d | 1d | - | 3d | Phase 7 |
-
-**Total Duration:** 35 days (7 weeks) with parallelization
-**Critical Path:** P1(5d) → P2(5d) → P4(13d) → P7(6d) → P8(3d) = 32 days
-**Contingency:** 3 days (8.5%)
-```
+**Fix:** Add to Task 5.2: "Note: CREATE INDEX CONCURRENTLY cannot run inside a transaction. If using a migration tool that wraps migrations in BEGIN/COMMIT, split this index creation into a separate migration."
 
 ---
 
-## NIT SEVERITY FINDINGS
+### NIT-3: Design System Documentation Has No Component Examples
 
-### N1. Typo: "sk-seka-" Prefix Inconsistent
+**Location:** Task 8.4, DESIGN_SYSTEM.md
 
-**Location:** Phase 8 outline, multiple locations
+**Problem:** The design shows color tokens and button sizes but doesn't show actual component examples using them.
 
-**Issue:** Documentation page shows `sk-seka-JhbGciOi...` but JWT tokens typically don't have custom prefixes. API keys have `sk-seka-` prefix (verified in settings page), JWTs don't.
+**Fix:** Add a "Component Examples" section:
+```tsx
+// Button variants
+<button className="py-2 px-4 bg-brand-gold text-white">Small</button>
+<button className="py-3 px-6 bg-brand-gold text-white">Medium</button>
 
-**Fix:** Clarify distinction:
-- API Keys: `sk-seka-{random}` (for programmatic access)
-- JWT Tokens: Standard JWT format `eyJhbGciOi...` (for session auth)
-
----
-
-### N2. Missing Logging Configuration
-
-**Location:** All phases use `logger.error()`, `logger.warning()`, etc.
-
-**Issue:** No mention of logging configuration, log levels, or log aggregation in production. Design uses `logger.critical()` for Redis degradation but doesn't define what "critical" means.
-
-**Fix:** Add to Phase 1 or Phase 8:
-```python
-# backend/core/logging_config.py
-import logging
-import sys
-
-def configure_logging(environment: str, log_level: str = "INFO"):
-    logging.basicConfig(
-        level=getattr(logging, log_level.upper()),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[logging.StreamHandler(sys.stdout)]
-    )
-    
-    if environment == "production":
-        # Add structured logging for log aggregation
-        # TODO: Configure Sentry, Datadog, or CloudWatch
-        pass
-```
-
----
-
-### N3. No Rollback Procedures
-
-**Location:** All phases
-
-**Issue:** Design includes rollback SQL for migration 001 but no rollback procedures for:
-- Error response format change (compatibility layer removal)
-- Rate limiter Redis failure
-- WebSocket deployment issues
-- API validation breaking changes
-
-**Fix:** Add rollback section to each phase where applicable.
-
----
-
-### N4. Import Statement Order Not Specified
-
-**Location:** Multiple new files (validators.py, error_handlers.py, etc.)
-
-**Issue:** Python convention is:
-1. Standard library imports
-2. Third-party imports
-3. Local imports
-
-Design code mixes these. Not blocking but violates style guides.
-
-**Fix:** Reorder imports consistently:
-```python
-# Standard library
-import time
-import logging
-from typing import Dict, Optional
-
-# Third-party
-from fastapi import HTTPException, Request
-from pydantic import BaseModel
-
-# Local
-from core.config import settings
+// Card
+<div className="p-6 bg-brand-card border border-brand-border">...</div>
 ```
 
 ---
 
 ## VERIFIED ASSUMPTIONS
 
-The following design assumptions were verified against the actual codebase and are CORRECT:
+The following claims in the design were verified against the actual codebase:
 
-1. ✅ **JWT validation exists in auth.py** - Confirmed at lines 30-45, validates secret key length and presence
-2. ✅ **Rate limiting uses in-memory dict** - Confirmed in `rate_limiting.py:14-16`
-3. ✅ **REDIS_URL is defined in config** - Confirmed in `config.py:108`
-4. ✅ **Response schemas exist** - Confirmed in `backend/core/response_schemas.py` with ErrorResponse, ErrorDetail, ErrorLevel
-5. ✅ **Migration 001 exists** - Confirmed at `backend/sql/migrations/001_add_area_validation.sql`
-6. ✅ **NASA POWER service has retry logic** - Confirmed in `fetch_complete_nasa_data()` with 3 retries and exponential backoff
-7. ✅ **Response models used on some endpoints** - Confirmed 5 endpoints already have response_model
-8. ✅ **Feature flags exist in config** - Confirmed FEATURE_REAL_TIME_UPDATES_ENABLED and others
-9. ✅ **Management units endpoint exists** - Confirmed `GET /management-units` returns `List[str]`
-10. ✅ **Models directory path configuration** - Confirmed config.py handles both `backend/models/` and `web-app/models/`
+1. ✅ **ErrorResponse exists in response_schemas.py** (verified lines 35-49)
+2. ✅ **Hardcoded colors exist in frontend** (verified: bg-[#775a19], text-[#1a1c1c] in multiple .tsx files)
+3. ✅ **Migration 001 exists** (verified at backend/sql/migrations/001_add_area_validation.sql)
+4. ✅ **Config has RATE_LIMIT_REQUESTS and RATE_LIMIT_PERIOD** (verified lines 107-108)
+5. ✅ **HealthCheckResponse exists in response_schemas.py** (verified lines 76-84)
+6. ✅ **Rate limiter uses in-memory fallback** (verified in core/rate_limiting.py lines 14-16)
 
 ---
 
 ## UNVERIFIED / WRONG ASSUMPTIONS
 
-The following design assumptions are INCORRECT or UNVERIFIED:
+The following claims in the design were NOT verified or were found to be INCORRECT:
 
-1. ❌ **"No silent exception handlers"** - WRONG: Three `except: pass` blocks exist at lines ~1177, ~1212, ~1248 in routes.py
-2. ❌ **"Migration 001 uses schema_version tracking"** - WRONG: Migration 001 predates schema_version (added in 003)
-3. ❌ **"WebSocket endpoints exist"** - WRONG: No WebSocket implementation found in backend
-4. ❌ **"No emojis in codebase"** - CORRECT but irrelevant, actual issue is hardcoded colors
-5. ❌ **"Validation approach conflict resolved"** - PARTIAL: Strategy defined but management units still hardcoded
-6. ❌ **"RATE_LIMIT_REQUESTS and RATE_LIMIT_PERIOD exist in config"** - WRONG: Not defined in Settings class
-7. ❌ **"All endpoints validated"** - UNVERIFIED: No audit of which endpoints lack validation
-8. ❌ **"Bbox validation uses min_lon/min_lat names"** - UNVERIFIED: Current API contract not checked
-9. ❌ **"Health check needs response model"** - PARTIAL: HealthCheckResponse already exists in response_schemas.py
-10. ❌ **"Phase dependencies allow parallelization"** - WRONG: Phase 2 needs Phase 5, Phase 4 needs Phase 3
-11. ❌ **"Railway deployment guide ready"** - UNVERIFIED: No mention of model file deployment
-12. ❌ **"Sub-second query performance"** - UNVERIFIED: No baseline metrics provided
-13. ❌ **"24 day timeline"** - QUESTIONABLE: No QA/testing time included
-14. ❌ **"NASA POWER retry on rainfall function"** - WRONG: Only `fetch_complete_nasa_data` has retry
-15. ❌ **"Middleware order correct"** - WRONG: Compatibility should be added after tracking, not before
+1. ❌ **Silent exception handlers at lines 1177, 1212, 1248** — grep found NO matches for `except.*pass` in routes.py (HIGH-1)
+2. ❌ **Migration 001 uses manual UPDATE** — actual migration uses GENERATED ALWAYS column (HIGH-2)
+3. ❌ **RequestTrackingMiddleware and ErrorResponseCompatibilityMiddleware exist** — grep found NO matches (HIGH-3)
+4. ❌ **BBoxParams exists** — grep found NO matches (HIGH-4)
+5. ❌ **RateLimiter has get_status() method** — method not defined in provided code (HIGH-6)
+6. ⚠️ **JWT validation "already implemented"** — not verified, config.py read but auth.py not checked (MEDIUM-1)
+7. ⚠️ **NASA POWER function signature** — not verified, function may not exist with proposed signature (HIGH-7)
+8. ⚠️ **Response models "verified" as existing** — audit report confirms some, but not all claimed (MEDIUM-9)
 
 ---
 
-## ACTIONABLE RECOMMENDATIONS
+## CONCRETE FIXES REQUIRED
 
-To move this design to APPROVED status:
+### For HIGH-1 (Silent Exceptions):
+READ routes.py lines 1170-1260, verify actual exception handling, update Task 1.4 to match reality.
 
-### Critical Path (Address HIGH findings first)
+### For HIGH-2 (Migration):
+Replace Task 5.2 code with:
+```sql
+-- Migration: 001_add_area_validation.sql (EXISTING FILE)
+-- This migration is IDEMPOTENT and safe to rerun
 
-1. **Fix silent exception handlers** - Correct line numbers and provide accurate replacements
-2. **Resolve migration confusion** - Separate JWT validation from spatial migration 001
-3. **WebSocket scope decision** - Either implement fully or remove from scope
-4. **Color audit and replacement** - Replace emoji focus with actual hardcoded color remediation
-5. **Validation strategy clarity** - Define "complex vs simple" and query management units from DB
-6. **Error response migration** - Explicit schema evolution plan
-7. **Redis fail-open recovery** - Add automatic reconnection and alerting
-8. **Phase dependency correction** - Revise timeline with accurate dependencies
+ALTER TABLE public.grid_cells ADD COLUMN IF NOT EXISTS 
+    area_km2 FLOAT GENERATED ALWAYS AS (
+        ST_Area(geom::geography) / 1000000.0
+    ) STORED;
 
-### Medium Priority (Address MEDIUM findings)
+-- Validation logging (runs every time, reports stats)
+DO $$
+DECLARE
+    outlier_count INTEGER;
+    min_area FLOAT;
+    max_area FLOAT;
+BEGIN
+    SELECT COUNT(*), MIN(area_km2), MAX(area_km2) 
+    INTO outlier_count, min_area, max_area
+    FROM grid_cells 
+    WHERE area_km2 < 0.5 OR area_km2 > 2.0;
+    
+    RAISE NOTICE 'Area validation: outliers=%, range=[%, %] km²',
+        outlier_count, min_area, max_area;
+    
+    IF outlier_count > 0 THEN
+        RAISE WARNING 'Found % cells with area outside [0.5, 2.0] km²', outlier_count;
+    END IF;
+END $$;
 
-9. Add NASA retry to rainfall function or document limitation
-10. Complete response model gap analysis (which endpoints need models)
-11. Fix middleware execution order
-12. Resolve feature flag collision for WebSocket
-13. Add rate limit config to Settings class
-14. Verify and document bbox field naming
-15. Clarify schema_version usage or remove claim
-16. Remove hardcoded management units list
-17. Consolidate health check response models
-18. Add model file deployment to Phase 8
-19. Provide query baseline metrics and EXPLAIN ANALYZE examples
-20. Expand timeline to include QA and review stages
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_grid_cells_area 
+    ON public.grid_cells(area_km2);
+```
 
-### Polish (Address NITs)
+### For HIGH-3 (Middleware):
+In Task 1.3, add before showing middleware code:
+"CREATE backend/core/middleware.py (new file) — this file does not currently exist."
 
-21-24. Fix typos, add logging config, add rollback procedures, standardize import order
+### For HIGH-4 (BBoxParams):
+In Task 2.2, add:
+"CURRENT STATE: Endpoints use individual query parameters (min_lon, min_lat, max_lon, max_lat) without validation.
+PROPOSED: Create validators.py with BBoxParams, then update X endpoints to use Depends(BBoxParams)."
+
+### For HIGH-6 (get_status):
+Add to RateLimiter class in Task 1.2:
+```python
+def get_status(self) -> dict:
+    """Return rate limiter status for health checks."""
+    return {
+        "backend": "redis" if (self.redis_client and not self.degraded_mode) else "memory",
+        "degraded": self.degraded_mode,
+        "degraded_since": self.degraded_since,
+        "degraded_duration_seconds": (time.time() - self.degraded_since) if self.degraded_since else None
+    }
+```
+
+### For MEDIUM-3 (Compatibility Middleware):
+Either implement the middleware logic OR remove it and explain: "Compatibility is achieved by error handlers returning ErrorResponse directly. No middleware needed."
+
+### For MEDIUM-7 (Baseline Metrics):
+Add to Task 6.1:
+```markdown
+**Baseline Measurement Protocol:**
+1. Run each query 10 times on production-like dataset
+2. Record median and p95 execution time
+3. Capture EXPLAIN ANALYZE output
+4. Document in docs/performance_baseline.md
+5. If median exceeds target by >2x, investigate before proceeding
+```
 
 ---
 
-## CONCLUSION
+## SUMMARY
 
-This design represents significant effort and addresses many production concerns, but contains critical ambiguities and unverified assumptions that would cause implementation failures. The document needs a focused revision pass to verify ALL claims against the actual codebase, resolve conflicts between proposed and existing code, and clarify scope boundaries (hardening vs new features).
+This design is detailed and addresses many audit findings, but contains **7 HIGH** and **11 MEDIUM** issues that must be resolved:
 
-**Estimated revision time:** 1-2 days to address all HIGH findings and key MEDIUM findings.
+**Critical blockers:**
+- Verify silent exception handler claims (may be false)
+- Correct migration 001 code (currently wrong)
+- Clarify that new middleware/validators don't exist yet
+- Add missing get_status() method to RateLimiter
 
-**Next steps:**
-1. Coder should NOT implement until design is revised
-2. Design author should verify each HIGH finding against codebase
-3. Resolve scope question: Is WebSocket in scope for "production hardening"?
-4. Resubmit for review with corrections
+**Important gaps:**
+- Verify JWT validation is actually implemented
+- Verify NASA POWER function exists and signature
+- Add concrete simplification criteria to Phase 7
+- Fix timeline calculation and explain contingency
+- Add email delivery status tracking to contact form
+- Clarify model file deployment process
+
+Once these issues are addressed, the design will be ready for implementation.
 
 ---
 
-**Review completed:** 2026-11-02  
-**Findings:** 8 HIGH, 12 MEDIUM, 4 NIT  
-**Status:** CHANGES REQUESTED
+**Review completed:** 2025-01-30  
+**Next step:** Address findings and resubmit design for approval
