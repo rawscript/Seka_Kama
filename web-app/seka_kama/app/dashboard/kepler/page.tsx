@@ -27,11 +27,11 @@ function KeplerContent() {
     if (scenarioId) {
       setLoading(true);
       setScenarioMeta({ id: scenarioId });
-      console.log('📊 Loading scenario #' + scenarioId + ' into Kepler.gl...');
+      console.log('[LOAD] Loading scenario #' + scenarioId + ' into Kepler.gl...');
       
       api.getScenarioById(parseInt(scenarioId))
         .then(scenario => {
-          console.log('✅ Scenario loaded for Kepler:', {
+          console.log('[SUCCESS] Scenario loaded for Kepler:', {
             id: scenario.scenario_id ?? scenario.id,
             has_geojson: !!scenario.scenario_geojson,
             features_count: scenario.scenario_geojson?.features?.length,
@@ -53,7 +53,7 @@ function KeplerContent() {
           }
         })
         .catch(err => {
-          console.error('❌ Failed to load scenario for Kepler:', err);
+          console.error('[ERROR] Failed to load scenario for Kepler:', err);
           setScenarioMeta(null);
         })
         .finally(() => {

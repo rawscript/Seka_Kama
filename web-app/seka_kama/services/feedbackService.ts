@@ -129,7 +129,7 @@ const FEEDBACK_CATEGORIES: FeedbackCategory[] = [
     id: 'data',
     name: 'Data Issue',
     description: 'Report incorrect or missing data',
-    icon: '📊',
+    icon: 'DATA',
     color: '#6366f1',
     componentFilter: ['SekaMap', 'AnalystPanel', 'ScenarioSimulation']
   },

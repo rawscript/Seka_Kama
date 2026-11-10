@@ -159,7 +159,7 @@ function Field({ label, id, children }: { label: string; id: string; children: R
 function Banner({ type, children }: { type: 'success' | 'error'; children: React.ReactNode }) {
   return (
     <div style={{ margin: '0.75rem 0', padding: '0.65rem 1rem', borderRadius: 8, fontSize: '0.85rem', background: type === 'success' ? '#e8f5e9' : '#ffebee', color: type === 'success' ? '#2e7d32' : '#c62828' }}>
-      {type === 'success' ? '✓ ' : '✗ '}{children}
+      <span style={{ fontWeight: 600 }}>{type === 'success' ? '[SUCCESS] ' : '[ERROR] '}</span>{children}
     </div>
   );
 }

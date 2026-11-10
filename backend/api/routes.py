@@ -12,7 +12,10 @@ logger = logging.getLogger(__name__)
 
 from .models import (
     ScenarioRequest, ScenarioResponse, BaselineResponse, 
-    ExplanationRequest, ExplanationResponse
+    ExplanationRequest, ExplanationResponse,
+    BaselineSummaryResponse, GeoJSONResponse, CorridorResponse,
+    NarrativeSummaryResponse, FeatureImportanceResponse,
+    ModelMetadataResponse, StatisticsResponse
 )
 from services.prediction_service import predict_scenario, get_feature_importance_json
 from services.spatial_service import get_baseline_grid, get_affected_cells, get_protected_areas
@@ -62,7 +65,7 @@ async def get_baseline(
     )
 
 
-@router.get("/baseline/summary")
+@router.get("/baseline/summary", response_model=BaselineSummaryResponse)
 async def get_baseline_summary(
     management_unit: Optional[str] = Query(None),
     year: Optional[int] = Query(None),

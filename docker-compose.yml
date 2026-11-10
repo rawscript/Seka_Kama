@@ -1,11 +1,11 @@
 services:
-  fastapi:
+  backend:
     build: ./backend
     environment:
       SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL is required}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY is required}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?ALLOWED_ORIGINS is required}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
       MODELS_DIR: /app/models
       FEATURE_SCENARIO_SIMULATION_ENABLED: ${FEATURE_SCENARIO_SIMULATION_ENABLED:-false}
     volumes:
@@ -22,9 +22,12 @@ services:
     build:
       context: ./web-app/seka_kama
       args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
         NEXT_PUBLIC_ENABLE_SCENARIOS: ${NEXT_PUBLIC_ENABLE_SCENARIOS:-false}
         NEXT_PUBLIC_MAP_STYLE_URL: ${NEXT_PUBLIC_MAP_STYLE_URL:-}
         NEXT_PUBLIC_MAP_TILE_URL: ${NEXT_PUBLIC_MAP_TILE_URL:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}
     ports:
       - "3000:3000"
-
+    depends_on:
+      backend:
+        condition: service_healthy

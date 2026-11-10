@@ -1,1 +1,10 @@
-
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "Seka Kama: Ecological Digital Twin API and Spatial Decision Support System"
+version: 2.0.0
+date-released: 2026-11-09
+repository-code: "https://github.com/rawscript/Seka_Kama"
+license: Apache-2.0
+authors:
+  - name: "Seka Kama Contributors"

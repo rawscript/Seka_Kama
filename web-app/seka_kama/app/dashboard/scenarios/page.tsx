@@ -109,7 +109,6 @@ export default function ScenariosPage() {
               <div className="w-16 h-16 bg-[#f3f3f3] rounded-full flex items-center justify-center mx-auto mb-6">
                 <History className="w-8 h-8 text-[#d1c5b4]" />
               </div>
-              <h2 className="text-xl font-medium text-[#1a1c1c] mb-2 uppercase tracking-wide">No Simulation Records</h2>
               <p className="text-sm text-[#4e4639] font-light max-w-sm mx-auto mb-8">
                 Your historical simulation vault is empty. Launch a new what-if analysis from the Spatial dashboard to begin your predictive narrative.
               </p>

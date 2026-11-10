@@ -152,7 +152,7 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
     setLoading(true);
     setProcessError(null);
     
-    console.log('🚀 Starting scenario execution...', {
+    console.log('[START] Starting scenario execution...', {
       geometry: drawnGeometry,
       modifications,
       simulation_years: 0,
@@ -169,7 +169,7 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
         management_units: selectedUnit ? [selectedUnit] : undefined,
       });
       
-      console.log('✅ Scenario execution successful!', {
+      console.log('[SUCCESS] Scenario execution successful!', {
         scenario_id: result.scenario_id,
         baseline_lions: result.baseline_total_lions,
         predicted_lions: result.predicted_total_lions,
@@ -191,7 +191,7 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
       
       onScenarioRun?.(result);
     } catch (error) {
-      console.error('❌ Scenario execution failed:', error);
+      console.error('[ERROR] Scenario execution failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setProcessError(`Simulation failed: ${errorMessage}`);
     } finally {

@@ -124,3 +124,78 @@ class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
     version: str = "2.0.0"
+
+
+class BaselineSummaryResponse(BaseModel):
+    """Baseline lion density summary statistics"""
+    total_cells: int
+    total_lions: float
+    mean_density: float
+    max_density: float
+    min_density: float
+    std_density: float
+    management_units: Optional[List[str]] = None
+
+class GeoJSONResponse(BaseModel):
+    """Standard GeoJSON FeatureCollection response"""
+    type: str = "FeatureCollection"
+    features: List[Dict[str, Any]]
+    properties: Optional[Dict[str, Any]] = None
+
+class CorridorResponse(BaseModel):
+    """Wildlife corridor analysis response"""
+    corridors: List[Dict[str, Any]]
+    total_corridors: int
+    total_length_km: Optional[float] = None
+    connectivity_score: Optional[float] = None
+
+class NarrativeSummaryResponse(BaseModel):
+    """AI-generated narrative summary"""
+    narrative: str
+    key_insights: List[str]
+    data_sources: List[str]
+    generated_at: datetime
+
+class FeatureImportanceResponse(BaseModel):
+    """Model feature importance rankings"""
+    features: List[Dict[str, Any]]
+    model_version: str
+    importance_method: str = "XGBoost gain"
+
+class ModelMetadataResponse(BaseModel):
+    """Model metadata and configuration"""
+    model_version: str
+    model_type: str
+    feature_count: int
+    training_date: Optional[str] = None
+    target_unit: Optional[str] = None
+    artifacts: Optional[List[str]] = None
+
+class StatisticsResponse(BaseModel):
+    """Platform usage statistics"""
+    total_predictions: int
+    total_scenarios: int
+    total_users: int
+    active_regions: List[str]
+    date_range: Optional[Dict[str, str]] = None
+
+class BBoxParams(BaseModel):
+    """Bounding box query parameters with validation"""
+    min_lon: float = Field(ge=-180, le=180)
+    min_lat: float = Field(ge=-90, le=90)
+    max_lon: float = Field(ge=-180, le=180)
+    max_lat: float = Field(ge=-90, le=90)
+    
+    @field_validator('max_lon')
+    @classmethod
+    def validate_lon_order(cls, v: float, info) -> float:
+        if 'min_lon' in info.data and v < info.data['min_lon']:
+            raise ValueError('max_lon must be greater than min_lon')
+        return v
+    
+    @field_validator('max_lat')
+    @classmethod
+    def validate_lat_order(cls, v: float, info) -> float:
+        if 'min_lat' in info.data and v < info.data['min_lat']:
+            raise ValueError('max_lat must be greater than min_lat')
+        return v
