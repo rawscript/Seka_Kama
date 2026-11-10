@@ -2,6 +2,7 @@
 import requests
 import logging
 from typing import Optional
+from functools import lru_cache
 
 # Using NASA POWER API (Prediction of Worldwide Energy Resources)
 # High reliability, single-step request, and requires no authentication.
@@ -9,9 +10,13 @@ from typing import Optional
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+@lru_cache(maxsize=256)
 def fetch_real_nasa_annual_rainfall(lon: float, lat: float, year: int = 2023) -> Optional[float]:
     """
     Fetches the total annual precipitation (mm) for a coordinate point using NASA POWER API.
+    
+    Cached with LRU (max 256 entries) to avoid redundant API calls for the same coordinates.
+    Cache key: (lon, lat, year) tuple
     """
     # NASA POWER API uses YYYYMMDD format
     start_date = f"{year}0101"
@@ -49,6 +54,7 @@ def fetch_real_nasa_annual_rainfall(lon: float, lat: float, year: int = 2023) ->
         total_rainfall = sum(val for val in daily_precip.values() if val >= 0)
         
         logger.info(f"Success! Total Annual Rainfall: {total_rainfall:.2f} mm")
+        logger.debug(f"[CACHE] LRU stats: {fetch_real_nasa_annual_rainfall.cache_info()}")
         return float(total_rainfall)
 
     except Exception as e:

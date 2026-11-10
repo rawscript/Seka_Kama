@@ -288,6 +288,55 @@ async def generate_explanation(
 
 # ── Internal helpers ────────────────────────────────────────────────────────
 
+def _check_ecological_plausibility(
+    user_query: str,
+    delta_pct: float,
+    modifications: Dict[str, float]
+) -> str:
+    """
+    Detect ecologically implausible predictions and flag them.
+    
+    Development scenarios (hotels, roads, settlements) that predict lion INCREASES
+    are ecologically illogical and should be flagged as model artifacts.
+    """
+    query_lower = user_query.lower()
+    development_keywords = {
+        "hotel", "lodge", "resort", "development", "building", "construction",
+        "road", "highway", "settlement", "town", "city", "infrastructure",
+        "urbanization", "expansion", "commercial"
+    }
+    
+    conservation_keywords = {
+        "protected", "conservation", "restore", "reforest", "rewild",
+        "anti-poaching", "corridor", "connectivity", "sanctuary"
+    }
+    
+    is_development = any(kw in query_lower for kw in development_keywords)
+    is_conservation = any(kw in query_lower for kw in conservation_keywords)
+    
+    nightlight_increase = (
+        modifications.get("all_mean_mean", 0) > 0.05 or
+        modifications.get("longterm_slope_mean", 0) > 0.02
+    )
+    
+    # Development + lion increase = IMPLAUSIBLE
+    if is_development and not is_conservation and delta_pct > 5:
+        return f"""
+⚠️ PLAUSIBILITY WARNING:
+The scenario describes DEVELOPMENT ({user_query[:60]}...) but the model predicts a {delta_pct:+.1f}% lion INCREASE.
+This contradicts established ecology: development increases nightlight, which correlates with habitat degradation.
+The model likely captured spurious correlations in training data. CRITICAL FLAG for manual review."""
+    
+    # Conservation + nightlight increase = CONTRADICTORY
+    if is_conservation and nightlight_increase:
+        return f"""
+⚠️ FEATURE CONTRADICTION:
+Scenario describes CONSERVATION but features include nightlight increases ({modifications}).
+This is internally contradictory. Verify input parameters before interpreting results."""
+    
+    return ""  # No issues detected
+
+
 def _build_narrative_prompt(
     user_query:    str,
     modifications: Dict[str, float],
@@ -297,10 +346,10 @@ def _build_narrative_prompt(
     eco_context:   Dict,
 ) -> str:
     """
-    Build the LLM prompt with explicit directional context.
+    Build the LLM prompt with explicit directional context and ecological validation.
     
-    FIX: Include signed delta and delta_pct to ensure LLM understands
-    whether the scenario results in an increase or decrease.
+    Includes sanity checks to flag ecologically implausible predictions
+    (e.g., hotel development predicting lion increases).
     """
     import json
 
@@ -312,7 +361,6 @@ def _build_narrative_prompt(
     )
 
     # Determine direction explicitly for LLM context
-    # Handle zero change as neutral
     if delta == 0 and delta_pct == 0:
         direction = "NO CHANGE"
     elif delta >= 0:
@@ -330,6 +378,9 @@ def _build_narrative_prompt(
         f"  - Historic Growth Trend (yearly):    {eco_context.get('avg_trend', 0):.4f}\n"
         f"  - Human-Wildlife Conflict Risk:      {eco_context.get('avg_hwc_risk', 0):.2f}/1.0"
     )
+
+    # Detect ecological plausibility issues
+    plausibility_warning = _check_ecological_plausibility(user_query, delta_pct, modifications)
 
     return f"""You are an ecological analyst for the Seka Kama landscape in Kenya,
 specialising in lion (Panthera leo) conservation and nightlight-driven habitat modelling.
@@ -351,6 +402,15 @@ Ecological Context of the Affected Area:
 Per-conservancy breakdown (top units):
 {unit_lines or '  (no per-unit data)'}
 
+{plausibility_warning}
+
+CRITICAL ECOLOGICAL PRINCIPLES (ALWAYS APPLY):
+  • Increased nightlight (all_mean_mean, longterm_slope_mean) = Habitat degradation = Lion DECREASE
+  • Hotels, lodges, settlements, roads = Development = Nightlight increase = Lion DECREASE  
+  • Protected area expansion, anti-poaching, prey restoration = Lion INCREASE
+  • Human population growth (pop2018_mean) = Conflict risk = Lion DECREASE
+  • The model correlates nightlight with habitat quality, NOT with tourism benefits
+
 Top model drivers (from XGBoost feature importance):
   1. longterm_slope_mean — nightlight trend (most important)
   2. dist_to_protected_km — distance to safe zones
@@ -358,27 +418,21 @@ Top model drivers (from XGBoost feature importance):
   4. cheetah_abundance — prey base proxy
   5. pop2018_mean — human population density
   6. ann_amp_mean — seasonal variation
-  7. all_kurtosis_mean — tail behavior of light distribution
-  8. licorr_slope_mean — industrial corridor trends
-  9. primary_prominence_mean — dominant frequency pattern
-  10. density_code — habitat classification
 
 ─────────────────────────────────────────
 Write a **targeted ecological interpretation** aimed at a conservancy manager.
 
-STRICT MULTI-SPECIES ANALYSIS:
-If the user query or environmental context mentions 'prey', 'herbivores', 'zebras', or 'wildebeest', you MUST provide two distinct scenarios:
-  1. LION IMPACT: Direct impact on lion abundance based on model results ({delta_pct:+.1f}%).
-  2. CHEETAH IMPACT: Inferred impact on cheetahs (Acinonyx jubatus). Note that while cheetahs share habitat, they may face increased competition or displacement if lion density rises significantly.
-
-Include:
+Requirements:
   1. Ecological significance (threshold: ±5%).
   2. Geographical variance: Mention {(', '.join(top_units)) if top_units else 'specific zones'} most affected.
   3. Actionable mitigation or opportunity based on the {direction} trend.
-  4. SCIENTIFIC GROUNDING: Explicitly cite the provided GBIF occurrence counts ({eco_context.get('avg_prey_density', 0):.3f} records/km²) and NASA POWER rainfall metrics ({eco_context.get('avg_rainfall_mm', 0):.0f} mm) to justify your reasoning.
-  5. Disclaimer: Mention model uncertainty (±15%).
+  4. SCIENTIFIC GROUNDING: Cite GBIF counts ({eco_context.get('avg_prey_density', 0):.3f} records/km²) 
+     and NASA POWER rainfall ({eco_context.get('avg_rainfall_mm', 0):.0f} mm).
+  5. If prediction seems ecologically implausible (e.g., development → increase), FLAG IT EXPLICITLY
+     as "model limitation" and explain the ecological contradiction.
+  6. Disclaimer: Mention model uncertainty (±15%).
 
-Be professional, concise, and use Markdown for emphasis. Use phrases like "{'will increase' if delta > 0 else 'will decrease' if delta < 0 else 'remains stable'}" to maintain clarity."""
+Output format: Use Markdown, 4-6 sentences, professional tone. Direction: {'increase' if delta > 0 else 'decrease' if delta < 0 else 'stable'}."""
 
 
 async def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:

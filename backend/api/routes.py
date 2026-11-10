@@ -28,6 +28,39 @@ from core.config import settings
 
 router = APIRouter()
 
+
+# ============================================================
+# VALIDATION HELPERS
+# ============================================================
+
+def _validate_scenario_plausibility(scenario: ScenarioRequest, results: Dict[str, Any]) -> Optional[str]:
+    """
+    Server-side validation for ecologically implausible predictions.
+    Returns warning message if issues detected, None otherwise.
+    """
+    query_lower = (scenario.user_query or "").lower()
+    delta_pct = results.get("delta_percent_total", 0)
+    modifications = scenario.feature_modifications
+    
+    development_keywords = {"hotel", "lodge", "resort", "development", "building", "road", "settlement"}
+    is_development = any(kw in query_lower for kw in development_keywords)
+    
+    nightlight_increase = (
+        modifications.get("all_mean_mean", 0) > 0.05 or
+        modifications.get("longterm_slope_mean", 0) > 0.02
+    )
+    
+    # Development scenarios should generally decrease lions, not increase
+    if is_development and delta_pct > 5:
+        return (
+            f"⚠️ ECOLOGICAL PLAUSIBILITY WARNING: Scenario describes development "
+            f"but predicts {delta_pct:+.1f}% lion increase. This contradicts ecology "
+            f"(development → nightlight → habitat loss → fewer lions). Likely model artifact."
+        )
+    
+    return None
+
+
 # ============================================================
 # BASELINE ENDPOINTS
 # ============================================================
@@ -501,7 +534,14 @@ async def run_scenario(
         logger.error(f"Prediction failure: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Simulation engine error: {str(e)}")
     
-    # 3. Generate LLM reasoning narrative
+    # 3. Validate ecological plausibility before generating narrative
+    plausibility_issues = _validate_scenario_plausibility(scenario, results)
+    if plausibility_issues:
+        logger.warning(f"Plausibility check failed: {plausibility_issues}")
+        # Prepend warning to results
+        results["plausibility_warning"] = plausibility_issues
+    
+    # 4. Generate LLM reasoning narrative
     try:
         narrative = await generate_narrative(scenario, results)
     except Exception as e:
