@@ -10,9 +10,9 @@ export const createKeplerConfig = (managementUnits: string[], hasScenario: boole
         label: 'Baseline Lion Density',
         color: [33, 102, 172],
         columns: { geojson: 'geometry' },
-        isVisible: !hasScenario, // Hide baseline if showing scenario
+        isVisible: false, // Always start hidden - user can enable from layer panel
         visConfig: {
-          opacity: 0.8,
+          opacity: 0.6,
           strokeColor: [255, 255, 255],
           strokeWidth: 1,
           stroked: false,
@@ -94,7 +94,7 @@ export const createKeplerConfig = (managementUnits: string[], hasScenario: boole
         columns: { geojson: 'geometry' },
         isVisible: true,
         visConfig: {
-          opacity: 0.25,
+          opacity: 0.15,
           thickness: 2,
           colorRange: {
             name: 'Set1',
@@ -138,9 +138,9 @@ export const createKeplerConfig = (managementUnits: string[], hasScenario: boole
         columns: { geojson: 'geometry' },
         isVisible: true,
         visConfig: {
-          opacity: 0.85,
+          opacity: 0.65,
           strokeColor: [255, 255, 255],
-          strokeWidth: 1.5,
+          strokeWidth: 1,
           stroked: true,
           filled: true,
           colorRange: {

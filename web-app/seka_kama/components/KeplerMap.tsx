@@ -79,9 +79,11 @@ function KeplerMapInner({ managementUnit, scenarioData, onCellSelect, onScenario
       
       if (scenarioData) {
         // Use scenario data provided directly (already fetched by the parent page)
-        console.log('Loading scenario into Kepler.gl:', {
+        console.log('[KEPLER] Loading scenario into Kepler.gl:', {
           id: scenarioData.scenario_id ?? scenarioData.id,
           has_geojson: !!scenarioData.scenario_geojson,
+          geojson_type: scenarioData.scenario_geojson?.type,
+          features_count: scenarioData.scenario_geojson?.features?.length ?? 0,
           description: scenarioData.user_description
         });
         
@@ -92,9 +94,9 @@ function KeplerMapInner({ managementUnit, scenarioData, onCellSelect, onScenario
         // Use the GeoJSON already present on the scenario object
         scenarioGeojson = scenarioData.scenario_geojson;
         
-        console.log('Scenario GeoJSON loaded:', {
-          features_count: scenarioGeojson?.features?.length ?? 0
-        });
+        if (!scenarioGeojson || !scenarioGeojson.features || scenarioGeojson.features.length === 0) {
+          console.warn('[KEPLER] Warning: scenario_geojson is missing or empty');
+        }
       } else {
         // Load default baseline view
         [baselineResponse, protectedResponse] = await Promise.all([
