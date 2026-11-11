@@ -14,6 +14,19 @@ import { StyleSheetManager } from 'styled-components';
 import { api, type GridCell } from '@/services/api';
 import { createKeplerConfig } from '@/services/kepler-config';
 
+// Suppress React 19 ref warnings from Kepler.gl library
+if (typeof window !== 'undefined') {
+  const originalConsoleError = console.error;
+  console.error = (...args: any[]) => {
+    const msg = args[0]?.toString() || '';
+    // Suppress Kepler.gl React 19 ref warnings (library compatibility issue)
+    if (msg.includes('Accessing element.ref was removed in React 19')) {
+      return;
+    }
+    originalConsoleError.apply(console, args);
+  };
+}
+
 interface KeplerMapProps {
   managementUnit?: string;
   scenarioData?: any; // Scenario data to load
@@ -33,10 +46,30 @@ function KeplerMapInner({ managementUnit, scenarioData, onCellSelect, onScenario
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [webglSupported, setWebglSupported] = useState<boolean | null>(null); // null = checking
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
+  // Check WebGL support IMMEDIATELY
+  useEffect(() => {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+      if (!gl) {
+        setWebglSupported(false);
+        setError('WebGL is not supported in your browser. Please use a modern browser with WebGL support.');
+        setIsLoading(false);
+      } else {
+        setWebglSupported(true);
+      }
+    } catch (e) {
+      setWebglSupported(false);
+      setError('Failed to initialize WebGL. Please check your browser settings.');
+      setIsLoading(false);
+    }
+  }, []);
+
   const loadData = useCallback(async (scenarioData?: any) => {
-    if (!process.env.NEXT_PUBLIC_MAPBOX_TOKEN) return;
+    if (!process.env.NEXT_PUBLIC_MAPBOX_TOKEN || webglSupported === false) return;
     
     try {
       setIsLoading(true);
@@ -163,22 +196,28 @@ function KeplerMapInner({ managementUnit, scenarioData, onCellSelect, onScenario
   }, [dispatch, managementUnit]);
 
   useEffect(() => {
-    loadData(scenarioData);
-  }, [loadData, scenarioData]);
+    // Only load data after WebGL check completes and is supported
+    if (webglSupported === true) {
+      loadData(scenarioData);
+    }
+  }, [loadData, scenarioData, webglSupported]);
 
-  if (error || !process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
+  if (!webglSupported || error || !process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
     const isTokenMissing = !process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    const isWebGLError = !webglSupported;
     return (
       <div style={{
         display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%',
         backgroundColor: '#0f172a', color: '#f87171', padding: '40px', textAlign: 'center',
       }}>
         <div style={{ maxWidth: '400px', padding: '32px', background: 'rgba(0,0,0,0.4)', borderRadius: '24px', border: '1px solid rgba(248,113,113,0.2)' }}>
-          <h3 style={{ margin: '0 0 12px', fontSize: '18px', fontWeight: 800 }}>{isTokenMissing ? 'Missing Mapbox Token' : 'Geospatial Error'}</h3>
+          <h3 style={{ margin: '0 0 12px', fontSize: '18px', fontWeight: 800 }}>
+            {isTokenMissing ? 'Missing Mapbox Token' : isWebGLError ? 'WebGL Not Available' : 'Geospatial Error'}
+          </h3>
           <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#94a3b8', lineHeight: 1.6 }}>
             {isTokenMissing ? 'Provide a valid NEXT_PUBLIC_MAPBOX_TOKEN to enable Kepler.gl exploration.' : error}
           </p>
-          {!isTokenMissing && <button onClick={loadData} style={{ padding: '10px 24px', background: '#10b981', color: 'white', borderRadius: '12px', fontWeight: 700, border: 'none', cursor: 'pointer' }}>Retry Sync</button>}
+          {!isTokenMissing && !isWebGLError && <button onClick={() => loadData()} style={{ padding: '10px 24px', background: '#10b981', color: 'white', borderRadius: '12px', fontWeight: 700, border: 'none', cursor: 'pointer' }}>Retry Sync</button>}
         </div>
       </div>
     );
@@ -205,17 +244,22 @@ function KeplerMapInner({ managementUnit, scenarioData, onCellSelect, onScenario
             alignItems: 'center', justifyContent: 'center', background: '#0a0a20', color: '#10b981'
           }}>
             <div style={{ width: '48px', height: '48px', border: '3px solid rgba(16,185,129,0.2)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-            <div style={{ marginTop: '20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em' }}>Loading Landscape Data...</div>
+            <div style={{ marginTop: '20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em' }}>
+              {webglSupported === null ? 'Checking WebGL Support...' : 'Loading Landscape Data...'}
+            </div>
             <style>{'@keyframes spin { to { transform: rotate(360deg); } }'}</style>
           </div>
         )}
         
-        <KeplerGl
-          id="sekakama"
-          width={mapContainerRef.current?.clientWidth || 1600}
-          height={mapContainerRef.current?.clientHeight || 900}
-          mapboxApiAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
-        />
+        {/* Only render Kepler.gl if WebGL is confirmed supported */}
+        {webglSupported === true && (
+          <KeplerGl
+            id="sekakama"
+            width={mapContainerRef.current?.clientWidth || 1600}
+            height={mapContainerRef.current?.clientHeight || 900}
+            mapboxApiAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
+          />
+        )}
 
         {/* Global Overrides to fix Kepler UI malformation in Next.js */}
         <style dangerouslySetInnerHTML={{ __html: `

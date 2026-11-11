@@ -192,7 +192,15 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
       onScenarioRun?.(result);
     } catch (error) {
       console.error('[ERROR] Scenario execution failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      let errorMessage: string;
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Handle plain error objects from API responses
+        errorMessage = JSON.stringify(error);
+      } else {
+        errorMessage = 'Unknown error';
+      }
       setProcessError(`Simulation failed: ${errorMessage}`);
     } finally {
       setLoading(false);

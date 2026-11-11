@@ -555,7 +555,7 @@ export default function EcosystemIndicatorsPanel({
         {isExpanded && (
           <div className="p-4 flex-1 overflow-auto">
             {loading ? (
-              <div className="flex flex-col items-center justify-center h-full">
+              <div className="flex flex-col items-center justify-center h-full py-8">
                 <div className="relative w-12 h-12 flex items-center justify-center">
                   <div className="absolute inset-0 rounded-none border-4 border-[#775a19]/20 border-t-[#775a19] animate-spin" />
                 </div>

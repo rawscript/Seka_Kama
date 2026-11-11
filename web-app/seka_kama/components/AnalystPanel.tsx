@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Bot, Shield, Zap, AlertTriangle, ChevronDown, ChevronUp, Download, RefreshCw, Info, BarChart3, TrendingUp, Clock, MapPin } from 'lucide-react';
 import { api } from '@/services/api';
 import { getApiUrl } from '@/services/config';
@@ -102,6 +102,9 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [generatingReport, setGeneratingReport] = useState(false);
   
+  // Track if we've shown initial fallback to avoid checking insight state in callback
+  const hasShownFallbackRef = useRef(false);
+  
   // Use API context for centralized error handling
   const { 
     shouldAttemptRequest, 
@@ -197,9 +200,9 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
         console.warn('API unavailable - backend may have CORS issues or connectivity problems.');
         markApiUnavailable('Backend API unavailable');
         
-        // Keep a neutral loading message on first failure.
-        if (!insight) {
-          // Set minimal fallback for first load only
+        // Keep a neutral loading message on first failure only
+        if (!hasShownFallbackRef.current) {
+          hasShownFallbackRef.current = true;
           setInsight({
             narrative: `Loading ecological insights for ${selectedUnit || 'this area'} in ${year}...`,
             confidence: 0,
@@ -248,18 +251,45 @@ export default function AnalystPanel({ selectedUnit, year }: AnalystPanelProps) 
       endMeasurement();
       setLoading(false);
     }
-  }, [selectedUnit, year, hasConsent, trackAnalystInteraction, startMeasurement, shouldAttemptRequest, markApiUnavailable, markApiAvailable, corsErrorActive, insight]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUnit, year, corsErrorActive]);
 
+  // Initial data fetch when dependencies change
   useEffect(() => {
+    // Reset fallback flag when region changes
+    hasShownFallbackRef.current = false;
     fetchAnalystData();
+  }, [fetchAnalystData]);
+
+  // Auto-refresh interval management (separate to avoid loop)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const fetchRef = useRef(fetchAnalystData);
+  
+  // Keep fetch ref up to date
+  useEffect(() => {
+    fetchRef.current = fetchAnalystData;
+  }, [fetchAnalystData]);
+  
+  useEffect(() => {
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
     
     // Only set up auto-refresh if API is available
-    // Stop refreshing if API is marked unavailable to reduce noise
     if (apiAvailable) {
-      const interval = setInterval(fetchAnalystData, 5 * 60 * 1000);
-      return () => clearInterval(interval);
+      intervalRef.current = setInterval(() => {
+        fetchRef.current(); // Use ref to avoid depending on fetchAnalystData
+      }, 5 * 60 * 1000);
     }
-  }, [fetchAnalystData, apiAvailable]);
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [apiAvailable]); // Only depend on apiAvailable, not fetchAnalystData
 
   const handleGenerateReport = async () => {
     // Track report generation

@@ -7,6 +7,58 @@ let corsErrorStartTime = 0;
 export const getCorsErrorStatus = () => corsErrorDetected;
 export const resetCorsError = () => { corsErrorDetected = false; corsErrorStartTime = 0; };
 
+// ── In-Memory Cache for Fast Data Access ──────────────────────────────────────
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  ttl: number;
+}
+
+class ApiCache {
+  private cache = new Map<string, CacheEntry<any>>();
+  
+  set<T>(key: string, data: T, ttlSeconds: number = 300) {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl: ttlSeconds * 1000,
+    });
+  }
+  
+  get<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    
+    const age = Date.now() - entry.timestamp;
+    if (age > entry.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return entry.data as T;
+  }
+  
+  has(key: string): boolean {
+    return this.get(key) !== null;
+  }
+  
+  clear() {
+    this.cache.clear();
+  }
+  
+  invalidate(pattern: string) {
+    const keys = Array.from(this.cache.keys());
+    keys.forEach(key => {
+      if (key.includes(pattern)) {
+        this.cache.delete(key);
+      }
+    });
+  }
+}
+
+const apiCache = new ApiCache();
+export { apiCache };
+
 export interface ScenarioRequest {
   geometry: GeoJSON.Geometry;
   feature_modifications: Record<string, number>;
@@ -162,8 +214,21 @@ export const api = {
    * Centralized request helper — injects auth, handles 401 redirect,
    * and surfaces backend error detail strings.
    * Also detects CORS errors and prevents infinite retry loops.
+   * Now includes intelligent caching for faster responses.
    */
-  async request(endpoint: string, options: RequestInit = {}) {
+  async request(endpoint: string, options: RequestInit = {}, cacheConfig?: { ttl?: number; useCache?: boolean }) {
+    const method = options.method || 'GET';
+    const cacheKey = `${method}:${endpoint}`;
+    
+    // Check cache for GET requests (unless explicitly disabled)
+    if (method === 'GET' && cacheConfig?.useCache !== false) {
+      const cached = apiCache.get(cacheKey);
+      if (cached) {
+        console.log(`[CACHE HIT] ${cacheKey}`);
+        return cached;
+      }
+    }
+    
     // If CORS error was detected within the last 30 seconds, fail fast without retrying
     if (corsErrorDetected && (Date.now() - corsErrorStartTime) < 30000) {
       throw new Error('CORS error detected. Backend API is unavailable. Please wait for server to come online.');
@@ -215,7 +280,12 @@ export const api = {
       let detail = `HTTP ${response.status}: Failed to fetch ${endpoint}`;
       try {
         const errBody = await response.json();
-        if (errBody?.detail) detail = errBody.detail;
+        if (errBody?.detail) {
+          // Ensure detail is a string, handle objects/arrays
+          detail = typeof errBody.detail === 'string' 
+            ? errBody.detail 
+            : JSON.stringify(errBody.detail);
+        }
       } catch { /* ignore */ }
       throw new Error(detail);
     }
@@ -227,22 +297,35 @@ export const api = {
     }
 
     const ct = response.headers.get('content-type') ?? '';
-    return ct.includes('application/json') ? response.json() : response.text();
+    const result = ct.includes('application/json') ? await response.json() : await response.text();
+    
+    // Cache successful GET requests
+    if (method === 'GET' && cacheConfig?.useCache !== false) {
+      const ttl = cacheConfig?.ttl || 300; // Default 5 minutes
+      apiCache.set(cacheKey, result, ttl);
+      console.log(`[CACHE SET] ${cacheKey} (TTL: ${ttl}s)`);
+    }
+    
+    return result;
   },
 
-  async get(endpoint: string): Promise<any> {
-    return this.request(endpoint);
+  async get(endpoint: string, cacheConfig?: { ttl?: number; useCache?: boolean }): Promise<any> {
+    return this.request(endpoint, {}, cacheConfig);
   },
 
   async post(endpoint: string, body: any): Promise<any> {
+    // Invalidate related cache entries on mutation
+    apiCache.invalidate(endpoint.split('?')[0]);
     return this.request(endpoint, { method: 'POST', body: JSON.stringify(body) });
   },
 
   async patch(endpoint: string, body: any): Promise<any> {
+    apiCache.invalidate(endpoint.split('?')[0]);
     return this.request(endpoint, { method: 'PATCH', body: JSON.stringify(body) });
   },
 
   async delete(endpoint: string): Promise<any> {
+    apiCache.invalidate(endpoint.split('?')[0]);
     return this.request(endpoint, { method: 'DELETE' });
   },
 
@@ -321,7 +404,8 @@ export const api = {
   },
 
   async getManagementUnits(): Promise<string[]> {
-    return this.get('/management-units');
+    // Cache for 24 hours - management units rarely change
+    return this.get('/management-units', { ttl: 86400 });
   },
 
   async getLionPopulation(managementUnit?: string, year?: number, format: 'json' | 'geojson' = 'json'): Promise<any> {
@@ -387,7 +471,8 @@ export const api = {
   },
 
   async getModelMetadata(): Promise<ModelMetadata> {
-    return this.get('/model/metadata');
+    // Cache for 1 hour - model metadata is static
+    return this.get('/model/metadata', { ttl: 3600 });
   },
 
   async explainFeatures(features: Record<string, number>): Promise<{

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { getCorsErrorStatus, resetCorsError } from '@/services/api';
 import { getApiUrl } from '@/services/config';
 
@@ -11,7 +11,6 @@ interface ApiContextType {
   
   // API availability tracking
   apiAvailable: boolean;
-  lastCheckTime: number;
   retryCount: number;
   
   // Methods
@@ -34,8 +33,10 @@ export function ApiProvider({ children }: ApiProviderProps) {
   const [corsErrorActive, setCorsErrorActive] = useState(false);
   const [corsErrorMessage, setCorsErrorMessage] = useState<string | null>(null);
   const [apiAvailable, setApiAvailable] = useState(true);
-  const [lastCheckTime, setLastCheckTime] = useState(Date.now());
   const [retryCount, setRetryCount] = useState(0);
+  
+  // Use ref for lastCheckTime to avoid triggering callback recreations
+  const lastCheckTimeRef = useRef(Date.now());
 
   // Sync with global CORS error state from api.ts
   useEffect(() => {
@@ -57,12 +58,12 @@ export function ApiProvider({ children }: ApiProviderProps) {
     const now = Date.now();
     
     // If CORS error is active and cooldown hasn't expired, return false immediately
-    if (corsErrorActive && (now - lastCheckTime) < RETRY_COOLDOWN_MS) {
+    if (corsErrorActive && (now - lastCheckTimeRef.current) < RETRY_COOLDOWN_MS) {
       return false;
     }
 
     // If we've retried too many times, wait for cooldown
-    if (retryCount >= MAX_RETRY_COUNT && (now - lastCheckTime) < RETRY_COOLDOWN_MS) {
+    if (retryCount >= MAX_RETRY_COUNT && (now - lastCheckTimeRef.current) < RETRY_COOLDOWN_MS) {
       return false;
     }
 
@@ -91,13 +92,13 @@ export function ApiProvider({ children }: ApiProviderProps) {
         setCorsErrorMessage(null);
         setRetryCount(0);
         resetCorsError();
-        setLastCheckTime(now);
+        lastCheckTimeRef.current = now;
         return true;
       } else {
         // API returned error
         setApiAvailable(false);
         setRetryCount(prev => prev + 1);
-        setLastCheckTime(now);
+        lastCheckTimeRef.current = now;
         return false;
       }
     } catch (error) {
@@ -112,15 +113,15 @@ export function ApiProvider({ children }: ApiProviderProps) {
       
       setApiAvailable(false);
       setRetryCount(prev => prev + 1);
-      setLastCheckTime(now);
+      lastCheckTimeRef.current = now;
       return false;
     }
-  }, [corsErrorActive, lastCheckTime, retryCount]);
+  }, [corsErrorActive, retryCount]);
 
   const markApiUnavailable = useCallback((reason?: string) => {
     setApiAvailable(false);
     setRetryCount(prev => prev + 1);
-    setLastCheckTime(Date.now());
+    lastCheckTimeRef.current = Date.now();
     if (reason) {
       setCorsErrorMessage(reason);
       if (reason.toLowerCase().includes('cors')) {
@@ -134,7 +135,7 @@ export function ApiProvider({ children }: ApiProviderProps) {
     setCorsErrorActive(false);
     setCorsErrorMessage(null);
     setRetryCount(0);
-    setLastCheckTime(Date.now());
+    lastCheckTimeRef.current = Date.now();
     resetCorsError();
   }, []);
 
@@ -147,29 +148,28 @@ export function ApiProvider({ children }: ApiProviderProps) {
     }
 
     // If we've hit max retries and cooldown hasn't expired, block request
-    if (retryCount >= MAX_RETRY_COUNT && (now - lastCheckTime) < RETRY_COOLDOWN_MS) {
+    if (retryCount >= MAX_RETRY_COUNT && (now - lastCheckTimeRef.current) < RETRY_COOLDOWN_MS) {
       return false;
     }
 
     // If CORS error is active and cooldown hasn't expired, block request
-    if (corsErrorActive && (now - lastCheckTime) < RETRY_COOLDOWN_MS) {
+    if (corsErrorActive && (now - lastCheckTimeRef.current) < RETRY_COOLDOWN_MS) {
       return false;
     }
 
     // Allow retry if cooldown has expired
-    if ((now - lastCheckTime) >= RETRY_COOLDOWN_MS) {
+    if ((now - lastCheckTimeRef.current) >= RETRY_COOLDOWN_MS) {
       return true;
     }
 
     // Default to allowing request (first attempts)
     return retryCount < MAX_RETRY_COUNT;
-  }, [apiAvailable, corsErrorActive, retryCount, lastCheckTime]);
+  }, [apiAvailable, corsErrorActive, retryCount]);
 
   const value: ApiContextType = {
     corsErrorActive,
     corsErrorMessage,
     apiAvailable,
-    lastCheckTime,
     retryCount,
     checkApiAvailability,
     markApiUnavailable,
