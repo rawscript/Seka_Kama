@@ -524,7 +524,7 @@ function DashboardContent() {
         )}
 
         {/* ── Map Controls Panel ── */}
-        <div className={`absolute bottom-6 w-[360px] max-w-[calc(100vw-4rem)] z-30 transition-all duration-300 ${isMobile ? 'right-4 max-w-[calc(100vw-2rem)]' : 'right-[400px]'}`}>
+        <div className={`absolute bottom-6 w-[360px] max-w-[calc(100vw-4rem)] z-30 transition-all duration-300 ${isMobile ? 'right-4 max-w-[calc(100vw-2rem)]' : 'right-4'}`}>
           <div className="bg-white/95 backdrop-blur-sm border border-slate-200 p-4 shadow-xl rounded-lg space-y-4">
             
             {/* Regional Overview Dropdown */}
