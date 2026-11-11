@@ -70,8 +70,14 @@ class ScenarioRequest(BaseModel):
             polygon = shape(geometry)
         except Exception as exc:
             raise ValueError(f"Malformed GeoJSON geometry: {exc}") from exc
-        if polygon.is_empty or not polygon.is_valid:
-            raise ValueError("Polygon must be non-empty, have closed rings, and contain no self-intersections")
+        
+        # Fix self-intersecting polygons automatically using buffer(0)
+        # This handles common drawing errors where users create bow-tie shapes
+        if not polygon.is_valid:
+            polygon = polygon.buffer(0)
+        
+        if polygon.is_empty:
+            raise ValueError("Polygon is empty after validation")
         
         return v
     
