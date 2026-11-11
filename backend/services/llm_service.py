@@ -18,8 +18,25 @@ import json
 from typing import Any, Dict, Optional, List
 from openai import AsyncOpenAI  # Changed from OpenAI to AsyncOpenAI (Issue 22)
 from core.config import settings
+import httpx  # For timeout exception handling
 
 logger = logging.getLogger(__name__)
+
+# Log configured LLM model and warn about known-invalid names
+_LLM_MODEL = settings.LLM_MODEL
+logger.info(f"LLM model configured: {_LLM_MODEL}")
+
+# Known-invalid model names that don't exist on NVIDIA NIM
+_INVALID_MODELS = {
+    "nvidia/nemotron-3.5-bolt-e4b",
+    "nemotron-3.5-bolt",
+    "nvidia/nemotron-3.5-bolt",
+}
+if _LLM_MODEL in _INVALID_MODELS:
+    logger.warning(
+        f"⚠️ LLM_MODEL '{_LLM_MODEL}' is not a valid NVIDIA NIM model. "
+        f"Use 'stepfun-ai/step-3.5-flash' instead. LLM calls will fail."
+    )
 
 # Known default values from the frontend ScenarioDrawer for merging logic
 # These are treated as 'neutral' unless the user actively moves the slider.
@@ -32,11 +49,10 @@ DEFAULT_SLIDER_VALUES = {
 # ── Client factory ─────────────────────────────────────────────────────────
 
 def _get_client() -> AsyncOpenAI:
-    """Return an async OpenAI client pointed at NVIDIA NIM."""
-    return AsyncOpenAI(base_url=settings.LLM_API_URL, api_key=settings.LLM_API_KEY)
+    """Return an async OpenAI client pointed at NVIDIA NIM with 30s timeout."""
+    return AsyncOpenAI(base_url=settings.LLM_API_URL, api_key=settings.LLM_API_KEY, timeout=30.0)
 
 
-_LLM_MODEL   = settings.LLM_MODEL
 _TEMPERATURE = 0.3
 _TOP_P       = 0.9
 _MAX_TOKENS  = 1024
@@ -203,6 +219,28 @@ Example Response: {{"all_mean_mean": 0.2, "longterm_slope_mean": 0.05}}
 
         implied_mods = json.loads(content)
 
+        # VALID FEATURE WHITELIST — filter out any features the LLM hallucinated
+        # These are the only 43 features the XGBoost model accepts
+        VALID_FEATURES = {
+            'longterm_slope_mean', 'longterm_slope_std', 'all_skew_mean', 'all_skew_std',
+            'all_mean_mean', 'all_mean_std', 'all_kurtosis_mean', 'all_kurtosis_std',
+            'all_median_mean', 'all_median_std', 'all_variance_mean', 'all_variance_std',
+            'licorr_slope_mean', 'licorr_slope_std', 'longterm_intercept_mean', 'longterm_intercept_std',
+            'longterm_r2_mean', 'longterm_r2_std', 'pop2018_mean', 'pop2018_std',
+            'primary_acf_mean', 'primary_acf_std', 'primary_prominence_mean', 'primary_prominence_std',
+            'secondary_acf_mean', 'secondary_acf_std', 'secondary_prominence_mean', 'secondary_prominence_std',
+            'ann_amp_mean', 'ann_amp_std', 'ann_cv_mean', 'ann_cv_std',
+            'ann_peak_month_mean', 'ann_peak_month_std', 'ann_trend_mean', 'ann_trend_std',
+            'ann_mean_mean', 'ann_mean_std', 'density_code', 'hist_lag1', 'hist_lag2',
+            'cheetah_abundance', 'dist_to_protected_km'
+        }
+        
+        # Filter out invalid features from LLM response
+        invalid_features = set(implied_mods.keys()) - VALID_FEATURES
+        if invalid_features:
+            logger.warning(f"LLM returned invalid features (ignored): {invalid_features}")
+            implied_mods = {k: v for k, v in implied_mods.items() if k in VALID_FEATURES}
+
         # Merge: Explicit user mods override inferred ones, EXCEPT if they are just the defaults.
         # This allows the LLM to 'be heard' when the user hasn't touched the sliders.
         merged = implied_mods.copy()
@@ -216,6 +254,12 @@ Example Response: {{"all_mean_mean": 0.2, "longterm_slope_mean": 0.05}}
 
         logger.info(f"Applied augmented mods: {merged}")
         return merged
+    except httpx.TimeoutException as e:
+        logger.error(f"LLM API timed out after 30s during feature extraction — using explicit_mods fallback")
+        return explicit_mods
+    except httpx.ConnectError as e:
+        logger.error(f"LLM API connection failed: {type(e).__name__} — using explicit_mods fallback")
+        return explicit_mods
     except Exception as e:
         logger.error(f"NVIDIA NIM call failed during feature extraction: {type(e).__name__}: {str(e)}")
         # If it's an AuthenticationError, we should be explicit
@@ -439,30 +483,34 @@ async def _stream_completion(prompt: str, max_tokens: int = _MAX_TOKENS) -> str:
     """Call NVIDIA NIM with streaming and return the assembled text."""
     client = _get_client()
 
-    # Use async with await (Issue 22)
-    stream = await client.chat.completions.create(
-        model       = _LLM_MODEL,
-        messages    = [{"role": "user", "content": prompt}],
-        temperature = _TEMPERATURE,
-        top_p       = _TOP_P,
-        max_tokens  = max_tokens,
-        stream      = True,
-    )
+    try:
+        # Use async with await (Issue 22)
+        stream = await client.chat.completions.create(
+            model       = _LLM_MODEL,
+            messages    = [{"role": "user", "content": prompt}],
+            temperature = _TEMPERATURE,
+            top_p       = _TOP_P,
+            max_tokens  = max_tokens,
+            stream      = True,
+        )
 
-    parts: list[str] = []
-    # FIX: Use async for to iterate over AsyncStream
-    async for chunk in stream:
-        if not getattr(chunk, "choices", None):
-            continue
-        delta = chunk.choices[0].delta
-        # Capture reasoning traces if the model emits them
-        reasoning = getattr(delta, "reasoning_content", None)
-        if reasoning:
-            logger.debug("Reasoning: %s", reasoning)
-        if delta.content:
-            parts.append(delta.content)
+        parts: list[str] = []
+        # FIX: Use async for to iterate over AsyncStream
+        async for chunk in stream:
+            if not getattr(chunk, "choices", None):
+                continue
+            delta = chunk.choices[0].delta
+            # Capture reasoning traces if the model emits them
+            reasoning = getattr(delta, "reasoning_content", None)
+            if reasoning:
+                logger.debug("Reasoning: %s", reasoning)
+            if delta.content:
+                parts.append(delta.content)
 
-    return "".join(parts).strip()
+        return "".join(parts).strip()
+    except httpx.TimeoutException:
+        logger.error("LLM API timed out after 30s during narrative streaming")
+        raise
 
 
 def _post_process(narrative: str, results: Dict) -> str:

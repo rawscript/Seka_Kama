@@ -33,6 +33,12 @@ router = APIRouter()
 # VALIDATION HELPERS
 # ============================================================
 
+def _safe_str(e: Any) -> str:
+    """Safely coerce exception to string, ensuring non-empty output."""
+    s = str(e)
+    return s if s else type(e).__name__
+
+
 def _validate_scenario_plausibility(scenario: ScenarioRequest, results: Dict[str, Any]) -> Optional[str]:
     """
     Server-side validation for ecologically implausible predictions.
@@ -457,6 +463,14 @@ async def run_scenario(
     feature_names = request.app.state.feature_names
     supabase = request.app.state.supabase
     
+    # Guard: Model may be None if background loading thread hasn't finished
+    if model is None or scaler is None or feature_names is None:
+        logger.error("Model not ready - background loading may still be in progress")
+        raise HTTPException(
+            status_code=503,
+            detail="Model not ready — still loading. Retry in a few seconds."
+        )
+    
     # 1. Fetch grid cells affected by user-drawn geometry
     try:
         affected_cells = await get_affected_cells(
@@ -465,10 +479,10 @@ async def run_scenario(
             scenario.management_units
         )
     except Exception as e:
-        logger.error(f"Error fetching affected cells: {str(e)}")
+        logger.error(f"Error fetching affected cells: {_safe_str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Spatial processing failure: {str(e)}"
+            detail=f"Spatial processing failure: {_safe_str(e)}"
         )
     
     if not affected_cells:
@@ -512,14 +526,47 @@ async def run_scenario(
     baseline_averages["affected_area_km2"] = len(affected_cells)
     baseline_averages["management_units"] = management_units
 
+    # 1.6 Augment feature modifications from user text (LLM interpretation)
+    # Wrap in try/catch to ensure LLM failures don't break the scenario
     from services.llm_service import augment_modifications_from_text
-    final_modifications = await augment_modifications_from_text(
-        scenario.user_query or "",
-        scenario.feature_modifications,
-        centroid_lon=clon,
-        centroid_lat=clat,
-        baseline_context=baseline_averages
-    )
+    
+    # VALID FEATURE WHITELIST — filter out any invalid features from frontend
+    # These are the only 43 features the XGBoost model accepts
+    VALID_FEATURES = {
+        'longterm_slope_mean', 'longterm_slope_std', 'all_skew_mean', 'all_skew_std',
+        'all_mean_mean', 'all_mean_std', 'all_kurtosis_mean', 'all_kurtosis_std',
+        'all_median_mean', 'all_median_std', 'all_variance_mean', 'all_variance_std',
+        'licorr_slope_mean', 'licorr_slope_std', 'longterm_intercept_mean', 'longterm_intercept_std',
+        'longterm_r2_mean', 'longterm_r2_std', 'pop2018_mean', 'pop2018_std',
+        'primary_acf_mean', 'primary_acf_std', 'primary_prominence_mean', 'primary_prominence_std',
+        'secondary_acf_mean', 'secondary_acf_std', 'secondary_prominence_mean', 'secondary_prominence_std',
+        'ann_amp_mean', 'ann_amp_std', 'ann_cv_mean', 'ann_cv_std',
+        'ann_peak_month_mean', 'ann_peak_month_std', 'ann_trend_mean', 'ann_trend_std',
+        'ann_mean_mean', 'ann_mean_std', 'density_code', 'hist_lag1', 'hist_lag2',
+        'cheetah_abundance', 'dist_to_protected_km'
+    }
+    
+    # Filter explicit_modifications to only include valid features
+    filtered_explicit_mods = {
+        k: v for k, v in scenario.feature_modifications.items() 
+        if k in VALID_FEATURES
+    }
+    invalid_keys = set(scenario.feature_modifications.keys()) - VALID_FEATURES
+    if invalid_keys:
+        logger.warning(f"Ignoring invalid features from request: {invalid_keys}")
+    
+    try:
+        final_modifications = await augment_modifications_from_text(
+            scenario.user_query or "",
+            filtered_explicit_mods,
+            centroid_lon=clon,
+            centroid_lat=clat,
+            baseline_context=baseline_averages
+        )
+    except Exception as e:
+        logger.warning(f"LLM augmentation failed (non-fatal): {str(e)}")
+        # Fall back to explicit modifications from the user
+        final_modifications = scenario.feature_modifications
 
     # 2. Run prediction using the XGBoost engine
     try:
@@ -528,11 +575,11 @@ async def run_scenario(
             affected_cells, final_modifications
         )
     except ValueError as ve:
-        logger.warning(f"Validation error in scenario: {str(ve)}")
-        raise HTTPException(status_code=400, detail=str(ve))
+        logger.warning(f"Validation error in scenario: {_safe_str(ve)}")
+        raise HTTPException(status_code=400, detail=_safe_str(ve))
     except Exception as e:
-        logger.error(f"Prediction failure: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Simulation engine error: {str(e)}")
+        logger.error(f"Prediction failure: {_safe_str(e)}")
+        raise HTTPException(status_code=500, detail=f"Simulation engine error: {_safe_str(e)}")
     
     # 3. Validate ecological plausibility before generating narrative
     plausibility_issues = _validate_scenario_plausibility(scenario, results)
@@ -545,7 +592,7 @@ async def run_scenario(
     try:
         narrative = await generate_narrative(scenario, results)
     except Exception as e:
-        logger.warning(f"Narrative generation failed: {str(e)}")
+        logger.warning(f"Narrative generation failed: {_safe_str(e)}")
         narrative = "The simulation completed successfully, but narrative interpretation is currently unavailable. Total predicted change is listed below."
     
     # 4. Build scenario GeoJSON for persistence and response

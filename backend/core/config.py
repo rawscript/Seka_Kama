@@ -201,6 +201,9 @@ class Settings(BaseSettings):
 # Global settings instance
 settings = Settings()
 
+# Log LLM model configuration at startup for diagnostics
+logger.info(f"LLM model configured: {settings.LLM_MODEL}")
+
 # Validate settings on import
 try:
     settings.validate()
