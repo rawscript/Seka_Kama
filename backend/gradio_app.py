@@ -466,14 +466,14 @@ def create_gradio_app():
 # MAIN ENTRY POINT
 # ============================================================
 
+# Create Gradio app
+demo = create_gradio_app()
+
+# Mount Gradio on FastAPI app - this is the app object HF Spaces will run
+app = gr.mount_gradio_app(fastapi_app, demo, path="/")
+
+# For local development
 if __name__ == "__main__":
-    # Create Gradio app
-    demo = create_gradio_app()
-    
-    # Mount FastAPI app at /api
-    app = gr.mount_gradio_app(fastapi_app, demo, path="/")
-    
-    # Run with uvicorn
     import uvicorn
     
     port = int(os.getenv("PORT", "7860"))  # HF Spaces uses 7860
