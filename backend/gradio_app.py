@@ -21,9 +21,6 @@ import os
 from pathlib import Path
 import sys
 
-# Add backend to path
-sys.path.insert(0, str(Path(__file__).parent))
-
 # Import spaces for GPU decorator (required by HF Spaces even for CPU)
 try:
     import spaces
@@ -36,6 +33,9 @@ except ImportError:
                 return func
             return decorator
 
+# Add backend to path
+sys.path.insert(0, str(Path(__file__).parent))
+
 # Import FastAPI app for mounting
 from main import app as fastapi_app
 from core.config import settings
@@ -45,7 +45,6 @@ from core.config import settings
 # ============================================================
 # HF Spaces checks for @spaces.GPU decorated functions during startup
 # This stub satisfies the requirement without actually using GPU
-# DO NOT call this function - just having it decorated is enough
 @spaces.GPU(duration=120)
 def _gpu_stub_for_hf_spaces_check():
     """Minimal GPU stub to satisfy HF Spaces decorator detection"""
@@ -512,8 +511,12 @@ app = gr.mount_gradio_app(fastapi_app, demo, path="/")
 print("App ready - launching server")
 
 # HF Spaces requires the script to call .launch() to start the server
+# Using demo.launch() instead of uvicorn to keep Gradio in control
 if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", "7860"))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=7860,
+        show_error=True,
+        share=False
+    )
 
