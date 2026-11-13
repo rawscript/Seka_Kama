@@ -1,17 +1,30 @@
-FROM python:3.12-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir --disable-pip-version-check -r requirements.txt
+# Copy requirements first for caching
+COPY requirements.hf.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . ./
+# Copy application files
+COPY gradio_app.py .
+COPY main.py .
+COPY api/ ./api/
+COPY core/ ./core/
+COPY services/ ./services/
+COPY models/ ./models/
 
-RUN useradd --create-home --uid 1000 appuser && chown -R appuser:appuser /app
-USER appuser
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV SPACE_ID=Jasekm2/Sekakama
 
-EXPOSE 8000
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Expose port
+EXPOSE 7860
+
+# Run the app
+CMD ["python", "gradio_app.py"]

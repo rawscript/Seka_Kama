@@ -3,10 +3,7 @@ title: Seka Kama Ecological Digital Twin
 emoji: 🦁
 colorFrom: yellow
 colorTo: red
-sdk: gradio
-sdk_version: "4.44.0"
-python_version: "3.10"
-app_file: gradio_app.py
+sdk: docker
 pinned: false
 license: mit
 ---
