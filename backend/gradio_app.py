@@ -466,14 +466,26 @@ def create_gradio_app():
 # MAIN ENTRY POINT
 # ============================================================
 
-# Create Gradio app
-demo = create_gradio_app()
-
-# For HF Spaces: export the Gradio demo directly
-# For local development with FastAPI: mount on FastAPI
-if os.getenv("SPACE_ID"):  # HF Spaces environment variable
-    # HF Spaces: use pure Gradio
-    app = demo
-else:
-    # Local: mount Gradio on FastAPI for full API access
-    app = gr.mount_gradio_app(fastapi_app, demo, path="/")
+# Create Gradio app with error handling
+try:
+    print("Creating Gradio interface...")
+    demo = create_gradio_app()
+    print("Gradio interface created successfully")
+    
+    # For HF Spaces: export the Gradio demo directly
+    # For local development with FastAPI: mount on FastAPI
+    if os.getenv("SPACE_ID"):  # HF Spaces environment variable
+        # HF Spaces: use pure Gradio
+        print("HF Spaces detected, using pure Gradio demo")
+        app = demo
+    else:
+        # Local: mount Gradio on FastAPI for full API access
+        print("Local environment, mounting Gradio on FastAPI")
+        app = gr.mount_gradio_app(fastapi_app, demo, path="/")
+    
+    print("App object ready for HF Spaces")
+except Exception as e:
+    print(f"ERROR creating Gradio app: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
