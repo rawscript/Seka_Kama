@@ -21,6 +21,16 @@ import os
 from pathlib import Path
 import sys
 
+# Add dummy GPU decorator for HF Spaces compatibility
+try:
+    import spaces
+except ImportError:
+    # Create dummy decorator if spaces module not available
+    class spaces:
+        @staticmethod
+        def GPU(func):
+            return func
+
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
