@@ -1,5 +1,6 @@
 ---
 title: Seka Kama Ecological Digital Twin
+emoji: 🦁
 colorFrom: orange
 colorTo: amber
 sdk: gradio
