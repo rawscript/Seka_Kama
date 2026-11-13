@@ -74,6 +74,7 @@ Visit: http://localhost:7860
    SUPABASE_SERVICE_ROLE_KEY=eyJxxx...
    SECRET_KEY=your-jwt-secret
    NVIDIA_API_KEY=nvapi-xxx...
+   HF_MODEL_REPO=Jasekm2/sekanet-models  # Optional, this is the default
    ```
 
 3. **Push Files**:
@@ -83,6 +84,9 @@ Visit: http://localhost:7860
    
    # Copy backend files to root
    cp -r ../backend/* .
+   
+   # Note: NO need to copy models/ directory!
+   # Models auto-download from HF Hub (Jasekm2/sekanet-models)
    
    # Commit and push
    git add .
@@ -147,6 +151,7 @@ See `docs/HUGGINGFACE_DEPLOYMENT.md` for detailed instructions.
 - XGBoost (ML model for predictions)
 - Supabase (PostGIS spatial database)
 - NVIDIA NIM (LLM for narratives)
+- Hugging Face Hub (model storage & auto-download)
 
 **Data Sources**:
 - NASA POWER (climate data)

@@ -76,40 +76,27 @@ cp requirements-gradio.txt requirements.txt
 
 Ensure model files are available:
 
-**Option A: Include in repo** (if <100MB total):
+**NEW: Models Auto-Downloaded from HF Hub**
 ```bash
-# Models are already in models/ directory
-git add models/*.pkl
+# Models are automatically downloaded from Hugging Face Hub on startup
+# Repository: Jasekm2/sekanet-models
+# Files:
+#   - sekanet_xgboost_shp.pkl
+#   - sekanet_scaler_shp.pkl  
+#   - feature_names.pkl
+
+# No need to include model files in your Space!
+# They're downloaded to HF cache on first run
 ```
 
-**Option B: Download on startup** (for larger models):
-Create `download_models.py`:
+**Fallback to Local** (optional):
+If you want to include models in the Space for faster startup:
+```bash
+# Create models directory
+mkdir models
 
-```python
-import requests
-import joblib
-from pathlib import Path
-
-MODEL_URLS = {
-    "model": "https://your-host.com/sekanet_xgboost_shp.pkl",
-    "scaler": "https://your-host.com/sekanet_scaler_shp.pkl",
-    "features": "https://your-host.com/feature_names.pkl"
-}
-
-def download_models():
-    models_dir = Path("models")
-    models_dir.mkdir(exist_ok=True)
-    
-    for name, url in MODEL_URLS.items():
-        path = models_dir / f"{name}.pkl"
-        if not path.exists():
-            print(f"Downloading {name}...")
-            response = requests.get(url)
-            with open(path, 'wb') as f:
-                f.write(response.content)
-
-if __name__ == "__main__":
-    download_models()
+# Copy your local models (if available)
+cp ../path/to/models/*.pkl models/
 ```
 
 ### 5. Deploy

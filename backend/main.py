@@ -40,16 +40,44 @@ def _load_ml_models_async():
     """Load heavy ML models in background thread to never block HTTP requests or login."""
     try:
         from pathlib import Path
-        mp, sp, fp = Path(settings.MODEL_PATH), Path(settings.SCALER_PATH), Path(settings.FEATURE_NAMES_PATH)
-        if mp.exists() and sp.exists() and fp.exists():
-            logger.info("Background loading ML model artefacts...")
-            _state["model"] = joblib.load(mp)
-            _state["scaler"] = joblib.load(sp)
-            _state["feature_names"] = joblib.load(fp)
-            logger.info(f"ML models loaded: {len(_state['feature_names'])} features")
-            from services.prediction_service import PredictionService
-            _state["prediction_service"] = PredictionService(_state["model"], _state["scaler"], _state["feature_names"])
-            logger.info("Prediction service ready")
+        from huggingface_hub import hf_hub_download
+        
+        # Try Hugging Face Hub first (for HF Spaces deployment)
+        REPO_ID = os.getenv("HF_MODEL_REPO", "Jasekm2/sekanet-models")
+        
+        try:
+            logger.info(f"Loading ML models from Hugging Face Hub: {REPO_ID}")
+            model_path = hf_hub_download(repo_id=REPO_ID, filename="sekanet_xgboost_shp.pkl")
+            scaler_path = hf_hub_download(repo_id=REPO_ID, filename="sekanet_scaler_shp.pkl")
+            features_path = hf_hub_download(repo_id=REPO_ID, filename="feature_names.pkl")
+            
+            _state["model"] = joblib.load(model_path)
+            _state["scaler"] = joblib.load(scaler_path)
+            _state["feature_names"] = joblib.load(features_path)
+            logger.info(f"ML models loaded from HF Hub: {len(_state['feature_names'])} features")
+            
+        except Exception as hf_error:
+            # Fallback to local files if HF Hub fails
+            logger.warning(f"HF Hub loading failed: {hf_error}. Trying local files...")
+            
+            mp, sp, fp = Path(settings.MODEL_PATH), Path(settings.SCALER_PATH), Path(settings.FEATURE_NAMES_PATH)
+            if mp.exists() and sp.exists() and fp.exists():
+                logger.info("Loading ML model artefacts from local files...")
+                _state["model"] = joblib.load(mp)
+                _state["scaler"] = joblib.load(sp)
+                _state["feature_names"] = joblib.load(fp)
+                logger.info(f"ML models loaded from local: {len(_state['feature_names'])} features")
+            else:
+                raise FileNotFoundError(
+                    f"Models not found in HF Hub ({REPO_ID}) or local paths "
+                    f"({mp}, {sp}, {fp})"
+                )
+        
+        # Initialize prediction service
+        from services.prediction_service import PredictionService
+        _state["prediction_service"] = PredictionService(_state["model"], _state["scaler"], _state["feature_names"])
+        logger.info("Prediction service ready")
+        
     except Exception as e:
         logger.error(f"Background model load failed: {e}")
     finally:

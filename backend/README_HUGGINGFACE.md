@@ -1,6 +1,5 @@
 ---
 title: Seka Kama Ecological Digital Twin
-emoji: none
 colorFrom: orange
 colorTo: amber
 sdk: gradio
@@ -17,22 +16,23 @@ license: mit
 This Hugging Face Space provides a demonstration interface for the Seka Kama platform,
 which uses machine learning to predict lion population density and simulate conservation scenarios.
 
-## 🌟 Features
+##  Features
 
 - **Baseline Predictions**: View current lion density estimates across conservancies
 - **Scenario Simulation**: Run what-if analysis for development or conservation interventions
 - **Feature Importance**: Understand which environmental factors drive predictions
 - **Ecological Validation**: Automatic detection of ecologically implausible predictions
 
-## 🔬 Technology
+##  Technology
 
 - **ML Model**: XGBoost trained on nightlight satellite imagery (VIIRS)
+- **Model Storage**: Hugging Face Hub (Jasekm2/sekanet-models) - auto-downloaded on startup
 - **Environmental Data**: NASA POWER (climate), GBIF (wildlife occurrences)
 - **Backend**: FastAPI + Python
 - **Database**: Supabase (PostGIS spatial database)
 - **LLM**: NVIDIA NIM API for natural language scenario analysis
 
-## 📊 Data Sources
+##  Data Sources
 
 1. **VIIRS Nightlight**: Monthly composites (2012-2024) for human activity patterns
 2. **NASA POWER**: Climate data (temperature, precipitation)
@@ -40,17 +40,17 @@ which uses machine learning to predict lion population density and simulate cons
 4. **WDPA**: Protected areas boundaries
 5. **Historical Surveys**: Lion population baseline from conservation organizations
 
-## 🚀 Usage
+##  Usage
 
 ### Baseline Predictions
 
-1. Go to "📍 Baseline Predictions" tab
+1. Go to " Baseline Predictions" tab
 2. Click "Load Baseline Summary"
 3. View total lion estimates and per-conservancy breakdown
 
 ### Scenario Simulation
 
-1. Go to "🔮 Scenario Simulation" tab
+1. Go to " Scenario Simulation" tab
 2. Describe your scenario (e.g., "Build an eco-lodge" or "Expand protected area")
 3. Adjust feature sliders:
    - **Nightlight**: Development impact (-50% to +50%)
@@ -79,14 +79,14 @@ Protected Distance: 0%
 Expected: Lion population decrease (with plausibility warning if model predicts increase)
 ```
 
-## ⚠️ Limitations
+##  Limitations
 
 1. **Demo Mode**: This space uses a predefined Maasai Mara region. For custom polygon drawing, use the full web app.
 2. **Model Uncertainty**: Predictions have ±15% uncertainty margin
 3. **Training Period**: Model trained on 2015-2023 data
 4. **Ecological Validation**: System flags illogical predictions (e.g., development → lion increase)
 
-## 🌐 Full Web Application
+##  Full Web Application
 
 For the complete interactive mapping experience with:
 - Custom polygon drawing
@@ -96,7 +96,7 @@ For the complete interactive mapping experience with:
 
 Visit: **[seka-kama.vercel.app](https://seka-kama.vercel.app)**
 
-## 📝 Citation
+##  Citation
 
 If you use Seka Kama in your research, please cite:
 
@@ -105,19 +105,19 @@ If you use Seka Kama in your research, please cite:
   title = {Seka Kama: Ecological Digital Twin for Lion Conservation},
   author = {[Your Name/Organization]},
   year = {2024},
-  url = {https://huggingface.co/spaces/[your-username]/seka-kama}
+  url = {https://huggingface.co/spaces/[Jasekm2]/seka-kama}
 }
 ```
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions welcome! See the main repository for development guidelines.
 
-## 📄 License
+##  License
 
 MIT License - See LICENSE file for details
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - **NASA POWER** for climate data API
 - **GBIF** for biodiversity occurrence data

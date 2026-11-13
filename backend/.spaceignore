@@ -11,8 +11,8 @@ venv/
 .env.local
 .env.development
 
-# Ignore large model files if they'll be downloaded
-# models/*.pkl
+# Ignore local model files (models auto-download from HF Hub)
+models/*.pkl
 
 # Ignore database dumps
 *.sql
