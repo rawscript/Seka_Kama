@@ -1,0 +1,28 @@
+# Ignore development files when deploying to HF Spaces
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+*.log
+.DS_Store
+.env.local
+.env.development
+
+# Ignore large model files if they'll be downloaded
+# models/*.pkl
+
+# Ignore database dumps
+*.sql
+*.db
+
+# Ignore notebooks
+notebooks/
+
+# Ignore scripts
+scripts/
+
+# Ignore monitoring configs
+monitoring/
