@@ -24,9 +24,32 @@ import sys
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Import spaces for GPU decorator (required by HF Spaces even for CPU)
+try:
+    import spaces
+except ImportError:
+    # Fallback for local development
+    class spaces:
+        @staticmethod
+        def GPU(func):
+            return func
+
 # Import FastAPI app for mounting
 from main import app as fastapi_app
 from core.config import settings
+
+# ============================================================
+# GPU DECORATOR STUB FOR HF SPACES
+# ============================================================
+# HF Spaces requires at least one @spaces.GPU decorated function
+# This stub function satisfies the requirement without using GPU
+@spaces.GPU(duration=60)
+def _gpu_stub():
+    """Minimal GPU stub to satisfy HF Spaces requirement"""
+    return True
+
+# Call the stub during module load to register it with HF Spaces
+_gpu_stub()
 
 # Base URL - will be localhost when running locally, can be configured for HF Spaces
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
