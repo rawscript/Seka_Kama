@@ -106,13 +106,20 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup_event():
     """Wait for ML models to load before accepting requests"""
-    logger.info("Waiting for ML models to load...")
+    import time
+    logger.info("Startup event: Waiting for ML models to load...")
+    start_time = time.time()
+    
     # Wait for the model loading thread to complete (max 120 seconds)
     _model_thread.join(timeout=120)
+    
+    elapsed = time.time() - start_time
+    
     if _state["initialized"]:
-        logger.info("Startup complete: ML models ready")
+        logger.info(f"Startup complete: ML models ready (took {elapsed:.1f}s)")
     else:
-        logger.error("Startup timeout: ML models failed to load within 120 seconds")
+        logger.error(f"Startup timeout: ML models failed to load within 120 seconds (waited {elapsed:.1f}s)")
+        # Don't raise exception - let the app start anyway for debugging
 
 @app.middleware("http")
 async def init_middleware(request: Request, call_next):
