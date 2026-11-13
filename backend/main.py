@@ -84,7 +84,8 @@ def _load_ml_models_async():
         _state["initialized"] = True
 
 # Start background loading thread so requests are never blocked
-threading.Thread(target=_load_ml_models_async, daemon=True, name="ml-model-loader").start()
+_model_thread = threading.Thread(target=_load_ml_models_async, daemon=False, name="ml-model-loader")
+_model_thread.start()
 
 def lazy_init():
     pass
@@ -101,6 +102,17 @@ app = FastAPI(
     # Disable automatic trailing-slash redirects; they convert POST→GET (405).
     redirect_slashes=False,
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Wait for ML models to load before accepting requests"""
+    logger.info("Waiting for ML models to load...")
+    # Wait for the model loading thread to complete (max 120 seconds)
+    _model_thread.join(timeout=120)
+    if _state["initialized"]:
+        logger.info("Startup complete: ML models ready")
+    else:
+        logger.error("Startup timeout: ML models failed to load within 120 seconds")
 
 @app.middleware("http")
 async def init_middleware(request: Request, call_next):
