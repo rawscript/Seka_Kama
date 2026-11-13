@@ -51,8 +51,14 @@ def _gpu_stub_for_hf_spaces_check():
     """Minimal GPU stub to satisfy HF Spaces decorator detection"""
     pass
 
-# Base URL - will be localhost when running locally, can be configured for HF Spaces
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+# Base URL - use relative URLs on HF Spaces (same server), localhost for local dev
+# On HF Spaces, Gradio and FastAPI run on the same port (7860)
+if os.getenv("SPACE_ID"):
+    # HF Spaces: use relative URLs (same origin)
+    API_BASE_URL = ""  # Empty string means same origin
+else:
+    # Local development: FastAPI on 8000, Gradio on 7860
+    API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
 
 # ============================================================
