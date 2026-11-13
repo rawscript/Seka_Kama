@@ -466,32 +466,6 @@ def create_gradio_app():
 # MAIN ENTRY POINT
 # ============================================================
 
-# Create Gradio app
+# Create Gradio app and mount on FastAPI
 demo = create_gradio_app()
-
-# Mount Gradio on FastAPI app - this is the app object HF Spaces will run
 app = gr.mount_gradio_app(fastapi_app, demo, path="/")
-
-# For local development
-if __name__ == "__main__":
-    import uvicorn
-    
-    port = int(os.getenv("PORT", "7860"))  # HF Spaces uses 7860
-    
-    print(f"""
-    ╔═══════════════════════════════════════════════════════╗
-    ║  Seka Kama Ecological Digital Twin                    ║
-    ║  Gradio Interface + FastAPI Backend                   ║
-    ╠═══════════════════════════════════════════════════════╣
-    ║  Gradio UI:    http://localhost:{port}/              ║
-    ║  FastAPI Docs: http://localhost:{port}/redoc         ║
-    ║  Health Check: http://localhost:{port}/health        ║
-    ╚═══════════════════════════════════════════════════════╝
-    """)
-    
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=port,
-        log_level="info"
-    )
