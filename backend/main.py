@@ -87,6 +87,19 @@ def _load_ml_models_async():
 _model_thread = threading.Thread(target=_load_ml_models_async, daemon=False, name="ml-model-loader")
 _model_thread.start()
 
+# For HF Spaces/Gradio deployment: wait for models to load before creating the app
+# This ensures the app is fully ready when Gradio mounts it
+import time
+_load_start = time.time()
+logger.info("Waiting for ML models to load before app initialization...")
+_model_thread.join(timeout=120)
+_load_elapsed = time.time() - _load_start
+
+if _state["initialized"]:
+    logger.info(f"ML models loaded successfully in {_load_elapsed:.1f}s - app ready")
+else:
+    logger.error(f"ML models failed to load in {_load_elapsed:.1f}s - app may be degraded")
+
 def lazy_init():
     pass
 
@@ -102,24 +115,6 @@ app = FastAPI(
     # Disable automatic trailing-slash redirects; they convert POST→GET (405).
     redirect_slashes=False,
 )
-
-@app.on_event("startup")
-async def startup_event():
-    """Wait for ML models to load before accepting requests"""
-    import time
-    logger.info("Startup event: Waiting for ML models to load...")
-    start_time = time.time()
-    
-    # Wait for the model loading thread to complete (max 120 seconds)
-    _model_thread.join(timeout=120)
-    
-    elapsed = time.time() - start_time
-    
-    if _state["initialized"]:
-        logger.info(f"Startup complete: ML models ready (took {elapsed:.1f}s)")
-    else:
-        logger.error(f"Startup timeout: ML models failed to load within 120 seconds (waited {elapsed:.1f}s)")
-        # Don't raise exception - let the app start anyway for debugging
 
 @app.middleware("http")
 async def init_middleware(request: Request, call_next):
