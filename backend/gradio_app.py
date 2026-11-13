@@ -53,8 +53,8 @@ def _gpu_stub_for_hf_spaces_check():
 # Base URL - use relative URLs on HF Spaces (same server), localhost for local dev
 # On HF Spaces, Gradio and FastAPI run on the same port (7860)
 if os.getenv("SPACE_ID"):
-    # HF Spaces: use relative URLs (same origin)
-    API_BASE_URL = ""  # Empty string means same origin
+    # HF Spaces: use same origin (the Space URL)
+    API_BASE_URL = f"https://huggingface.co/spaces/{os.getenv('SPACE_ID')}"
 else:
     # Local development: FastAPI on 8000, Gradio on 7860
     API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
