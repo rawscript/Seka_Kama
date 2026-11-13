@@ -31,8 +31,10 @@ except ImportError:
     # Fallback for local development
     class spaces:
         @staticmethod
-        def GPU(func):
-            return func
+        def GPU(duration=None):
+            def decorator(func):
+                return func
+            return decorator
 
 # Import FastAPI app for mounting
 from main import app as fastapi_app
@@ -41,15 +43,13 @@ from core.config import settings
 # ============================================================
 # GPU DECORATOR STUB FOR HF SPACES
 # ============================================================
-# HF Spaces requires at least one @spaces.GPU decorated function
-# This stub function satisfies the requirement without using GPU
-@spaces.GPU(duration=60)
-def _gpu_stub():
-    """Minimal GPU stub to satisfy HF Spaces requirement"""
-    return True
-
-# Call the stub during module load to register it with HF Spaces
-_gpu_stub()
+# HF Spaces checks for @spaces.GPU decorated functions during startup
+# This stub satisfies the requirement without actually using GPU
+# DO NOT call this function - just having it decorated is enough
+@spaces.GPU(duration=120)
+def _gpu_stub_for_hf_spaces_check():
+    """Minimal GPU stub to satisfy HF Spaces decorator detection"""
+    pass
 
 # Base URL - will be localhost when running locally, can be configured for HF Spaces
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
