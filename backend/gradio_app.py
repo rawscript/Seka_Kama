@@ -466,6 +466,14 @@ def create_gradio_app():
 # MAIN ENTRY POINT
 # ============================================================
 
-# Create Gradio app and mount on FastAPI
+# Create Gradio app
 demo = create_gradio_app()
-app = gr.mount_gradio_app(fastapi_app, demo, path="/")
+
+# For HF Spaces: export the Gradio demo directly
+# For local development with FastAPI: mount on FastAPI
+if os.getenv("SPACE_ID"):  # HF Spaces environment variable
+    # HF Spaces: use pure Gradio
+    app = demo
+else:
+    # Local: mount Gradio on FastAPI for full API access
+    app = gr.mount_gradio_app(fastapi_app, demo, path="/")
