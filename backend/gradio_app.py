@@ -65,11 +65,11 @@ def get_baseline_summary(management_unit: Optional[str] = None) -> Tuple[str, st
         result = asyncio.run(call_api("/baseline/summary"))
         
         if "error" in result:
-            return f"❌ Error: {result['error']}", ""
+            return f"Error: {result['error']}", ""
         
         # Format summary text
         summary = f"""
-## 🦁 Baseline Lion Density Summary
+## Baseline Lion Density Summary
 
 **Total Lions**: {result.get('total_lions', 0):.1f}
 **Affected Area**: {result.get('affected_area_km2', 0):.1f} km²
@@ -99,7 +99,7 @@ def get_baseline_summary(management_unit: Optional[str] = None) -> Tuple[str, st
         return summary, html
         
     except Exception as e:
-        return f"❌ Error: {str(e)}", ""
+        return f"Error: {str(e)}", ""
 
 
 def get_feature_importance() -> Tuple[str, str]:
@@ -108,7 +108,7 @@ def get_feature_importance() -> Tuple[str, str]:
         result = asyncio.run(call_api("/feature-importance"))
         
         if "error" in result:
-            return f"❌ Error: {result['error']}", ""
+            return f"Error: {result['error']}", ""
         
         # Create dataframe
         features = result.get('feature_importance', [])
@@ -127,7 +127,7 @@ def get_feature_importance() -> Tuple[str, str]:
         
         # Text summary
         summary = f"""
-## 📊 Model Feature Importance
+## Model Feature Importance
 
 **Top Feature**: {result.get('top_feature', 'N/A')}
 **Importance**: {result.get('top_importance', 0):.4f}
@@ -139,7 +139,7 @@ Nightlight trends and spatial patterns are the most important predictors.
         return summary, fig.to_html()
         
     except Exception as e:
-        return f"❌ Error: {str(e)}", ""
+        return f"Error: {str(e)}", ""
 
 
 # ============================================================
@@ -185,20 +185,20 @@ def run_scenario_simulation(
         result = asyncio.run(call_api("/scenario", method="POST", data=scenario_data))
         
         if "error" in result:
-            return f"❌ Error: {result['error']}", ""
+            return f"Error: {result['error']}", ""
         
         # Check for plausibility warning
         warning = ""
         if "plausibility_warning" in result:
-            warning = f"\n\n⚠️ **{result['plausibility_warning']}**\n"
+            warning = f"\n\n**WARNING: {result['plausibility_warning']}**\n"
         
         # Format results
         summary = f"""
-## 🔮 Scenario Simulation Results
+## Scenario Simulation Results
 
 **Scenario ID**: {result.get('scenario_id', 'N/A')}
 
-### 📈 Predictions:
+### Predictions:
 
 **Baseline Lions**: {result.get('baseline_total_lions', 0):.1f}
 **Predicted Lions**: {result.get('predicted_total_lions', 0):.1f}
@@ -206,14 +206,14 @@ def run_scenario_simulation(
 
 {warning}
 
-### 🌍 Ecological Context:
+### Ecological Context:
 
 **Affected Area**: {result.get('affected_area_km2', 0):.1f} km²
 **Grid Cells**: {result.get('total_cells_affected', 0)}
 **Avg Rainfall**: {result.get('ecological_context', {}).get('avg_rainfall_mm', 0):.0f} mm/year
 **Avg Prey Density**: {result.get('ecological_context', {}).get('avg_prey_density', 0):.3f} records/km²
 
-### 💬 LLM Analysis:
+### LLM Analysis:
 
 {result.get('llm_narrative', 'No narrative available')}
 
@@ -241,7 +241,7 @@ For custom polygon drawing, use the full web interface at https://seka-kama.verc
         return summary, fig.to_html()
         
     except Exception as e:
-        return f"❌ Error: {str(e)}", ""
+        return f"Error: {str(e)}", ""
 
 
 # ============================================================
@@ -254,9 +254,9 @@ def check_system_health() -> str:
         result = asyncio.run(call_api("/health"))
         
         if "error" in result:
-            return f"❌ Error: {result['error']}"
+            return f"Error: {result['error']}"
         
-        status_emoji = "✅" if result.get('status') == 'healthy' else "⚠️"
+        status_emoji = "[OK]" if result.get('status') == 'healthy' else "[WARNING]"
         
         summary = f"""
 ## {status_emoji} System Health Check
@@ -269,18 +269,18 @@ def check_system_health() -> str:
         
         components = result.get('components', {})
         for name, status in components.items():
-            emoji = "✅" if status == "operational" else "❌"
+            emoji = "[OK]" if status == "operational" else "[FAIL]"
             summary += f"\n{emoji} **{name}**: {status}"
         
         if result.get('warnings'):
-            summary += "\n\n### ⚠️ Warnings:\n"
+            summary += "\n\n### Warnings:\n"
             for warning in result['warnings']:
                 summary += f"- {warning}\n"
         
         return summary
         
     except Exception as e:
-        return f"❌ Error: {str(e)}"
+        return f"Error: {str(e)}"
 
 
 # ============================================================
@@ -296,7 +296,7 @@ def create_gradio_app():
     ) as demo:
         
         gr.Markdown("""
-        # 🦁 Seka Kama: Ecological Digital Twin
+        # Seka Kama: Ecological Digital Twin
         
         **AI-powered lion habitat prediction and conservation planning for Maasai Mara, Kenya**
         
@@ -310,7 +310,7 @@ def create_gradio_app():
         with gr.Tabs():
             
             # ── Tab 1: Baseline Predictions ──
-            with gr.Tab("📍 Baseline Predictions"):
+            with gr.Tab("Baseline Predictions"):
                 gr.Markdown("""
                 ### Current Lion Density Estimates
                 
@@ -319,7 +319,7 @@ def create_gradio_app():
                 """)
                 
                 with gr.Row():
-                    baseline_btn = gr.Button("🔄 Load Baseline Summary", variant="primary")
+                    baseline_btn = gr.Button("Load Baseline Summary", variant="primary")
                 
                 with gr.Row():
                     baseline_text = gr.Markdown()
@@ -333,7 +333,7 @@ def create_gradio_app():
                 )
             
             # ── Tab 2: Feature Importance ──
-            with gr.Tab("📊 Model Insights"):
+            with gr.Tab("Model Insights"):
                 gr.Markdown("""
                 ### Feature Importance Analysis
                 
@@ -342,7 +342,7 @@ def create_gradio_app():
                 """)
                 
                 with gr.Row():
-                    importance_btn = gr.Button("🔄 Load Feature Importance", variant="primary")
+                    importance_btn = gr.Button("Load Feature Importance", variant="primary")
                 
                 with gr.Row():
                     importance_text = gr.Markdown()
@@ -356,7 +356,7 @@ def create_gradio_app():
                 )
             
             # ── Tab 3: Scenario Simulation ──
-            with gr.Tab("🔮 Scenario Simulation"):
+            with gr.Tab("Scenario Simulation"):
                 gr.Markdown("""
                 ### What-If Analysis
                 
@@ -392,7 +392,7 @@ def create_gradio_app():
                             info="Negative = closer to protection, Positive = farther"
                         )
                         
-                        scenario_btn = gr.Button("🚀 Run Simulation", variant="primary", size="lg")
+                        scenario_btn = gr.Button("Run Simulation", variant="primary", size="lg")
                 
                 with gr.Row():
                     scenario_text = gr.Markdown()
@@ -409,7 +409,7 @@ def create_gradio_app():
                 gr.Markdown("""
                 ---
                 
-                **⚠️ Important Notes:**
+                **Important Notes:**
                 
                 - **Ecological Validation**: The system flags scenarios that contradict ecology 
                   (e.g., development predicting lion increases)
@@ -418,7 +418,7 @@ def create_gradio_app():
                 """)
             
             # ── Tab 4: System Health ──
-            with gr.Tab("⚙️ System Status"):
+            with gr.Tab("System Status"):
                 gr.Markdown("""
                 ### API Health Check
                 
@@ -426,7 +426,7 @@ def create_gradio_app():
                 """)
                 
                 with gr.Row():
-                    health_btn = gr.Button("🔄 Check Health", variant="primary")
+                    health_btn = gr.Button("Check Health", variant="primary")
                 
                 with gr.Row():
                     health_text = gr.Markdown()
@@ -440,13 +440,13 @@ def create_gradio_app():
         gr.Markdown("""
         ---
         
-        ### 📚 Resources
+        ### Resources
         
         - **Full Web App**: [seka-kama.vercel.app](https://seka-kama.vercel.app)
         - **GitHub**: [Seka Kama Repository](#)
         - **API Docs**: [/redoc](/redoc)
         
-        ### 🔬 Technology Stack
+        ### Technology Stack
         
         - **ML Model**: XGBoost (scikit-learn pipeline)
         - **Backend**: FastAPI + Python
@@ -456,7 +456,7 @@ def create_gradio_app():
         
         ---
         
-        **Built for wildlife conservation in Maasai Mara, Kenya** 🇰🇪
+        **Built for wildlife conservation in Maasai Mara, Kenya**
         """)
     
     return demo

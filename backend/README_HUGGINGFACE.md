@@ -1,6 +1,6 @@
 ---
 title: Seka Kama Ecological Digital Twin
-emoji: 🦁
+emoji: none
 colorFrom: orange
 colorTo: amber
 sdk: gradio
@@ -10,7 +10,7 @@ pinned: false
 license: mit
 ---
 
-# 🦁 Seka Kama: Ecological Digital Twin
+# Seka Kama: Ecological Digital Twin
 
 **AI-powered lion habitat prediction and conservation planning for Maasai Mara, Kenya**
 
