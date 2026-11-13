@@ -506,17 +506,14 @@ except Exception as e:
     traceback.print_exc()
     raise
 
-# Export as 'app' for HF Spaces
-print("Exporting demo as 'app' for HF Spaces")
-app = demo
+# For HF Spaces: Mount Gradio on FastAPI to expose both UI and API
+print("Mounting Gradio on FastAPI app...")
+app = gr.mount_gradio_app(fastapi_app, demo, path="/")
 print("App ready - launching server")
 
 # HF Spaces requires the script to call .launch() to start the server
 if __name__ == "__main__":
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=7860,
-        show_error=True,
-        share=False
-    )
+    import uvicorn
+    port = int(os.getenv("PORT", "7860"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
