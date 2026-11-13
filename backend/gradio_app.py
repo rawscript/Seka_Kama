@@ -50,11 +50,10 @@ def _gpu_stub_for_hf_spaces_check():
     """Minimal GPU stub to satisfy HF Spaces decorator detection"""
     pass
 
-# Base URL - use relative URLs on HF Spaces (same server), localhost for local dev
-# On HF Spaces, Gradio and FastAPI run on the same port (7860)
+# Base URL - for HF Spaces, Gradio and FastAPI run on same server
 if os.getenv("SPACE_ID"):
-    # HF Spaces: use same origin (the Space URL)
-    API_BASE_URL = f"https://huggingface.co/spaces/{os.getenv('SPACE_ID')}"
+    # HF Spaces: both Gradio and FastAPI on same server at port 7860
+    API_BASE_URL = "http://localhost:7860"
 else:
     # Local development: FastAPI on 8000, Gradio on 7860
     API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
@@ -210,7 +209,7 @@ def run_scenario_simulation(
             "user_query": user_query,
         }
         
-        result = asyncio.run(call_api("/scenario", method="POST", data=scenario_data))
+        result = asyncio.run(call_api("/api/scenario", method="POST", data=scenario_data))
         
         if "error" in result:
             return f"Error: {result['error']}", ""
