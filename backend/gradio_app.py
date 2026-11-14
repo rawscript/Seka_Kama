@@ -89,7 +89,7 @@ async def call_api(endpoint: str, method: str = "GET", data: Optional[Dict] = No
 def get_baseline_summary(management_unit: Optional[str] = None) -> Tuple[str, str]:
     """Get baseline lion density summary"""
     try:
-        result = asyncio.run(call_api("/baseline/summary"))
+        result = asyncio.run(call_api("/api/baseline/summary"))
         
         if "error" in result:
             return f"Error: {result['error']}", ""
@@ -132,7 +132,7 @@ def get_baseline_summary(management_unit: Optional[str] = None) -> Tuple[str, st
 def get_feature_importance() -> Tuple[str, str]:
     """Get model feature importance"""
     try:
-        result = asyncio.run(call_api("/feature-importance"))
+        result = asyncio.run(call_api("/api/feature-importance"))
         
         if "error" in result:
             return f"Error: {result['error']}", ""
@@ -278,7 +278,7 @@ For custom polygon drawing, use the full web interface at https://seka-kama.verc
 def check_system_health() -> str:
     """Check API health and dependencies"""
     try:
-        result = asyncio.run(call_api("/health"))
+        result = asyncio.run(call_api("/api/health"))
         
         if "error" in result:
             return f"Error: {result['error']}"
