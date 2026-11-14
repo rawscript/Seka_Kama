@@ -208,6 +208,11 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
   };
 
   const navigateToKepler = (scenarioId: number) => {
+    if (scenarioId <= 0) {
+      console.error('[ERROR] Invalid scenario ID:', scenarioId);
+      setProcessError('Scenario was not saved properly. Please try again.');
+      return;
+    }
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('kepler_scenario_id', scenarioId.toString());
     }
