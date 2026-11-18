@@ -4,10 +4,10 @@
 
 ## Quick Links
 
-- 🦁 **[Lion Population Data Setup](#5-lion-population-data-gbif-integration)** - Sync real GBIF occurrence data
-- 📚 **[Documentation](#3-documentation-and-resources)** - Technical guides and references
-- 🔧 **[Model Status](#2-vision)** - Current limitations and requirements
-- 🗺️ **[Visual Guide](#4-visual-guide)** - System architecture diagram
+-  **[Lion Population Data Setup](#5-lion-population-data-gbif-integration)** - Sync real GBIF occurrence data
+-  **[Documentation](#3-documentation-and-resources)** - Technical guides and references
+-  **[Model Status](#2-vision)** - Current limitations and requirements
+-  **[Visual Guide](#4-visual-guide)** - System architecture diagram
 
 ---
 
