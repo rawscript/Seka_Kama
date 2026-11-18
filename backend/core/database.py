@@ -253,11 +253,24 @@ class SupabaseService:
             "llm_narrative": llm_narrative
         }
         
-        result = self.client.table("scenario_history").insert(scenario_data).execute()
-        
-        if result.data:
-            return result.data[0]
-        return {}
+        try:
+            result = self.client.table("scenario_history").insert(scenario_data).execute()
+            
+            if result.data:
+                return result.data[0]
+            # If no data returned but no exception, something unexpected happened
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Scenario save returned no data: {result}")
+            return {"error": "No data returned from insert", "details": str(result)}
+        except Exception as db_error:
+            # Log detailed error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            error_msg = str(db_error)
+            logger.error(f"Database error saving scenario: {error_msg}")
+            # Re-raise so caller can handle appropriately
+            raise Exception(f"Database error: {error_msg}")
     
     def get_scenario_history(
         self,

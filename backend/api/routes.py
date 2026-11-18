@@ -2,6 +2,7 @@ import json
 import numpy as np
 import logging
 from fastapi import APIRouter, HTTPException, Request, Query, Response, Depends
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 from shapely.geometry import shape
@@ -472,12 +473,22 @@ async def run_scenario(
         )
     
     # 1. Fetch grid cells affected by user-drawn geometry
+    geometry_geojson = scenario.geometry
+    logger.info(
+        f"Scenario request from user {current_user.user_id}: "
+        f"geometry type={geometry_geojson.get('type')}, "
+        f"query='{(scenario.user_query or '')[:100]}', "
+        f"explicit_mods={list(scenario.feature_modifications.keys())}, "
+        f"management_units={scenario.management_units}"
+    )
+    
     try:
         affected_cells = await get_affected_cells(
             supabase, 
-            scenario.geometry, 
+            geometry_geojson, 
             scenario.management_units
         )
+        logger.info(f"Found {len(affected_cells)} affected cells for scenario")
     except Exception as e:
         logger.error(f"Error fetching affected cells: {_safe_str(e)}")
         raise HTTPException(
@@ -486,10 +497,46 @@ async def run_scenario(
         )
     
     if not affected_cells:
-        raise HTTPException(
-            status_code=400, 
-            detail="No habitat grid cells found in the selected simulation area"
-        )
+        # FALLBACK: Use default Mara region if no cells found
+        # This allows scenarios to run even when polygon selection has issues
+        logger.warning(f"No cells found with provided geometry, using default Mara region fallback")
+        
+        default_mara_polygon = {
+            "type": "Polygon",
+            "coordinates": [[
+                [35.0, -1.8], [35.5, -1.8], [35.5, -1.2], [35.0, -1.2], [35.0, -1.8]
+            ]]
+        }
+        
+        try:
+            affected_cells = await get_affected_cells(
+                supabase, 
+                default_mara_polygon, 
+                scenario.management_units
+            )
+            if affected_cells:
+                logger.info(f"Fallback default region returned {len(affected_cells)} cells")
+            else:
+                # If even fallback fails, we have a real problem
+                raise HTTPException(
+                    status_code=400, 
+                    detail=(
+                        "No habitat grid cells found. The database may not have grid data loaded. "
+                        "Please ensure the grid_cells table has data for the Maasai Mara region."
+                    )
+                )
+        except HTTPException:
+            raise
+        except Exception as fallback_err:
+            logger.error(f"Fallback to default region also failed: {fallback_err}")
+            raise HTTPException(
+                status_code=400, 
+                detail=(
+                    f"No habitat grid cells found in the selected simulation area. "
+                    f"Geometry type: {geometry_geojson.get('type')}. "
+                    f"Even the default fallback region returned no cells - database may be empty."
+                )
+            )
     
     # 1.5 Enrich cells with LIVE ecological data (NASA POWER + GBIF)
     try:
@@ -639,8 +686,11 @@ async def run_scenario(
         )
     except Exception as e:
         logger.error(f"Failed to save scenario history for user {current_user.user_id}: {str(e)}")
-        # We still return the results even if save fails, but with a warning
-        stored = {"id": -1, "error": str(e)}
+        # Return error response - don't continue with failed save
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save scenario: {str(e)}"
+        )
     
     # 6. Log audit action
     await audit_service.log(
@@ -1466,3 +1516,159 @@ You can reply directly to {contact_data.email} to respond to {contact_data.name}
             status_code=500,
             detail="Failed to process contact form. Please try emailing directly to jasemwaura@gmail.com"
         )
+
+
+
+# ============================================================
+# PUBLIC DEMO ENDPOINTS (for Hugging Face Spaces)
+# ============================================================
+
+class DemoScenarioRequest(BaseModel):
+    """Simplified scenario request for public demo (no auth required)"""
+    geometry: Dict[str, Any] = Field(..., description="GeoJSON polygon geometry")
+    feature_modifications: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Feature modifications as percentage deltas",
+        max_length=50
+    )
+    simulation_years: Optional[int] = Field(
+        default=0,
+        description="Number of years to simulate into the future",
+        ge=0,
+        le=50
+    )
+    user_query: Optional[str] = Field(
+        default=None,
+        description="Natural language scenario description",
+        max_length=2000
+    )
+
+
+@router.post("/demo/scenario")
+async def run_demo_scenario(
+    scenario: DemoScenarioRequest,
+    request: Request,
+    db: SupabaseService = Depends(get_db)
+):
+    """
+    Public demo scenario endpoint (no authentication required).
+    For Hugging Face Spaces demo.
+    
+    Uses predefined Maasai Mara region if no geometry provided.
+    Results are not saved to user history.
+    """
+    if not settings.FEATURE_SCENARIO_SIMULATION_ENABLED:
+        raise HTTPException(
+            status_code=503,
+            detail="Scenario simulation is disabled."
+        )
+    
+    model = request.app.state.model
+    scaler = request.app.state.scaler
+    feature_names = request.app.state.feature_names
+    supabase = request.app.state.supabase
+    
+    # Guard: Model may be None if background loading thread hasn't finished
+    if model is None or scaler is None or feature_names is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Model not ready — still loading. Retry in a few seconds."
+        )
+    
+    # Use provided geometry or default to Maasai Mara demo region
+    demo_geometry = scenario.geometry
+    if not demo_geometry or demo_geometry.get("type") != "Polygon":
+        demo_geometry = {
+            "type": "Polygon",
+            "coordinates": [[
+                [35.0, -1.7],
+                [35.5, -1.7],
+                [35.5, -1.3],
+                [35.0, -1.3],
+                [35.0, -1.7]
+            ]]
+        }
+    
+    # Fetch grid cells affected by geometry
+    try:
+        affected_cells = await get_affected_cells(supabase, demo_geometry, None)
+    except Exception as e:
+        logger.error(f"Error fetching affected cells: {_safe_str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Spatial processing failure: {_safe_str(e)}"
+        )
+    
+    if not affected_cells:
+        raise HTTPException(
+            status_code=400,
+            detail="No habitat grid cells found in the selected simulation area"
+        )
+    
+    # Enrich cells with live ecological data
+    try:
+        from services.ecological_data_service import enrich_cells_with_live_data
+        affected_cells = await enrich_cells_with_live_data(affected_cells)
+    except Exception as e:
+        logger.warning(f"Live data enrichment failed (using defaults): {e}")
+    
+    # Run prediction
+    try:
+        from services.prediction_service import PredictionService
+        pred_service = PredictionService(model, scaler, feature_names)
+        results = pred_service.predict_scenario(affected_cells, scenario.feature_modifications)
+    except Exception as e:
+        logger.error(f"Scenario prediction failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Prediction failed: {_safe_str(e)}"
+        )
+    
+    # Generate LLM narrative (optional)
+    narrative = None
+    try:
+        from services.llm_service import LLMScenarioService
+        llm_service = LLMScenarioService()
+        
+        class SimpleContext:
+            def __init__(self, query, mods):
+                self.user_query = query
+                self.feature_modifications = mods
+        
+        context = SimpleContext(scenario.user_query or "Demo scenario", scenario.feature_modifications)
+        narrative = await llm_service.generate_narrative(context, results)
+    except Exception as e:
+        logger.warning(f"LLM narrative generation failed: {e}")
+        narrative = "LLM narrative generation unavailable for this demo."
+    
+    # Calculate ecological context
+    avg_rainfall = sum((c.get("annual_rainfall_mm") or 0.0) for c in affected_cells) / max(len(affected_cells), 1)
+    avg_prey = sum((c.get("prey_density") or 0.0) for c in affected_cells) / max(len(affected_cells), 1)
+    avg_hwc = sum((c.get("hwc_risk_score") or 0.0) for c in affected_cells) / max(len(affected_cells), 1)
+    
+    # Plausibility check
+    plausibility_warning = None
+    if results.get("delta_total", 0) > 0:
+        has_nightlight_increase = any("nightlight" in k.lower() and v > 0 for k, v in scenario.feature_modifications.items())
+        has_population_increase = any("pop" in k.lower() and v > 0 for k, v in scenario.feature_modifications.items())
+        if has_nightlight_increase or has_population_increase:
+            plausibility_warning = "Development activities (nightlight/population increase) are not expected to increase lion populations. This prediction may not reflect ecological reality."
+    
+    return {
+        "scenario_id": f"demo_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}",
+        "baseline_total_lions": float(results.get("baseline_total", 0)),
+        "predicted_total_lions": float(results.get("scenario_total", 0)),
+        "delta_lions": float(results.get("delta_total", 0)),
+        "delta_percent": float(results.get("delta_percent_total", 0)),
+        "affected_area_km2": float(len(affected_cells) * 5.0),  # Approx 5km² per cell
+        "total_cells_affected": len(affected_cells),
+        "ecological_context": {
+            "avg_rainfall_mm": float(avg_rainfall),
+            "avg_prey_density": float(avg_prey),
+            "avg_hwc_risk": float(avg_hwc)
+        },
+        "llm_narrative": narrative,
+        "plausibility_warning": plausibility_warning,
+        "demo_mode": True,
+        "note": "Demo mode: Results not saved to history. Use full web app for complete features."
+    }

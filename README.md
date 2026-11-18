@@ -227,3 +227,125 @@ Seka Kama is a research interface for spatial conservation data. The checked-in 
 - **Issue tracker**: [[Link](https://github.com/rawscript/Seka_Kama/issues?q=is%3Aissue+is%3Aopen)]
 
 *Seka Kama provides the intelligence needed to protect critical ecosystems while supporting informed regional development.*
+
+---
+
+## 7. Running Commands
+
+### Docker Commands
+
+```bash
+# Build and start all services (backend + frontend)
+docker compose up --build
+
+# Build containers only
+docker compose build
+
+# Start services in detached mode
+docker compose up -d
+
+# Stop services
+docker compose down
+
+# Stop services and remove volumes
+docker compose down -v
+```
+
+### Backend (Python/FastAPI)
+
+```bash
+cd backend
+
+# Create virtual environment
+python -m venv .venv
+
+# Activate virtual environment (Windows)
+.venv\Scripts\activate
+
+# Activate virtual environment (Linux/Mac)
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start development server
+python -m uvicorn main:app --reload
+
+# Start on specific port
+python -m uvicorn main:app --reload --port 8001
+
+# Run tests
+pytest
+
+# Run specific test file
+pytest tests/test_gbif_service.py -v
+
+# Run tests with coverage
+pytest --cov=services --cov-report=html
+```
+
+### Frontend (Node.js/Next.js)
+
+```bash
+cd web-app/seka_kama
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Run linter
+npm run lint
+
+# Run TypeScript type checking
+npm run typecheck
+```
+
+### Makefile Commands
+
+```bash
+# Start development environment (Docker)
+make dev
+
+# Build Docker containers
+make build
+
+# Start services in background
+make up
+
+# Stop services
+make down
+
+# Clean up (stop and remove volumes)
+make clean
+
+# Run all tests (backend + frontend)
+make test
+
+# Run linters (backend + frontend)
+make lint
+```
+
+### Environment Setup
+
+Copy `.env.example` to `.env` and configure the following variables:
+
+```env
+SUPABASE_URL=https://project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=supabase-service-role-key
+JWT_SECRET_KEY=secure-secret-key-at-least-32-chars-long
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+```
+
+### Service URLs
+
+- Backend API: http://localhost:8000
+- Backend API Docs: http://localhost:8000/docs
+- Frontend: http://localhost:3000

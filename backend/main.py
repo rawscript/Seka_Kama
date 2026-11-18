@@ -37,41 +37,38 @@ except Exception as e:
     logger.error(f"Supabase startup init failed: {e}")
 
 def _load_ml_models_async():
-    """Load heavy ML models in background thread to never block HTTP requests or login."""
+    """Load heavy ML models in background thread to never block HTTP requests or login.
+    
+    Loading strategy:
+    - Development (DEBUG=true): Load from local models/ directory
+    - Production (DEBUG=false, HF Spaces, Railway): Load from Hugging Face Hub
+    """
     try:
         from pathlib import Path
-        from huggingface_hub import hf_hub_download
         
-        # Try Hugging Face Hub first (for HF Spaces deployment)
-        REPO_ID = os.getenv("HF_MODEL_REPO", "Jasekm2/sekanet-models")
+        # Determine loading strategy based on environment
+        is_dev = settings.DEBUG or os.getenv("SPACE_ID") is None
+        local_models_dir = Path(__file__).parent / "models"
         
-        try:
-            logger.info(f"Loading ML models from Hugging Face Hub: {REPO_ID}")
-            model_path = hf_hub_download(repo_id=REPO_ID, filename="sekanet_xgboost_shp.pkl")
-            scaler_path = hf_hub_download(repo_id=REPO_ID, filename="sekanet_scaler_shp.pkl")
-            features_path = hf_hub_download(repo_id=REPO_ID, filename="feature_names.pkl")
+        if is_dev:
+            # Development: Try local files first
+            local_model = local_models_dir / "sekanet_xgboost_shp.pkl"
+            local_scaler = local_models_dir / "sekanet_scaler_shp.pkl"
+            local_features = local_models_dir / "feature_names.pkl"
             
-            _state["model"] = joblib.load(model_path)
-            _state["scaler"] = joblib.load(scaler_path)
-            _state["feature_names"] = joblib.load(features_path)
-            logger.info(f"ML models loaded from HF Hub: {len(_state['feature_names'])} features")
-            
-        except Exception as hf_error:
-            # Fallback to local files if HF Hub fails
-            logger.warning(f"HF Hub loading failed: {hf_error}. Trying local files...")
-            
-            mp, sp, fp = Path(settings.MODEL_PATH), Path(settings.SCALER_PATH), Path(settings.FEATURE_NAMES_PATH)
-            if mp.exists() and sp.exists() and fp.exists():
-                logger.info("Loading ML model artefacts from local files...")
-                _state["model"] = joblib.load(mp)
-                _state["scaler"] = joblib.load(sp)
-                _state["feature_names"] = joblib.load(fp)
-                logger.info(f"ML models loaded from local: {len(_state['feature_names'])} features")
+            if local_model.exists() and local_scaler.exists() and local_features.exists():
+                logger.info(f"[DEV] Loading ML models from local directory: {local_models_dir}")
+                _state["model"] = joblib.load(local_model)
+                _state["scaler"] = joblib.load(local_scaler)
+                _state["feature_names"] = joblib.load(local_features)
+                logger.info(f"[DEV] ML models loaded from local: {len(_state['feature_names'])} features")
             else:
-                raise FileNotFoundError(
-                    f"Models not found in HF Hub ({REPO_ID}) or local paths "
-                    f"({mp}, {sp}, {fp})"
-                )
+                # Local files not found, try HF Hub as fallback
+                logger.warning(f"[DEV] Local models not found in {local_models_dir}, trying Hugging Face Hub...")
+                _load_from_huggingface_hub()
+        else:
+            # Production: Load from Hugging Face Hub
+            _load_from_huggingface_hub()
         
         # Initialize prediction service
         from services.prediction_service import PredictionService
@@ -82,6 +79,23 @@ def _load_ml_models_async():
         logger.error(f"Background model load failed: {e}")
     finally:
         _state["initialized"] = True
+
+
+def _load_from_huggingface_hub():
+    """Load ML models from Hugging Face Hub (for production deployment)."""
+    from huggingface_hub import hf_hub_download
+    
+    REPO_ID = os.getenv("HF_MODEL_REPO", "Jasekm2/sekanet-models")
+    logger.info(f"[PROD] Loading ML models from Hugging Face Hub: {REPO_ID}")
+    
+    model_path = hf_hub_download(repo_id=REPO_ID, filename="sekanet_xgboost_shp.pkl")
+    scaler_path = hf_hub_download(repo_id=REPO_ID, filename="sekanet_scaler_shp.pkl")
+    features_path = hf_hub_download(repo_id=REPO_ID, filename="feature_names.pkl")
+    
+    _state["model"] = joblib.load(model_path)
+    _state["scaler"] = joblib.load(scaler_path)
+    _state["feature_names"] = joblib.load(features_path)
+    logger.info(f"[PROD] ML models loaded from HF Hub: {len(_state['feature_names'])} features")
 
 # Start background loading thread so requests are never blocked
 _model_thread = threading.Thread(target=_load_ml_models_async, daemon=False, name="ml-model-loader")

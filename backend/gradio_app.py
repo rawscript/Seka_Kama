@@ -209,7 +209,7 @@ def run_scenario_simulation(
             "user_query": user_query,
         }
         
-        result = asyncio.run(call_api("/api/scenario", method="POST", data=scenario_data))
+        result = asyncio.run(call_api("/api/demo/scenario", method="POST", data=scenario_data))
         
         if "error" in result:
             return f"Error: {result['error']}", ""
@@ -505,6 +505,8 @@ except Exception as e:
     raise
 
 # For HF Spaces: Mount Gradio on FastAPI to expose both UI and API
+# Mount at root "/" so Gradio UI is the default, but FastAPI routes at /api/* still work
+# Gradio's mount_gradio_app internally mounts the Gradio app and leaves other routes to FastAPI
 print("Mounting Gradio on FastAPI app...")
 app = gr.mount_gradio_app(fastapi_app, demo, path="/")
 print("App ready - launching server")

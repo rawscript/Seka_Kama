@@ -18,6 +18,12 @@ class ScenarioRequest(BaseModel):
         description="List of management unit names",
         max_length=10  # Limit to 10 units max
     )
+    simulation_years: Optional[int] = Field(
+        default=0,
+        description="Number of years to simulate into the future",
+        ge=0,
+        le=50
+    )
     user_query: Optional[str] = Field(
         default=None,
         description="Natural language scenario description",
