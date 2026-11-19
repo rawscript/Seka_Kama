@@ -1,12 +1,5 @@
 --
 -- Migration 003: Add Schema Version Tracking
---
--- Purpose: Create table to track applied migrations
--- Duration: <1 second
--- Breaking: No
--- Requires: None
---
-
 -- Create schema version tracking table
 CREATE TABLE IF NOT EXISTS public.schema_version (
     id SERIAL PRIMARY KEY,

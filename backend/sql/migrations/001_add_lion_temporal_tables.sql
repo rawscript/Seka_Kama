@@ -1,7 +1,4 @@
 -- Migration: Add temporal lion occurrence tables for GBIF integration
--- Purpose: Enable year-specific lion population tracking from GBIF API
--- Run this in Supabase SQL Editor before deploying backend changes
-
 -- 1. Create table for raw GBIF occurrence records
 CREATE TABLE IF NOT EXISTS public.lion_occurrences (
     id SERIAL PRIMARY KEY,

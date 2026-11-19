@@ -1,8 +1,4 @@
 -- Migration: Fix scenario_history schema
--- Issue: Missing baseline_total_lions column causing PGRST204 error
--- Run this in Supabase SQL Editor
-
--- Add missing columns to scenario_history table if they don't exist
 ALTER TABLE public.scenario_history 
 ADD COLUMN IF NOT EXISTS baseline_total_lions FLOAT DEFAULT 0;
 

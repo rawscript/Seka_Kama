@@ -1,11 +1,6 @@
 --
 -- Migration 002: Add Spatial SRID Constraints
---
--- Purpose: Enforce SRID 4326 on all spatial columns
--- Duration: ~10 seconds (constraint addition only)
--- Breaking: Yes (rejects invalid SRID data)
--- Requires: Migration 000 completed (all SRID violations repaired)
---
+
 
 -- Pre-flight validation check
 -- This will FAIL if any violations exist, preventing constraint addition

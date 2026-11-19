@@ -1,12 +1,5 @@
 --
 -- Migration 000: Repair SRID Violations
---
--- Purpose: Fix spatial columns with incorrect SRID before adding constraints
--- Duration: ~30 seconds for 271K rows
--- Breaking: No (idempotent data repair)
--- Run Before: 002_add_spatial_constraints.sql
---
-
 -- Repair grid_cells.geom
 UPDATE grid_cells 
 SET geom = ST_SetSRID(geom, 4326) 

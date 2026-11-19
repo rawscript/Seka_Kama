@@ -27,11 +27,35 @@ DROP FUNCTION IF EXISTS public.get_cells_in_geometry(text);
 -- The caller (spatial_service.py) passes the raw GeoJSON geometry object
 -- (e.g. {"type":"Polygon","coordinates":[...]}) directly as geom_geojson.
 -- The optional `units` array filters by management_unit when non-empty.
+DROP FUNCTION IF EXISTS public.get_cells_in_geometry(JSONB, TEXT[]);
 CREATE OR REPLACE FUNCTION public.get_cells_in_geometry(
     geom_geojson  JSONB,
     units         TEXT[] DEFAULT '{}'::TEXT[]
 )
-RETURNS SETOF public.grid_cells
+RETURNS TABLE (
+    cell_id INTEGER,
+    geom GEOMETRY,
+    centroid GEOMETRY,
+    pt_lon FLOAT,
+    pt_lat FLOAT,
+    management_unit TEXT,
+    baseline_lion_density FLOAT,
+    all_mean_mean FLOAT,
+    all_skew_mean FLOAT,
+    all_skew_std FLOAT,
+    all_kurtosis_mean FLOAT,
+    longterm_slope_mean FLOAT,
+    licorr_slope_mean FLOAT,
+    dist_to_protected_km FLOAT,
+    pop2018_mean FLOAT,
+    ann_amp_mean FLOAT,
+    ann_cv_mean FLOAT,
+    ann_peak_month_mean FLOAT,
+    prey_density FLOAT,
+    annual_rainfall_mm FLOAT,
+    hwc_risk_score FLOAT,
+    year INTEGER
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 STABLE
@@ -51,7 +75,29 @@ BEGIN
     END IF;
 
     RETURN QUERY
-    SELECT gc.*
+    SELECT 
+        gc.cell_id,
+        gc.geom,
+        gc.centroid,
+        gc.pt_lon,
+        gc.pt_lat,
+        gc.management_unit,
+        gc.baseline_lion_density,
+        gc.all_mean_mean,
+        gc.all_skew_mean,
+        gc.all_skew_std,
+        gc.all_kurtosis_mean,
+        gc.longterm_slope_mean,
+        gc.licorr_slope_mean,
+        gc.dist_to_protected_km,
+        gc.pop2018_mean,
+        gc.ann_amp_mean,
+        gc.ann_cv_mean,
+        gc.ann_peak_month_mean,
+        gc.prey_density,
+        gc.annual_rainfall_mm,
+        gc.hwc_risk_score,
+        gc.year
     FROM   public.grid_cells gc
     WHERE  ST_Intersects(gc.geom, target_geom)
     AND    (

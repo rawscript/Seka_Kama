@@ -1,13 +1,5 @@
 --
 -- Migration 004: Add Study Area Bounds RPC Function
---
--- Purpose: Create RPC function to compute study area bounding box from grid_cells extent
--- Duration: <1 second
--- Breaking: No
--- Requires: None
---
-
--- Create RPC function to retrieve study area bounds dynamically
 CREATE OR REPLACE FUNCTION get_study_area_bounds()
 RETURNS TABLE(min_lon float, min_lat float, max_lon float, max_lat float)
 LANGUAGE plpgsql

@@ -78,18 +78,33 @@ async def get_affected_cells(
     """
     try:
         # Normalize GeoJSON — unwrap Feature wrapper if present (common from frontend)
+        original_type = geometry_geojson.get("type")
         if geometry_geojson.get("type") == "Feature":
             geometry_geojson = geometry_geojson["geometry"]
+            logger.debug(f"Unwrapped Feature wrapper, inner type: {geometry_geojson.get('type')}")
         if geometry_geojson.get("type") == "FeatureCollection":
             # Take the first geometry if a collection was passed
             feats = geometry_geojson.get("features", [])
             if feats:
                 geometry_geojson = feats[0].get("geometry", geometry_geojson)
+                logger.debug(f"Extracted first geometry from FeatureCollection, type: {geometry_geojson.get('type')}")
 
-        logger.debug("RPC get_cells_in_geometry payload: %s units=%s", geometry_geojson.get("type"), management_units)
+        geom_type = geometry_geojson.get("type")
+        coords = geometry_geojson.get("coordinates")
+        logger.info(
+            f"get_affected_cells called: geometry_type={geom_type}, "
+            f"has_coords={bool(coords)}, management_units={management_units}, year={year}"
+        )
+        
+        if not geom_type or not coords:
+            logger.error(f"Invalid geometry: type={geom_type}, coords_present={bool(coords)}")
+            return []
+
+        logger.debug("RPC get_cells_in_geometry payload: type=%s units=%s", geom_type, management_units)
 
         # Pass the raw geometry object directly — the SQL function calls
         # ST_GeomFromGeoJSON(geom_geojson::text) on it without extra nesting.
+        logger.debug(f"Calling RPC get_cells_in_geometry with geom_geojson keys: {list(geometry_geojson.keys())}")
         rpc_result = supabase.rpc(
             "get_cells_in_geometry",
             {
@@ -99,7 +114,7 @@ async def get_affected_cells(
         ).execute()
 
         cells = rpc_result.data or []
-        logger.info("get_cells_in_geometry returned %d cells", len(cells))
+        logger.info("get_cells_in_geometry returned %d cells for geometry_type=%s", len(cells), geom_type)
 
         # Apply year filter on the returned rows when a year is requested
         if year and cells:

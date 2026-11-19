@@ -152,8 +152,11 @@ export default function ScenarioDrawer({ onScenarioRun, selectedUnit }: Scenario
     setLoading(true);
     setProcessError(null);
     
+    // Log the exact geometry being sent
     console.log('[START] Starting scenario execution...', {
       geometry: drawnGeometry,
+      geometry_type: drawnGeometry.type,
+      geometry_coords_length: drawnGeometry.coordinates?.length,
       modifications,
       simulation_years: 0,
       user_query: userQuery,
