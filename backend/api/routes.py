@@ -476,11 +476,18 @@ async def run_scenario(
     geometry_geojson = scenario.geometry
     logger.info(
         f"Scenario request from user {current_user.user_id}: "
-        f"geometry type={geometry_geojson.get('type')}, "
+        f"geometry type={geometry_geojson.get('type') if geometry_geojson else 'None'}, "
         f"query='{(scenario.user_query or '')[:100]}', "
         f"explicit_mods={list(scenario.feature_modifications.keys())}, "
         f"management_units={scenario.management_units}"
     )
+    
+    # Validate geometry exists
+    if not geometry_geojson or geometry_geojson.get('type') is None:
+        logger.warning("No geometry provided, forcing fallback to default Mara region")
+        geometry_geojson = {"type": "Polygon", "coordinates": [[
+            [35.0, -1.8], [35.5, -1.8], [35.5, -1.2], [35.0, -1.2], [35.0, -1.8]
+        ]]}
     
     try:
         affected_cells = await get_affected_cells(
@@ -499,7 +506,7 @@ async def run_scenario(
     if not affected_cells:
         # FALLBACK: Use default Mara region if no cells found
         # This allows scenarios to run even when polygon selection has issues
-        logger.warning(f"No cells found with provided geometry, using default Mara region fallback")
+        logger.warning(f"No cells found with provided geometry (type={geometry_geojson.get('type')}), using default Mara region fallback")
         
         default_mara_polygon = {
             "type": "Polygon",
@@ -696,7 +703,7 @@ async def run_scenario(
     await audit_service.log(
         action="Intelligence Scenario Executed",
         resource_type="Intelligence",
-        resource_id=str(stored.get("id")),
+        resource_id=str(stored.get("scenario_id") or stored.get("id")),
         user_id=current_user.user_id,
         details={
             "delta": results["delta_total"],
@@ -706,7 +713,7 @@ async def run_scenario(
     )
     
     return ScenarioResponse(
-        scenario_id=stored.get("id", -1),
+        scenario_id=stored.get("scenario_id") or stored.get("id", -1),
         baseline_total_lions=results["baseline_total"],
         predicted_total_lions=results["scenario_total"],
         delta_lions=results["delta_total"],

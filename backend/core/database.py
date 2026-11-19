@@ -257,7 +257,10 @@ class SupabaseService:
             result = self.client.table("scenario_history").insert(scenario_data).execute()
             
             if result.data:
-                return result.data[0]
+                # Support both 'id' and 'scenario_id' as primary key column names
+                stored_record = result.data[0]
+                stored_record.setdefault("id", stored_record.get("scenario_id"))
+                return stored_record
             # If no data returned but no exception, something unexpected happened
             import logging
             logger = logging.getLogger(__name__)

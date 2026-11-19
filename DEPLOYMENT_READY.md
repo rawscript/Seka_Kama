@@ -72,14 +72,14 @@ Visit: http://localhost:7860
    SUPABASE_URL=https://xxxxx.supabase.co
    SUPABASE_KEY=eyJxxx...
    SUPABASE_SERVICE_ROLE_KEY=eyJxxx...
-   SECRET_KEY=your-jwt-secret
+   SECRET_KEY=jwt-secret
    NVIDIA_API_KEY=nvapi-xxx...
    HF_MODEL_REPO=Jasekm2/sekanet-models  # Optional, this is the default
    ```
 
 3. **Push Files**:
    ```bash
-   git clone https://huggingface.co/spaces/YOUR-USERNAME/seka-kama
+   git clone https://huggingface.co/spaces/USERNAME/seka-kama
    cd seka-kama
    
    # Copy backend files to root
@@ -260,7 +260,7 @@ LOG_LEVEL=INFO            # Logging level
 
 ### Check Health
 ```
-GET https://YOUR-SPACE.hf.space/health
+GET https://SPACE.hf.space/health
 ```
 
 Expected response:

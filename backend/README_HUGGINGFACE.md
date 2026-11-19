@@ -104,7 +104,7 @@ If you use Seka Kama in your research, please cite:
 ```bibtex
 @software{seka_kama_2024,
   title = {Seka Kama: Ecological Digital Twin for Lion Conservation},
-  author = {[Your Name/Organization]},
+  author = {[ Name/Organization]},
   year = {2024},
   url = {https://huggingface.co/spaces/[Jasekm2]/seka-kama}
 }

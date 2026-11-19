@@ -180,6 +180,14 @@ INSTRUCTIONS:
 - If the user already provided specific values in {list(explicit_mods.keys())}, PRIORITISE the user's values.
 - ONLY return the JSON object. No prose.
 
+ECOLOGICAL PROXY MAPPING (when user describes ecological changes that are NOT direct model features):
+- "Prey decrease" / "herbivore decline" → Increase ann_cv_mean (higher variability in ecosystem), Decrease cheetah_abundance (proxy for prey availability)
+- "Drought" / "low rainfall" / "kills grass" → Increase ann_cv_mean (seasonal variability), Decrease ann_amp_mean (lower seasonal amplitude), Increase longterm_slope_mean (human activity may expand into drought-stressed areas)
+- "Flooding" / "heavy rain" → Increase ann_amp_mean (seasonal amplitude), Decrease ann_cv_mean (more consistent water)
+- "Human settlement" / "development" → Increase all_mean_mean (nightlight intensity), Increase longterm_slope_mean (trend upward)
+- "Habitat loss" / "deforestation" → Increase all_mean_mean, Increase longterm_slope_mean
+- "Conservation success" / "protected expansion" → Decrease longterm_slope_mean (less human pressure), Decrease all_mean_mean
+
 Available features to modify: {', '.join([
     'longterm_slope_mean', 'longterm_slope_std', 'all_skew_mean', 'all_skew_std',
     'all_mean_mean', 'all_mean_std', 'all_kurtosis_mean', 'all_kurtosis_std',
